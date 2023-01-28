@@ -1,0 +1,48 @@
+version: '2'
+
+services:
+  myapp:
+    container_name: api-bot
+    image: 'api-bot'
+    environment:
+      XDEBUG_MODE: coverage
+    ports:
+      - 9000:9000
+    volumes:
+      - ./app:/usr/src/myapp
+      - /var/run/php/php8.2-fpm.sock
+      - var:/usr/src/myapp/var
+      - vendor:/usr/src/myapp/vendor
+    depends_on:
+      - mysql
+  mysql:
+    container_name: mysql
+    image: 'mysql:latest'
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_HOST: mysql
+    ports:
+      - 3306:3306
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      PMA_ARBITRARY: 1
+  nginx:
+    container_name: nginx
+    image: 'nginx:latest'
+    depends_on:
+      - myapp
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./app:/usr/src/myapp
+      - /var/run/php/php8.2-fpm.sock
+volumes:
+  var:
+  vendor:
+
