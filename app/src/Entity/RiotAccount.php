@@ -13,39 +13,39 @@ class RiotAccount
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $riotId = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $riotPuuid = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $summonerName = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $summonerRankedSoloRank = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $summonerRankedSoloTier = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?int $summonerRankedSoloLeaguePoints = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $summonerRankedSoloWins = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $SummonerRankedSoloLosses = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $SummonerLevel = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $lastUpdate = null;
 
-    #[ORM\OneToOne(inversedBy: 'riotAccount', cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?user $user = null;
+    #[ORM\OneToOne(mappedBy: 'riotAccount', targetEntity: RiotAccount::class,cascade: ['persist', 'remove'])]
+    private ?User $user = null;
+
 
     public function getId(): ?int
     {
@@ -172,13 +172,23 @@ class RiotAccount
         return $this;
     }
 
-    public function getUser(): ?user
+    public function getUser(): ?User
     {
         return $this->user;
     }
 
-    public function setUser(user $user): self
+    public function setUser(?User $user): self
     {
+        // unset the owning side of the relation if necessary
+        if ($user === null && $this->user !== null) {
+            $this->user->setRiotAccount(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($user !== null && $user->getRiotAccount() !== $this) {
+            $user->setRiotAccount($this);
+        }
+
         $this->user = $user;
 
         return $this;
