@@ -3,7 +3,12 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\UserRepository;
 use App\State\UserStateProcessor;
 use Doctrine\ORM\Mapping as ORM;
@@ -15,6 +20,11 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
 #[ApiResource(
     operations: [
         new Post(processor: UserStateProcessor::class),
+        new Get(),
+        new GetCollection(),
+        new Put(),
+        new Patch(),
+        new Delete()
     ],
     denormalizationContext: ['groups' => ['write']]
 )]
@@ -30,7 +40,7 @@ class User
     #[ORM\Column(length: 255, unique: true)]
     private ?string $discordId = null;
 
-    #[ORM\OneToOne(inversedBy: 'user', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: "user", targetEntity: RiotAccount::class, cascade: ['persist', 'remove'])]
     private ?RiotAccount $riotAccount = null;
 
     public function getId(): ?int
@@ -50,12 +60,12 @@ class User
         return $this;
     }
 
-    public function getRiotAccount(): ?riotAccount
+    public function getRiotAccount(): ?RiotAccount
     {
         return $this->riotAccount;
     }
 
-    public function setRiotAccount(?riotAccount $riotAccount): self
+    public function setRiotAccount(?RiotAccount $riotAccount): self
     {
         $this->riotAccount = $riotAccount;
 

@@ -43,7 +43,7 @@ class RiotAccount
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $lastUpdate = null;
 
-    #[ORM\OneToOne(mappedBy: 'riotAccount', targetEntity: RiotAccount::class,cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: "riotAccount",targetEntity: User::class,cascade: ['persist', 'remove'])]
     private ?User $user = null;
 
 
@@ -179,16 +179,6 @@ class RiotAccount
 
     public function setUser(?User $user): self
     {
-        // unset the owning side of the relation if necessary
-        if ($user === null && $this->user !== null) {
-            $this->user->setRiotAccount(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($user !== null && $user->getRiotAccount() !== $this) {
-            $user->setRiotAccount($this);
-        }
-
         $this->user = $user;
 
         return $this;
