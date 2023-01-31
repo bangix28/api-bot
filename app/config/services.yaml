@@ -22,7 +22,7 @@ services:
             - '../src/Kernel.php'
     App\State\UserStateProcessor:
         bind:
-            $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
+            #$persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
             #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
 
     # add more service definitions when explicit configuration is needed

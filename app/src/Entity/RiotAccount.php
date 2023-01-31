@@ -2,10 +2,13 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Repository\RiotAccountRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
+#[ApiResource]
 class RiotAccount
 {
     #[ORM\Id]
@@ -17,7 +20,7 @@ class RiotAccount
     private ?string $riotId = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $riotPuuid = null;
+    private ?string $puuid = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $summonerName = null;
@@ -28,24 +31,23 @@ class RiotAccount
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $summonerRankedSoloTier = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $summonerRankedSoloLeaguePoints = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $summonerRankedSoloLosses = null;
+
     #[ORM\Column(nullable: true)]
-    private ?int $summonerRankedSoloLeaguePoints = null;
+    private ?int $summonerLevel = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloWins = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $score = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $SummonerRankedSoloLosses = null;
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $lastUpdate = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $SummonerLevel = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $lastUpdate = null;
-
-    #[ORM\OneToOne(inversedBy: "riotAccount",targetEntity: User::class,cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'riotAccount', cascade: ['persist', 'remove'])]
     private ?User $user = null;
-
 
     public function getId(): ?int
     {
@@ -57,21 +59,21 @@ class RiotAccount
         return $this->riotId;
     }
 
-    public function setRiotId(string $riotId): self
+    public function setRiotId(?string $riotId): self
     {
         $this->riotId = $riotId;
 
         return $this;
     }
 
-    public function getRiotPuuid(): ?string
+    public function getPuuid(): ?string
     {
-        return $this->riotPuuid;
+        return $this->puuid;
     }
 
-    public function setRiotPuuid(string $riotPuuid): self
+    public function setPuuid(?string $puuid): self
     {
-        $this->riotPuuid = $riotPuuid;
+        $this->puuid = $puuid;
 
         return $this;
     }
@@ -81,7 +83,7 @@ class RiotAccount
         return $this->summonerName;
     }
 
-    public function setSummonerName(string $summonerName): self
+    public function setSummonerName(?string $summonerName): self
     {
         $this->summonerName = $summonerName;
 
@@ -93,7 +95,7 @@ class RiotAccount
         return $this->summonerRankedSoloRank;
     }
 
-    public function setSummonerRankedSoloRank(string $summonerRankedSoloRank): self
+    public function setSummonerRankedSoloRank(?string $summonerRankedSoloRank): self
     {
         $this->summonerRankedSoloRank = $summonerRankedSoloRank;
 
@@ -105,67 +107,67 @@ class RiotAccount
         return $this->summonerRankedSoloTier;
     }
 
-    public function setSummonerRankedSoloTier(string $summonerRankedSoloTier): self
+    public function setSummonerRankedSoloTier(?string $summonerRankedSoloTier): self
     {
         $this->summonerRankedSoloTier = $summonerRankedSoloTier;
 
         return $this;
     }
 
-    public function getSummonerRankedSoloLeaguePoints(): ?int
+    public function getSummonerRankedSoloLeaguePoints(): ?string
     {
         return $this->summonerRankedSoloLeaguePoints;
     }
 
-    public function setSummonerRankedSoloLeaguePoints(int $summonerRankedSoloLeaguePoints): self
+    public function setSummonerRankedSoloLeaguePoints(?string $summonerRankedSoloLeaguePoints): self
     {
         $this->summonerRankedSoloLeaguePoints = $summonerRankedSoloLeaguePoints;
 
         return $this;
     }
 
-    public function getSummonerRankedSoloWins(): ?string
-    {
-        return $this->summonerRankedSoloWins;
-    }
-
-    public function setSummonerRankedSoloWins(string $summonerRankedSoloWins): self
-    {
-        $this->summonerRankedSoloWins = $summonerRankedSoloWins;
-
-        return $this;
-    }
-
     public function getSummonerRankedSoloLosses(): ?string
     {
-        return $this->SummonerRankedSoloLosses;
+        return $this->summonerRankedSoloLosses;
     }
 
-    public function setSummonerRankedSoloLosses(string $SummonerRankedSoloLosses): self
+    public function setSummonerRankedSoloLosses(?string $summonerRankedSoloLosses): self
     {
-        $this->SummonerRankedSoloLosses = $SummonerRankedSoloLosses;
+        $this->summonerRankedSoloLosses = $summonerRankedSoloLosses;
 
         return $this;
     }
 
-    public function getSummonerLevel(): ?string
+    public function getSummonerLevel(): ?int
     {
-        return $this->SummonerLevel;
+        return $this->summonerLevel;
     }
 
-    public function setSummonerLevel(string $SummonerLevel): self
+    public function setSummonerLevel(?int $summonerLevel): self
     {
-        $this->SummonerLevel = $SummonerLevel;
+        $this->summonerLevel = $summonerLevel;
 
         return $this;
     }
 
-    public function getLastUpdate(): ?string
+    public function getScore(): ?int
+    {
+        return $this->score;
+    }
+
+    public function setScore(?int $score): self
+    {
+        $this->score = $score;
+
+        return $this;
+    }
+
+    public function getLastUpdate(): ?\DateTimeInterface
     {
         return $this->lastUpdate;
     }
 
-    public function setLastUpdate(string $lastUpdate): self
+    public function setLastUpdate(?\DateTimeInterface $lastUpdate): self
     {
         $this->lastUpdate = $lastUpdate;
 

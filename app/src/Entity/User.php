@@ -3,44 +3,28 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Delete;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
 use App\Repository\UserRepository;
-use App\State\UserStateProcessor;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ApiResource(
-    operations: [
-        new Post(processor: UserStateProcessor::class),
-        new Get(),
-        new GetCollection(),
-        new Put(),
-        new Patch(),
-        new Delete()
-    ],
-    denormalizationContext: ['groups' => ['write']]
+#[UniqueEntity(
+    fields: 'discordId',
+    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
 )]
+#[ApiResource]
 class User
 {
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[Groups(['write'])]
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(length: 255)]
     private ?string $discordId = null;
 
-    #[ORM\OneToOne(mappedBy: "user", targetEntity: RiotAccount::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?RiotAccount $riotAccount = null;
 
     public function getId(): ?int
@@ -67,16 +51,19 @@ class User
 
     public function setRiotAccount(?RiotAccount $riotAccount): self
     {
+        // unset the owning side of the relation if necessary
+        if ($riotAccount === null && $this->riotAccount !== null) {
+            $this->riotAccount->setUser(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($riotAccount !== null && $riotAccount->getUser() !== $this) {
+            $riotAccount->setUser($this);
+        }
+
         $this->riotAccount = $riotAccount;
 
         return $this;
-    }
-
-    public static function loadValidatorMetadata(ClassMetadata $metadata)
-    {
-        $metadata->addConstraint(new UniqueEntity([
-            'fields' => 'discordId',
-        ]));
     }
 
 
