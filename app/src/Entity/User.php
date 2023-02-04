@@ -2,9 +2,12 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Link;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 
@@ -13,15 +16,23 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
     fields: 'discordId',
     message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
 )]
+#[UniqueEntity(
+    fields: 'riotAccount',
+    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
+)]
 #[ApiResource]
 class User
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[ApiProperty(identifier: false)]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[ApiProperty(
+        identifier: true
+    )]
     private ?string $discordId = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]

@@ -3,12 +3,45 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
+use ApiPlatform\Metadata\Post;
 use App\Repository\RiotAccountRepository;
+use App\State\RiotAccountProcessor;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    uriTemplate: '/user/{discordId}/riotAccount',
+    operations: [ new Post(read: false) ],
+    uriVariables: [
+        'discordId' => new Link(
+            fromProperty: 'riotAccount',
+            fromClass: User::class,
+        ),
+    ],
+    denormalizationContext: ['groups' => ['riotAccount:write']],
+    processor: RiotAccountProcessor::class
+)]
+
+#[ApiResource(
+    uriTemplate: '/user/{discordId}/riotAccount',
+    operations: [ new GetCollection() ],
+    uriVariables: [
+        'discordId' => new Link(
+            fromProperty: 'riotAccount',
+            fromClass: User::class
+        )
+    ]
+)]
+
+#[UniqueEntity(
+    fields: 'user',
+    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
+)]
 class RiotAccount
 {
     #[ORM\Id]
@@ -23,6 +56,7 @@ class RiotAccount
     private ?string $puuid = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('riotAccount:write')]
     private ?string $summonerName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
