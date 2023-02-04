@@ -18,3 +18,4 @@ api_platform:
 
     # Custom mapping
     App\Exception\DiscordNotFoundException: !php/const Symfony\Component\HttpFoundation\Response::HTTP_UNPROCESSABLE_ENTITY
+    App\Exception\RiotAccountExistException: 404

@@ -16,10 +16,6 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
     fields: 'discordId',
     message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
 )]
-#[UniqueEntity(
-    fields: 'riotAccount',
-    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
-)]
 #[ApiResource]
 class User
 {

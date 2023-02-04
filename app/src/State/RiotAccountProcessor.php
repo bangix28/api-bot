@@ -5,13 +5,16 @@ namespace App\State;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Exception\DiscordNotFoundException;
+use App\Exception\RiotAccountExistException;
+use App\Repository\RiotAccountRepository;
 use App\Repository\UserRepository;
 use Exception;
 
 class RiotAccountProcessor implements ProcessorInterface
 {
-    public function __construct(private ProcessorInterface $persistProcessor,private UserRepository $userRepository)
+    public function __construct(private ProcessorInterface $persistProcessor,private UserRepository $userRepository, private RiotAccountRepository $rioAccountRepository )
     {
+
     }
 
     /**
@@ -19,12 +22,17 @@ class RiotAccountProcessor implements ProcessorInterface
      */
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = [])
     {
-        $user = $this->userRepository->findOneBy(array('discordId' => 'string'));
-        if (empty($user)) {
-            $data->getUser($user->getId());
-            return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        $discordId = $uriVariables['discordId'];
+        $user = $this->userRepository->findOneBy(array('discordId' => $discordId));
+        if ($user === null)
+        {
+            throw new RiotAccountExistException(sprintf('Le compte discord "%s" n\'est pas lié au Bot', $discordId));
         }
-        throw new DiscordNotFoundException(sprintf('Le compte discord "%s" existe déja.', $user->getDiscordId()));
+        if (!empty($user->getRiotAccount())) {
+            throw new DiscordNotFoundException(sprintf('Le compte discord "%s" est deja lié a un utilisateur.', $user->getDiscordId()));
+        }
 
+        $data->setUser($user);
+        return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
     }
 }
