@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
@@ -29,13 +30,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
     uriTemplate: '/user/{discordId}/riotAccount',
-    operations: [ new GetCollection() ],
+    operations: [ new Get ],
     uriVariables: [
         'discordId' => new Link(
             fromProperty: 'riotAccount',
             fromClass: User::class
         )
-    ]
+    ],
+    normalizationContext: ['groups' => ['riotAccount:read:get']]
 )]
 
 #[UniqueEntity(
@@ -50,34 +52,42 @@ class RiotAccount
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $riotId = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $riotId = '';
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $puuid = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $puuid = null;
+    #[Groups(['riotAccount:write', 'riotAccount:read:get'])]
+    private ?string $summonerName = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups('riotAccount:write')]
-    private ?string $summonerName = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloRank = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloRank = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloTier = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloTier = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloLeaguePoints = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloLeaguePoints = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloLosses = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloLosses = '';
 
     #[ORM\Column(nullable: true)]
-    private ?int $summonerLevel = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $summonerLevel = 0;
 
     #[ORM\Column(nullable: true)]
-    private ?int $score = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $score = 0;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
     private ?\DateTimeInterface $lastUpdate = null;
 
     #[ORM\OneToOne(inversedBy: 'riotAccount', cascade: ['persist', 'remove'])]

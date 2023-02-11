@@ -9,6 +9,7 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
@@ -16,7 +17,9 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
     fields: 'discordId',
     message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
 )]
-#[ApiResource]
+#[ApiResource(
+    denormalizationContext: ['groups' => ['riotAccount:post:write']]
+)]
 class User
 {
     #[ORM\Id]
@@ -29,6 +32,7 @@ class User
     #[ApiProperty(
         identifier: true
     )]
+    #[Groups(['riotAccount:post:write'])]
     private ?string $discordId = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
