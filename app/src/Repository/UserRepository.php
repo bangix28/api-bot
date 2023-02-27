@@ -40,7 +40,7 @@ class UserRepository extends ServiceEntityRepository
     }
 
 //    /**
-//     * @return UserStateProcessor[] Returns an array of UserStateProcessor objects
+//     * @return User[] Returns an array of User objects
 //     */
 //    public function findByExampleField($value): array
 //    {
@@ -54,7 +54,7 @@ class UserRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-//    public function findOneBySomeField($value): ?UserStateProcessor
+//    public function findOneBySomeField($value): ?User
 //    {
 //        return $this->createQueryBuilder('u')
 //            ->andWhere('u.exampleField = :val')

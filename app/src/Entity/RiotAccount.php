@@ -2,10 +2,48 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
+use ApiPlatform\Metadata\Post;
 use App\Repository\RiotAccountRepository;
+use App\State\RiotAccountProcessor;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
+#[ApiResource(
+    uriTemplate: '/user/{discordId}/riotAccount',
+    operations: [ new Post(read: false) ],
+    uriVariables: [
+        'discordId' => new Link(
+            fromProperty: 'riotAccount',
+            fromClass: User::class,
+        ),
+    ],
+    denormalizationContext: ['groups' => ['riotAccount:write']],
+    processor: RiotAccountProcessor::class
+)]
+
+#[ApiResource(
+    uriTemplate: '/user/{discordId}/riotAccount',
+    operations: [ new Get ],
+    uriVariables: [
+        'discordId' => new Link(
+            fromProperty: 'riotAccount',
+            fromClass: User::class
+        )
+    ],
+    normalizationContext: ['groups' => ['riotAccount:read:get']]
+)]
+
+#[UniqueEntity(
+    fields: 'user',
+    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
+)]
 class RiotAccount
 {
     #[ORM\Id]
@@ -14,38 +52,46 @@ class RiotAccount
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $riotId = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $riotId = '';
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $puuid = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $riotPuuid = null;
+    #[Groups(['riotAccount:write', 'riotAccount:read:get'])]
+    private ?string $summonerName = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerName = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloRank = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloRank = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloTier = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloTier = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloLeaguePoints = '';
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedSoloLosses = '';
 
     #[ORM\Column(nullable: true)]
-    private ?int $summonerRankedSoloLeaguePoints = null;
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $summonerLevel = 0;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $summonerRankedSoloWins = null;
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $score = 0;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $SummonerRankedSoloLosses = null;
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?\DateTimeInterface $lastUpdate = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $SummonerLevel = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $lastUpdate = null;
-
-    #[ORM\OneToOne(mappedBy: 'riotAccount', targetEntity: RiotAccount::class,cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'riotAccount', cascade: ['persist', 'remove'])]
     private ?User $user = null;
-
 
     public function getId(): ?int
     {
@@ -57,21 +103,21 @@ class RiotAccount
         return $this->riotId;
     }
 
-    public function setRiotId(string $riotId): self
+    public function setRiotId(?string $riotId): self
     {
         $this->riotId = $riotId;
 
         return $this;
     }
 
-    public function getRiotPuuid(): ?string
+    public function getPuuid(): ?string
     {
-        return $this->riotPuuid;
+        return $this->puuid;
     }
 
-    public function setRiotPuuid(string $riotPuuid): self
+    public function setPuuid(?string $puuid): self
     {
-        $this->riotPuuid = $riotPuuid;
+        $this->puuid = $puuid;
 
         return $this;
     }
@@ -81,7 +127,7 @@ class RiotAccount
         return $this->summonerName;
     }
 
-    public function setSummonerName(string $summonerName): self
+    public function setSummonerName(?string $summonerName): self
     {
         $this->summonerName = $summonerName;
 
@@ -93,7 +139,7 @@ class RiotAccount
         return $this->summonerRankedSoloRank;
     }
 
-    public function setSummonerRankedSoloRank(string $summonerRankedSoloRank): self
+    public function setSummonerRankedSoloRank(?string $summonerRankedSoloRank): self
     {
         $this->summonerRankedSoloRank = $summonerRankedSoloRank;
 
@@ -105,67 +151,67 @@ class RiotAccount
         return $this->summonerRankedSoloTier;
     }
 
-    public function setSummonerRankedSoloTier(string $summonerRankedSoloTier): self
+    public function setSummonerRankedSoloTier(?string $summonerRankedSoloTier): self
     {
         $this->summonerRankedSoloTier = $summonerRankedSoloTier;
 
         return $this;
     }
 
-    public function getSummonerRankedSoloLeaguePoints(): ?int
+    public function getSummonerRankedSoloLeaguePoints(): ?string
     {
         return $this->summonerRankedSoloLeaguePoints;
     }
 
-    public function setSummonerRankedSoloLeaguePoints(int $summonerRankedSoloLeaguePoints): self
+    public function setSummonerRankedSoloLeaguePoints(?string $summonerRankedSoloLeaguePoints): self
     {
         $this->summonerRankedSoloLeaguePoints = $summonerRankedSoloLeaguePoints;
 
         return $this;
     }
 
-    public function getSummonerRankedSoloWins(): ?string
-    {
-        return $this->summonerRankedSoloWins;
-    }
-
-    public function setSummonerRankedSoloWins(string $summonerRankedSoloWins): self
-    {
-        $this->summonerRankedSoloWins = $summonerRankedSoloWins;
-
-        return $this;
-    }
-
     public function getSummonerRankedSoloLosses(): ?string
     {
-        return $this->SummonerRankedSoloLosses;
+        return $this->summonerRankedSoloLosses;
     }
 
-    public function setSummonerRankedSoloLosses(string $SummonerRankedSoloLosses): self
+    public function setSummonerRankedSoloLosses(?string $summonerRankedSoloLosses): self
     {
-        $this->SummonerRankedSoloLosses = $SummonerRankedSoloLosses;
+        $this->summonerRankedSoloLosses = $summonerRankedSoloLosses;
 
         return $this;
     }
 
-    public function getSummonerLevel(): ?string
+    public function getSummonerLevel(): ?int
     {
-        return $this->SummonerLevel;
+        return $this->summonerLevel;
     }
 
-    public function setSummonerLevel(string $SummonerLevel): self
+    public function setSummonerLevel(?int $summonerLevel): self
     {
-        $this->SummonerLevel = $SummonerLevel;
+        $this->summonerLevel = $summonerLevel;
 
         return $this;
     }
 
-    public function getLastUpdate(): ?string
+    public function getScore(): ?int
+    {
+        return $this->score;
+    }
+
+    public function setScore(?int $score): self
+    {
+        $this->score = $score;
+
+        return $this;
+    }
+
+    public function getLastUpdate(): ?\DateTimeInterface
     {
         return $this->lastUpdate;
     }
 
-    public function setLastUpdate(string $lastUpdate): self
+    public function setLastUpdate(?\DateTimeInterface $lastUpdate): self
     {
         $this->lastUpdate = $lastUpdate;
 
@@ -179,16 +225,6 @@ class RiotAccount
 
     public function setUser(?User $user): self
     {
-        // unset the owning side of the relation if necessary
-        if ($user === null && $this->user !== null) {
-            $this->user->setRiotAccount(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($user !== null && $user->getRiotAccount() !== $this) {
-            $user->setRiotAccount($this);
-        }
-
         $this->user = $user;
 
         return $this;

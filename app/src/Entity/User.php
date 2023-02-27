@@ -2,35 +2,40 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Link;
 use App\Repository\UserRepository;
-use App\State\UserStateProcessor;
 use Doctrine\ORM\Mapping as ORM;
+
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[UniqueEntity(
+    fields: 'discordId',
+    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
+)]
 #[ApiResource(
-    operations: [
-        new Post(processor: UserStateProcessor::class),
-    ],
-    denormalizationContext: ['groups' => ['write']]
+    denormalizationContext: ['groups' => ['riotAccount:post:write']]
 )]
 class User
 {
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[ApiProperty(identifier: false)]
     private ?int $id = null;
 
-    #[Groups(['write'])]
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(length: 255)]
+    #[ApiProperty(
+        identifier: true
+    )]
+    #[Groups(['riotAccount:post:write'])]
     private ?string $discordId = null;
 
-    #[ORM\OneToOne(inversedBy: 'user', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?RiotAccount $riotAccount = null;
 
     public function getId(): ?int
@@ -50,23 +55,26 @@ class User
         return $this;
     }
 
-    public function getRiotAccount(): ?riotAccount
+    public function getRiotAccount(): ?RiotAccount
     {
         return $this->riotAccount;
     }
 
-    public function setRiotAccount(?riotAccount $riotAccount): self
+    public function setRiotAccount(?RiotAccount $riotAccount): self
     {
+        // unset the owning side of the relation if necessary
+        if ($riotAccount === null && $this->riotAccount !== null) {
+            $this->riotAccount->setUser(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($riotAccount !== null && $riotAccount->getUser() !== $this) {
+            $riotAccount->setUser($this);
+        }
+
         $this->riotAccount = $riotAccount;
 
         return $this;
-    }
-
-    public static function loadValidatorMetadata(ClassMetadata $metadata)
-    {
-        $metadata->addConstraint(new UniqueEntity([
-            'fields' => 'discordId',
-        ]));
     }
 
 
