@@ -2,16 +2,21 @@
 
 namespace App\Controller;
 
+use RiotAPI\Base\Exceptions\GeneralException;
+use RiotAPI\Base\Exceptions\SettingsException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use RiotAPI\Base\Definitions\Region;
 use RiotAPI\LeagueAPI\LeagueAPI;
 
 class RiotApi extends AbstractController
 {
+    /**
+     * @throws SettingsException
+     * @throws GeneralException
+     */
     public function riotApiInit()
     {
         $riotApiToken = $this->getParameter('app.riot.api.token');
-        $test = $riotApiToken;
         return new LeagueAPI([
             LeagueAPI::SET_KEY => $riotApiToken,
             LeagueAPI::SET_REGION => Region::EUROPE_WEST,

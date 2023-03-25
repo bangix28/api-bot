@@ -23,10 +23,14 @@ services:
         bind:
             #$persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
             #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
-    App\State\RiotAccountProcessor:
+    App\State\PostRiotAccountProcessor:
         bind:
             $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
         #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
 
+    App\State\PutRiotAccountProcessor:
+        bind:
+            $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
+        #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

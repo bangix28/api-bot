@@ -7,8 +7,10 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\RiotAccountRepository;
-use App\State\RiotAccountProcessor;
+use App\State\PostRiotAccountProcessor;
+use App\State\PutRiotAccountProcessor;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -25,7 +27,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
         ),
     ],
     denormalizationContext: ['groups' => ['riotAccount:write']],
-    processor: RiotAccountProcessor::class
+    processor: PostRiotAccountProcessor::class
+)]
+
+#[ApiResource(
+    uriTemplate: '/user/{discordId}/riotAccount',
+    operations: [ new Put(read: false) ],
+    uriVariables: [
+        'discordId' => new Link(
+            fromProperty: 'riotAccount',
+            fromClass: User::class,
+        ),
+    ],
+    denormalizationContext: ['groups' => ['riotAccount:write']],
+    processor: PutRiotAccountProcessor::class
 )]
 
 #[ApiResource(
@@ -92,6 +107,9 @@ class RiotAccount
 
     #[ORM\OneToOne(inversedBy: 'riotAccount', cascade: ['persist', 'remove'])]
     private ?User $user = null;
+
+    #[ORM\Column]
+    private ?int $summonerRankedSoloWins = null;
 
     public function getId(): ?int
     {
@@ -229,4 +247,17 @@ class RiotAccount
 
         return $this;
     }
+
+    public function getSummonerRankedSoloWins(): ?int
+    {
+        return $this->summonerRankedSoloWins;
+    }
+
+    public function setSummonerRankedSoloWins(int $summonerRankedSoloWins): self
+    {
+        $this->summonerRankedSoloWins = $summonerRankedSoloWins;
+
+        return $this;
+    }
+
 }

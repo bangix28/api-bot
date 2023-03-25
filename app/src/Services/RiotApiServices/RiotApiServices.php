@@ -8,32 +8,33 @@ use Symfony\Component\Validator\Constraints\DateTime;
 
 class RiotApiServices
 {
-    public function __construct(private ValidationController $validationController)
+    public function __construct(private ValidationController $validationController , private RiotApiScore $riotApiScore)
     {}
-    public function riotAccountFill(RiotAccount $riotAccount,)
+    public function riotAccountFill(RiotAccount $riotAccount)
     {
         $summonerInformations = $this->validationController->getRiotAccountBySummoner('shoteur');
-        $rankedSoloSummonerInfo = $this->getRankedInformations($summonerInformations->id)->data;
+        $listOfGames = $this->validationController->getMatchsInformationsById($summonerInformations->puuid,440);
+        $rankedSoloSummonerInfo = $this->validationController->getRankedsInformationsById($summonerInformations->id)->data;
+        dump($listOfGames);
         $riotAccount->setRiotId($summonerInformations->accountId)
             ->setPuuid($summonerInformations->puuid)
             ->setScore(0)
             ->setSummonerLevel($summonerInformations->summonerLevel)
             ->setSummonerName($summonerInformations->name)
             ->setSummonerRankedSoloLeaguePoints($rankedSoloSummonerInfo->leaguePoints)
+            ->setSummonerRankedSoloTier($rankedSoloSummonerInfo->tier)
             ->setSummonerRankedSoloLosses($rankedSoloSummonerInfo->losses)
+            ->setSummonerRankedSoloWins($rankedSoloSummonerInfo->wins)
             ->setSummonerRankedSoloRank($rankedSoloSummonerInfo->rank)
             ->setLastUpdate(new \DateTime('now'));
        return $riotAccount;
     }
 
-    public function getRankedInformations($summonerId)
+    public function getGamesInformations($listOfGames)
     {
         try {
-            $rankedSummonerInformations = $this->validationController->getRankedsInformationsById($summonerId);
-            foreach ($rankedSummonerInformations as $rankedinfo) {
-                if ($rankedinfo->queueType === "RANKED_SOLO_5x5") {
-                    return (object)array('status' => 'true', 'data' => $rankedinfo);
-                }
+            foreach ($listOfGames as $game) {
+                return (object)array('status' => 'true', 'data' => $game);
             }
         } catch (Exception) {
             return array('status' => 'false', 'error');
