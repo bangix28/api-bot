@@ -5,6 +5,7 @@ namespace App\State;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Controller\ValidationController;
+use App\Exception\DiscordNotFoundException;
 use App\Repository\RiotAccountRepository;
 use App\Repository\UserRepository;
 use App\Services\RiotApiServices\RiotApiServices;
@@ -18,7 +19,11 @@ class PutRiotAccountProcessor implements ProcessorInterface
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = [])
     {
         $user = $this->validationController->verifyDiscordAccount($uriVariables['discordId']);
-        dump($user);
+        $riotAccountData = $user->getRiotAccount();
+        if (!$riotAccountData){
+            throw new DiscordNotFoundException(sprintf('Aucune entrée De compte LOL, contacte Kénolane', $user->getDiscordId()));
+        }
+        $data = $this->riotApiServices->riotAccountFill($data);
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
     }
 }

@@ -4,12 +4,12 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Exception\RiotAccountExistException;
+use App\Repository\RiotAccountRepository;
 use App\Repository\UserRepository;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class ValidationController
 {
-   public function __construct(private RiotApi $riotApi,private UserRepository $userRepository)
+   public function __construct(private RiotApi $riotApi,private UserRepository $userRepository,private RiotAccountRepository $riotAccount)
    {}
    public function getRiotAccountBySummoner(string $summonerName)
    {
