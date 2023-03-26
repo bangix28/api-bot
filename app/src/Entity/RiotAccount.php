@@ -32,14 +32,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
     uriTemplate: '/user/{discordId}/riotAccount',
-    operations: [ new Put(read: false) ],
+    operations: [ new Put(read: true) ],
     uriVariables: [
         'discordId' => new Link(
             fromProperty: 'riotAccount',
             fromClass: User::class,
         ),
     ],
-    denormalizationContext: ['groups' => ['riotAccount:write']],
+    denormalizationContext: ['groups' => ['riotAccount:write:put']],
     processor: PutRiotAccountProcessor::class
 )]
 
@@ -101,7 +101,7 @@ class RiotAccount
     #[Groups(['riotAccount:read:get'])]
     private ?int $score = 0;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?\DateTimeInterface $lastUpdate = null;
 
