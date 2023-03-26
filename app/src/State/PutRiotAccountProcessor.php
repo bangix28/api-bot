@@ -23,7 +23,7 @@ class PutRiotAccountProcessor implements ProcessorInterface
         if (!$riotAccountData){
             throw new DiscordNotFoundException(sprintf('Aucune entrée De compte LOL, contacte Kénolane', $user->getDiscordId()));
         }
-        $data = $this->riotApiServices->riotAccountFill($data);
+        $data = $this->riotApiServices->riotAccountFill($data,$data->getSummonerName());
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
     }
 }

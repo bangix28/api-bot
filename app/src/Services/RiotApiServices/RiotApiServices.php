@@ -10,12 +10,11 @@ class RiotApiServices
 {
     public function __construct(private ValidationController $validationController , private RiotApiScore $riotApiScore)
     {}
-    public function riotAccountFill(RiotAccount $riotAccount)
+    public function riotAccountFill(RiotAccount $riotAccount,$summonerName)
     {
-        $summonerInformations = $this->validationController->getRiotAccountBySummoner('shoteur');
-        $listOfGames = $this->validationController->getMatchsInformationsById($summonerInformations->puuid,440);
+        $summonerInformations = $this->validationController->getRiotAccountBySummoner($summonerName);
         $rankedSoloSummonerInfo = $this->validationController->getRankedsInformationsById($summonerInformations->id)->data;
-        dump($listOfGames);
+        $this->riotApiScore->aramRankedScore($summonerInformations,440);
         $riotAccount->setRiotId($summonerInformations->accountId)
             ->setPuuid($summonerInformations->puuid)
             ->setScore(0)
