@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\RiotAccount;
 use App\Entity\User;
 use App\Exception\RiotAccountExistException;
 use App\Repository\RiotAccountRepository;
 use App\Repository\UserRepository;
+use Symfony\Component\Validator\Constraints\DateTime;
 
 class ValidationController
 {
@@ -29,10 +31,13 @@ class ValidationController
                 return array('status' => 'false', 'error');
             }
     }
-   public function getMatchsInformationsById($puuid,$queueType,$gameType = null,$beginScraps = null): array
+   public function getMatchsInformationsById(string $puuid,int $queueType,$gameType = null,$beginScraps = null,int $numberGamesToGet = 10,$maxDateGames = null): array
    {
-       $numbersGamesToget = 10;
-       $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,$queueType,$gameType,$beginScraps,$numbersGamesToget);
+       $maxDateGames = strtotime($maxDateGames->format('Y-m-d H:i:s'));
+       if (!$maxDateGames){
+           $maxDateGames = null;
+       }
+       $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,$queueType,$gameType,$beginScraps,$numberGamesToGet,$maxDateGames);
        return $callApiRiot;
    }
 
