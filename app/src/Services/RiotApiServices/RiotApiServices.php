@@ -14,10 +14,11 @@ class RiotApiServices
     {
         $summonerInformations = $this->validationController->getRiotAccountBySummoner($summonerName);
         $rankedSoloSummonerInfo = $this->validationController->getRankedsInformationsById($summonerInformations->id)->data;
-        $scorePlayer = $this->riotApiScore->aramRankedScore($summonerInformations,440,$riotAccount);
+        $scoreToAdd = $this->riotApiScore->aramRankedScore($summonerInformations,440,$riotAccount);
+        $newScoreRiotAccount = $riotAccount->getScore() + $scoreToAdd;
         $riotAccount->setRiotId($summonerInformations->accountId)
             ->setPuuid($summonerInformations->puuid)
-            ->setScore($scorePlayer)
+            ->setScore($newScoreRiotAccount)
             ->setSummonerLevel($summonerInformations->summonerLevel)
             ->setSummonerName($summonerInformations->name)
             ->setSummonerRankedSoloLeaguePoints($rankedSoloSummonerInfo->leaguePoints)

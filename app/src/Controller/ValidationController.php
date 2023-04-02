@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Exception\RiotAccountExistException;
 use App\Repository\RiotAccountRepository;
 use App\Repository\UserRepository;
+use Doctrine\DBAL\Exception;
 use Symfony\Component\Validator\Constraints\DateTime;
 
 class ValidationController
@@ -30,12 +31,14 @@ class ValidationController
             } catch (Exception) {
                 return array('status' => 'false', 'error');
             }
+            throw new Exception('Je ne sais pas pourquoi tu as cette erreur, Contact Kenolane.');
     }
    public function getMatchsInformationsById(string $puuid,int $queueType,$gameType = null,$beginScraps = null,int $numberGamesToGet = 10,$maxDateGames = null): array
    {
-       $maxDateGames = strtotime($maxDateGames->format('Y-m-d H:i:s'));
-       if (!$maxDateGames){
+       if (is_null($maxDateGames)){
            $maxDateGames = null;
+       }else{
+           $maxDateGames = strtotime($maxDateGames->format('Y-m-d H:i:s'));
        }
        $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,$queueType,$gameType,$beginScraps,$numberGamesToGet,$maxDateGames);
        return $callApiRiot;

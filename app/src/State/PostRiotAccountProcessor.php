@@ -28,7 +28,7 @@ class PostRiotAccountProcessor implements ProcessorInterface
         if (!empty($user->getRiotAccount())) {
             throw new DiscordNotFoundException(sprintf('Le compte discord "%s" est deja lié a un utilisateur.', $user->getDiscordId()));
         }
-        $data = $this->riotApiServices->riotAccountFill($data);
+        $data = $this->riotApiServices->riotAccountFill($data,$data->getSummonerName());
         $data->setUser($user);
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
     }

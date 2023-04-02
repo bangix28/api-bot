@@ -111,6 +111,9 @@ class RiotAccount
     #[ORM\Column]
     private ?int $summonerRankedSoloWins = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $summonerId = null;
+
     public function getId(): ?int
     {
         return $this->id;
