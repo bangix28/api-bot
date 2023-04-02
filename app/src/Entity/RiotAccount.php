@@ -263,4 +263,16 @@ class RiotAccount
         return $this;
     }
 
+    public function getSummonerId(): ?string
+    {
+        return $this->summonerId;
+    }
+
+    public function setSummonerId(string $summonerId): self
+    {
+        $this->summonerId = $summonerId;
+
+        return $this;
+    }
+
 }

@@ -26,15 +26,14 @@ namespace App\Services\RiotApiServices;
          * @throws RequestException
          * @throws GeneralException
          */
-        public function aramRankedScore(SummonerDto $summonerInformations,int $queueType,RiotAccount $riotAccount)
+        public function aramRankedScore($summonerPuuid,int $queueType,RiotAccount $riotAccount)
         {
-            $listOfGames = $this->validationController->getMatchsInformationsById($summonerInformations->puuid,$queueType,null,null,10,$riotAccount->getLastUpdate());
+            $listOfGames = $this->validationController->getMatchsInformationsById($summonerPuuid,$queueType,null,null,10,$riotAccount->getLastUpdate());
             $score = 0;
             foreach ($listOfGames as $game)
             {
-                dump($score);
                 $gameData = $this->riotApi->riotApiInit()->getMatch($game);
-                $participantData = $this->getGameDataFromMatchesForSummoner($gameData->info->participants,$summonerInformations->puuid);
+                $participantData = $this->getGameDataFromMatchesForSummoner($gameData->info->participants,$summonerPuuid);
                 $score += $participantData->kills * 1;
                 $score += $participantData->assists * 0.5;
                 $score -= $participantData->deaths * 0.5;
