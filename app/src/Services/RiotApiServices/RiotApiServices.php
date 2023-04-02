@@ -58,15 +58,4 @@ class RiotApiServices
         return $riotAccount;
     }
 
-
-    public function getGamesInformations($listOfGames)
-    {
-        try {
-            foreach ($listOfGames as $game) {
-                return (object)array('status' => 'true', 'data' => $game);
-            }
-        } catch (Exception) {
-            return array('status' => 'false', 'error');
-        }
-    }
 }
