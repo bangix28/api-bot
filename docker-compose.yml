@@ -1,5 +1,3 @@
-version: '2'
-
 services:
   myapp:
     container_name: api-bot
@@ -10,9 +8,9 @@ services:
       - 9000:9000
     volumes:
       - ./app:/usr/src/myapp
-      - /var/run/php/php8.2-fpm.sock
-      - var:/usr/src/myapp/var
-      - vendor:/usr/src/myapp/vendor
+      - /var/run/php/php8.3-fpm.sock
+      - /app/var:/usr/src/myapp/var
+      - /app/vendor:/usr/src/myapp/vendor
     depends_on:
       - mysql
   mysql:
@@ -25,7 +23,7 @@ services:
       - 3306:3306
   phpmyadmin:
     container_name: phpmyadmin
-    image: phpmyadmin
+    image: phpmyadmin:latest
     restart: always
     ports:
       - 8080:80

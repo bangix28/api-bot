@@ -11,7 +11,6 @@ class RiotApi extends AbstractController
     public function riotApiInit()
     {
         $riotApiToken = $this->getParameter('app.riot.api.token');
-        $test = $riotApiToken;
         return new LeagueAPI([
             LeagueAPI::SET_KEY => $riotApiToken,
             LeagueAPI::SET_REGION => Region::EUROPE_WEST,

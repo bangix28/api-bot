@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
@@ -15,35 +17,32 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
+#[UniqueEntity(
+    fields: ['riotId'],
+    message: 'Vous êtes déja inscrit avec ce Riot ID !'
+)]
+
 #[ApiResource(
-    uriTemplate: '/user/{discordId}/riotAccount',
+    uriTemplate: '/riotAccount',
     operations: [ new Post(read: false) ],
-    uriVariables: [
-        'discordId' => new Link(
-            fromProperty: 'riotAccount',
-            fromClass: User::class,
-        ),
-    ],
     denormalizationContext: ['groups' => ['riotAccount:write']],
     processor: RiotAccountProcessor::class
 )]
 
 #[ApiResource(
-    uriTemplate: '/user/{discordId}/riotAccount',
+    uriTemplate: '/riotAccount/{id}',
     operations: [ new Get ],
-    uriVariables: [
-        'discordId' => new Link(
-            fromProperty: 'riotAccount',
-            fromClass: User::class
-        )
-    ],
     normalizationContext: ['groups' => ['riotAccount:read:get']]
 )]
 
-#[UniqueEntity(
-    fields: 'user',
-    message: 'Vous êtes déja inscrit avec cette identifiant Discord !'
+#[ApiResource(
+    uriTemplate: '/user/ranked',
+    operations: [ new GetCollection ],
+    normalizationContext: ['groups' => ['riotAccount:read:get']],
+    processor: RiotAccountProcessor::class
 )]
+#[ApiFilter(OrderFilter::class, properties: ['score' => 'DESC'])]
+
 class RiotAccount
 {
     #[ORM\Id]
@@ -51,9 +50,9 @@ class RiotAccount
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['riotAccount:read:get'])]
-    private ?string $riotId = '';
+    #[ORM\Column(length: 255)]
+    #[Groups(['riotAccount:read:get','riotAccount:write'])]
+    private ?string $riotId = null;
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?string $puuid = '';
@@ -90,8 +89,9 @@ class RiotAccount
     #[Groups(['riotAccount:read:get'])]
     private ?\DateTimeInterface $lastUpdate = null;
 
-    #[ORM\OneToOne(inversedBy: 'riotAccount', cascade: ['persist', 'remove'])]
-    private ?User $user = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $summoner_ranked_solo_wins = null;
+
 
     public function getId(): ?int
     {
@@ -218,15 +218,16 @@ class RiotAccount
         return $this;
     }
 
-    public function getUser(): ?User
+    public function getSummonerRankedSoloWins(): ?int
     {
-        return $this->user;
+        return $this->summoner_ranked_solo_wins;
     }
 
-    public function setUser(?User $user): self
+    public function setSummonerRankedSoloWins(?int $summoner_ranked_solo_wins): static
     {
-        $this->user = $user;
+        $this->summoner_ranked_solo_wins = $summoner_ranked_solo_wins;
 
         return $this;
     }
+
 }
