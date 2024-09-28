@@ -14,22 +14,41 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
-            lazy: true
+            pattern: /api
+            stateless: true
             provider: app_user_provider
             json_login:
-                check_path:  /api/login
+                check_path: /api/login
+                username_path: email
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            jwt: ~
 
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
+        admin:
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: app_admin_login
+                default_target_path: admin
+                check_path: app_admin_login
+                enable_csrf: true
+            logout:
+                path: app_logout
+                # where to redirect after logout
+                # target: app_any_route
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
 
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+       - { path: ^/$, roles: PUBLIC_ACCESS } # Allows accessing the Swagger UI
+       - { path: ^/auth, roles: PUBLIC_ACCESS }
+       - { path: ^/api, roles: PUBLIC_ACCESS } # Allows accessing the Swagger UI docs
+       - { path: ^/api/auth, roles: PUBLIC_ACCESS }
+       - { path: ^/admin, roles: ROLE_ADMIN }
+       - { path: ^/api/user, roles: IS_AUTHENTICATED_FULLY }
+       - { path: ^/register, roles: ROLE_ADMIN }
 
 when@test:
     security:

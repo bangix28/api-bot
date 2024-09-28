@@ -1,10 +1,10 @@
 api_platform:
 
   # The title of the API.
-  title: 'API title'
+  title: 'API des Beauce Tigers'
 
   # The description of the API.
-  description: 'API description'
+  description: 'Api des Beauce Tigers'
 
   exception_to_status:
     # The 4 following handlers are registered by default, keep those lines to prevent unexpected side effects
