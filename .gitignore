@@ -1,14 +1,18 @@
 
 ###> symfony/framework-bundle ###
-app/.env.local
-app/.env.local.php
-app/.env.*.local
+/.env.local
+/.env.local.php
+/.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
-app/public/bundles/
-app/var/
-app/vendor/
-app/.env
-app/../.idea
-app/composer.lock
+/public/bundles/
+/var/
+/vendor/
+/.env
+../.idea
+composer.lock
 
 ###< symfony/framework-bundle ###
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###

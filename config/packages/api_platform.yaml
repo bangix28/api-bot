@@ -6,6 +6,12 @@ api_platform:
   # The description of the API.
   description: 'Api des Beauce Tigers'
 
+  swagger:
+    api_keys:
+      JWT:
+        name: Authorization
+        type: header
+
   exception_to_status:
     # The 4 following handlers are registered by default, keep those lines to prevent unexpected side effects
     Symfony\Component\Serializer\Exception\ExceptionInterface: 400 # Use a raw status code (recommended)

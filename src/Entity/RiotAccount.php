@@ -23,20 +23,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
 )]
 
 #[ApiResource(
-    uriTemplate: '/riotAccount',
+    uriTemplate: '/riotAccount/account',
     operations: [ new Post(read: false) ],
     denormalizationContext: ['groups' => ['riotAccount:write']],
     processor: RiotAccountProcessor::class
 )]
 
 #[ApiResource(
-    uriTemplate: '/riotAccount/{id}',
+    uriTemplate: '/riotAccount/account/{id}',
     operations: [ new Get ],
     normalizationContext: ['groups' => ['riotAccount:read:get']]
 )]
 
 #[ApiResource(
-    uriTemplate: '/user/ranked',
+    uriTemplate: '/riotAccount/ranked',
     operations: [ new GetCollection ],
     normalizationContext: ['groups' => ['riotAccount:read:get']],
     processor: RiotAccountProcessor::class
