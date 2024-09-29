@@ -48,11 +48,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['riotAccount:post:write'])]
-    private ?string $discordId = null;
-
-
     public function getId(): ?int
     {
         return $this->id;
@@ -121,18 +116,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
-    }
-
-    public function getDiscordId(): ?string
-    {
-        return $this->discordId;
-    }
-
-    public function setDiscordId(string $discordId): self
-    {
-        $this->discordId = $discordId;
-
-        return $this;
     }
 
 
