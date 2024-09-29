@@ -16,7 +16,7 @@ RUN apt update && apt install -y libicu-dev && rm -rf /var/lib/apt/lists/*
 RUN docker-php-ext-install intl
 
 
-ADD ./app /usr/src/myapp
+ADD . /usr/src/myapp
 
 EXPOSE 9000
 

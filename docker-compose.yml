@@ -7,10 +7,10 @@ services:
     ports:
       - 9000:9000
     volumes:
-      - ./app:/usr/src/myapp
+      - ./:/usr/src/myapp
       - /var/run/php/php8.3-fpm.sock
-      - /app/var:/usr/src/myapp/var
-      - /app/vendor:/usr/src/myapp/vendor
+      - /var:/usr/src/myapp/var
+      - /vendor:/usr/src/myapp/vendor
     depends_on:
       - mysql
   mysql:
