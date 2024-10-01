@@ -90,6 +90,7 @@ class RiotAccount
     private ?\DateTimeInterface $lastUpdate = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
     private ?int $summoner_ranked_solo_wins = null;
 
 
