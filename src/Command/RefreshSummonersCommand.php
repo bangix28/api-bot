@@ -32,14 +32,14 @@ class RefreshSummonersCommand extends Command
     /**
      * @throws \Exception
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): array
     {
         $io = new SymfonyStyle($input, $output);
 
-        $this->riotApiService->getListRanked();
+        $message = $this->riotApiService->getListRanked();
 
         $io->success('Commande effectuée avec succès !');
 
-        return Command::SUCCESS;
+        return $message;
     }
 }
