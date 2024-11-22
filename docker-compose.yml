@@ -1,16 +1,16 @@
 services:
-  myapp:
-    container_name: api-bot
+  api:
+    container_name: api
     image: 'api-bot'
     environment:
       XDEBUG_MODE: coverage
     ports:
       - 9000:9000
     volumes:
-      - ./:/usr/src/myapp
+      - ./:/usr/src/api
       - /var/run/php/php8.3-fpm.sock
-      - /var:/usr/src/myapp/var
-      - /vendor:/usr/src/myapp/vendor
+      - /var:/usr/src/api/var
+      - /vendor:/usr/src/api/vendor
     depends_on:
       - mysql
   mysql:
@@ -33,13 +33,13 @@ services:
     container_name: nginx
     image: 'nginx:latest'
     depends_on:
-      - myapp
+      - api
     ports:
       - 80:80
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./app:/usr/src/myapp
-      - /var/run/php/php8.2-fpm.sock
+      - ./:/usr/src/api
+      - /var/run/php/php8.3-fpm.sock
 volumes:
   var:
   vendor:
