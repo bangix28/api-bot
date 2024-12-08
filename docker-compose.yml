@@ -12,23 +12,27 @@ services:
       - /var:/usr/src/api/var
       - /vendor:/usr/src/api/vendor
     depends_on:
-      - mysql
-  mysql:
-    container_name: mysql
-    image: 'mysql:latest'
+      - postgres
+  postgres:
+    container_name: postgres
+    image: 'postgres:latest'
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-      MYSQL_HOST: mysql
+      POSTGRES_USER: your_user
+      POSTGRES_PASSWORD: your_password
     ports:
-      - 3306:3306
-  phpmyadmin:
-    container_name: phpmyadmin
-    image: phpmyadmin:latest
-    restart: always
-    ports:
-      - 8080:80
+      - 5432:5432
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
     environment:
-      PMA_ARBITRARY: 1
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DISABLE_POSTFIX: 1
+      PGADMIN_CSRF_TRUSTED_ORIGINS: 'http://localhost:5050'
+    ports:
+      - 5050:80
+    depends_on:
+      - postgres
   nginx:
     container_name: nginx
     image: 'nginx:latest'
@@ -43,4 +47,3 @@ services:
 volumes:
   var:
   vendor:
-
