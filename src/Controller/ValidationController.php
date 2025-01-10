@@ -39,4 +39,25 @@ class ValidationController
        $callApiRiot = $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId);
        return $callApiRiot;
    }
+
+    /**
+     * @return array
+     * @throws GeneralException
+     * @throws RequestException
+     * @throws ServerException
+     * @throws ServerLimitException
+     * @throws SettingsException
+     * Obtiens la liste des matchs d'un compte Lol en utilisant son PUUID
+     */
+   public function getListIdMatchHistoryLol(string $puuid,string $startTime = null)
+   {
+       $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,420,null,0,5,$startTime);
+       return $callApiRiot;
+   }
+
+   public function getDataMatchById(string $matchId)
+   {
+       $callApiRiot = $this->riotApi->riotApiInit()->getMatch($matchId);
+       return $callApiRiot;
+   }
 }

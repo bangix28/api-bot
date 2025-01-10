@@ -11,6 +11,8 @@ use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
 use App\Repository\RiotAccountRepository;
 use App\State\RiotAccountProcessor;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -85,13 +87,24 @@ class RiotAccount
     #[Groups(['riotAccount:read:get'])]
     private ?int $score = 0;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?\DateTimeInterface $lastUpdate = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?int $summoner_ranked_solo_wins = null;
+
+    /**
+     * @var Collection<int, HistoryAccountLol>
+     */
+    #[ORM\OneToMany(mappedBy: 'riotAccount', targetEntity: HistoryAccountLol::class, orphanRemoval: true)]
+    private Collection $historyAccountLols;
+
+    public function __construct()
+    {
+        $this->historyAccountLols = new ArrayCollection();
+    }
 
 
     public function getId(): ?int
@@ -227,6 +240,36 @@ class RiotAccount
     public function setSummonerRankedSoloWins(?int $summoner_ranked_solo_wins): static
     {
         $this->summoner_ranked_solo_wins = $summoner_ranked_solo_wins;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, HistoryAccountLol>
+     */
+    public function getHistoryAccountLols(): Collection
+    {
+        return $this->historyAccountLols;
+    }
+
+    public function addHistoryAccountLol(HistoryAccountLol $historyAccountLol): static
+    {
+        if (!$this->historyAccountLols->contains($historyAccountLol)) {
+            $this->historyAccountLols->add($historyAccountLol);
+            $historyAccountLol->setRiotAccountId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeHistoryAccountLol(HistoryAccountLol $historyAccountLol): static
+    {
+        if ($this->historyAccountLols->removeElement($historyAccountLol)) {
+            // set the owning side to null (unless already changed)
+            if ($historyAccountLol->getRiotAccountId() === $this) {
+                $historyAccountLol->setRiotAccountId(null);
+            }
+        }
 
         return $this;
     }

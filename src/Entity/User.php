@@ -2,12 +2,12 @@
 
 namespace App\Entity;
 
-
-
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Link;
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -16,10 +16,12 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name:"`user`")]
 #[UniqueEntity(
     fields: 'email',
     message: 'Vous êtes déja inscrit avec cette email !'
 )]
+
 
 #[ApiResource(
     denormalizationContext: [
@@ -47,6 +49,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
+    public function __construct()
+    {
+        $this->historyAccountLols = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -116,6 +122,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    /**
+     * @return Collection<int, HistoryAccountLol>
+     */
+    public function getHistoryAccountLols(): Collection
+    {
+        return $this->historyAccountLols;
+    }
+
+    public function addHistoryAccountLol(HistoryAccountLol $historyAccountLol): static
+    {
+        if (!$this->historyAccountLols->contains($historyAccountLol)) {
+            $this->historyAccountLols->add($historyAccountLol);
+            $historyAccountLol->setIdUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeHistoryAccountLol(HistoryAccountLol $historyAccountLol): static
+    {
+        if ($this->historyAccountLols->removeElement($historyAccountLol)) {
+            // set the owning side to null (unless already changed)
+            if ($historyAccountLol->getIdUser() === $this) {
+                $historyAccountLol->setIdUser(null);
+            }
+        }
+
+        return $this;
     }
 
 
