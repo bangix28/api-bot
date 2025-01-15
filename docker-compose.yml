@@ -5,7 +5,7 @@ services:
     environment:
       XDEBUG_MODE: coverage
     ports:
-      - 9000:9000
+      - 9001:9001
     volumes:
       - ./:/usr/src/api
       - /var/run/php/php8.3-fpm.sock
