@@ -39,6 +39,7 @@ class RiotApiServices
         }else{
             $riotAccount->setSummonerRankedSoloLeaguePoints(0)
                 ->setSummonerRankedSoloRank('non classée')
+                ->setSummonerRankedSoloTier(null)
                 ->setLastUpdate(new \DateTime('now'));
         }
         $this->entityManager->flush();
