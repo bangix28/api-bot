@@ -15,18 +15,6 @@ class ValidationController
    public function __construct(private RiotApi $riotApi)
    {}
 
-    /**
-     * @throws ServerException
-     * @throws ServerLimitException
-     * @throws SettingsException
-     * @throws RequestException
-     * @throws GeneralException
-     */
-    public function getRiotAccountBySummoner(string $summonerName)
-   {
-       $callApiRiot = $this->riotApi->riotApiInit()->getSummonerByName('shoteur');
-       return $callApiRiot;
-   }
 
     /**
      * @throws ServerLimitException
