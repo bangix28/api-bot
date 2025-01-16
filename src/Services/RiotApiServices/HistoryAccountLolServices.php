@@ -9,6 +9,11 @@ use App\Repository\DataChallengeRepository;
 use App\Repository\HistoryAccountLolRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpParser\Node\Expr\Array_;
+use RiotAPI\Base\Exceptions\GeneralException;
+use RiotAPI\Base\Exceptions\RequestException;
+use RiotAPI\Base\Exceptions\ServerException;
+use RiotAPI\Base\Exceptions\ServerLimitException;
+use RiotAPI\Base\Exceptions\SettingsException;
 use RiotAPI\LeagueAPI\Objects\MatchDto;
 
 class HistoryAccountLolServices
@@ -17,7 +22,14 @@ class HistoryAccountLolServices
     {
     }
 
-    public function getHistoryAccountLol(RiotAccount $riotAccount)
+    /**
+     * @throws ServerException
+     * @throws ServerLimitException
+     * @throws SettingsException
+     * @throws RequestException
+     * @throws GeneralException
+     */
+    public function getHistoryAccountLol(RiotAccount $riotAccount): void
     {
         if ($riotAccount->getLastUpdate()){
             $lastUpdateTimeStamp = $riotAccount->getLastUpdate()->getTimestamp();
@@ -31,21 +43,40 @@ class HistoryAccountLolServices
         }
     }
 
-    public function createHistoryAccountLol(MatchDto $dataMatchHistoryLol,RiotAccount $riotAccount)
+    public function createHistoryAccountLol(MatchDto $dataMatchHistoryLol, RiotAccount $riotAccount): void
     {
-        $listOfParticipants = $dataMatchHistoryLol->getData()['info']['participants'];
-        $dataSummoner = $this->getDataSummonerByListOfParicipants($riotAccount,$listOfParticipants);
+        // Récupération des données essentielles
+        $dataMatch = $dataMatchHistoryLol->getData();
+        $gameInfo = $dataMatch['info'] ?? [];
+        $listOfParticipants = $gameInfo['participants'] ?? [];
+
+
+        // Validation des données nécessaires
+        if (empty($gameInfo) || empty($listOfParticipants)) {
+            throw new \InvalidArgumentException('Les données de la partie sont invalides ou incomplètes.');
+        }
+
+        // Extraction et traitement des données du joueur
+        $dataSummoner = $this->getDataSummonerByListOfParicipants($riotAccount, $listOfParticipants);
         $clearedSummonerData = $this->clearChallengeByQueue($dataSummoner);
 
+        // Transformation du timestamp en DateTime et converti le timestamp de l'API de millisecondes en secondes
+        $dateTimeEndGame = (new \DateTime())->setTimestamp((int) ($gameInfo['gameEndTimestamp'] / 1000));
 
-        $historyAccountLol = new HistoryAccountLol();
-        $historyAccountLol->setRiotAccount($riotAccount);
-        $historyAccountLol->setUpdatedAt(new \DateTimeImmutable());
-        $historyAccountLol->setData($clearedSummonerData);
+        // Création et configuration de l'entité HistoryAccountLol
+        $historyAccountLol = (new HistoryAccountLol())
+            ->setRiotAccount($riotAccount)
+            ->setIsWin($dataSummoner['win'] ?? false)
+            ->setUpdatedAt(new \DateTimeImmutable())
+            ->setDateGameEnd($dateTimeEndGame)
+            ->setChampionId($dataSummoner['championId'] ?? 0)
+            ->setData($clearedSummonerData);
 
+        // Persistance de l'entité
         $this->entityManager->persist($historyAccountLol);
         $this->entityManager->flush();
     }
+
 
     public function getDataSummonerByListOfParicipants(RiotAccount $riotAccount,array $listOfParticipants)
     {

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Enum\RiotApiEnum;
 use RiotAPI\Base\Exceptions\GeneralException;
 use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
@@ -51,7 +52,7 @@ class ValidationController
      */
    public function getListIdMatchHistoryLol(string $puuid,string $startTime = null)
    {
-       $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,420,null,0,5,$startTime);
+       $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,RiotApiEnum::QUEUE_TYPE_RANKED_SOLO->value,null,RiotApiEnum::START_INDEX->value,RiotApiEnum::MATCH_COUNT_RETRIEVE->value,$startTime);
        return $callApiRiot;
    }
 
