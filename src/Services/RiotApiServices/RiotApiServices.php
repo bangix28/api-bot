@@ -24,6 +24,7 @@ class RiotApiServices
     {
         $response = $this->getRankedInformations($riotAccount->getRiotId());
 
+
         if ($response->status && !empty($response->data)) {
             $rankedSoloSummonerInfo = $response->data;
             $score = $this->scoreServices->getScoreSummoner($rankedSoloSummonerInfo);
@@ -40,6 +41,9 @@ class RiotApiServices
             $riotAccount->setSummonerRankedSoloLeaguePoints(0)
                 ->setSummonerRankedSoloRank('non classée')
                 ->setSummonerRankedSoloTier(null)
+                ->setScore(0)
+                ->setSummonerRankedSoloWins(null)
+                ->setSummonerRankedSoloLosses(null)
                 ->setLastUpdate(new \DateTime('now'));
         }
         $this->entityManager->flush();
