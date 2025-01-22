@@ -52,7 +52,8 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-       - { path: ^/api/riotAccount, roles: ROLE_API }
+       - { path: ^/api/riot-account, roles: ROLE_API }
+       - { path: ^/api/history-account-lol, roles: ROLE_API }
        - { path: ^/api/users, roles: ROLE_API }
        - { path: ^/api/login, roles: PUBLIC_ACCESS }
        - { path: ^/admin, roles: ROLE_ADMIN }

@@ -27,7 +27,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  * Récupère les détails d’un invocateur précis
  */
 #[ApiResource(
-    uriTemplate: '/riotAccount/account/{id}',
+    uriTemplate: '/riot-account/account/{id}',
     operations: [ new Get ],
     normalizationContext: ['groups' => ['riotAccount:read:get']]
 )]
