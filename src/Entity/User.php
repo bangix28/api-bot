@@ -22,12 +22,6 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
     message: 'Vous êtes déja inscrit avec cette email !'
 )]
 
-
-#[ApiResource(
-    denormalizationContext: [
-        'groups' => ['riotAccount:post:write']
-    ],
-)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]

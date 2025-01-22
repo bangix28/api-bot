@@ -23,25 +23,21 @@ use Symfony\Component\Serializer\Annotation\Groups;
     fields: ['riotId'],
     message: 'Vous êtes déja inscrit avec ce Riot ID !'
 )]
-
-#[ApiResource(
-    uriTemplate: '/riotAccount/account',
-    operations: [ new Post(read: false) ],
-    denormalizationContext: ['groups' => ['riotAccount:write']],
-    processor: RiotAccountProcessor::class
-)]
-
+/**
+ * Récupère les détails d’un invocateur précis
+ */
 #[ApiResource(
     uriTemplate: '/riotAccount/account/{id}',
     operations: [ new Get ],
     normalizationContext: ['groups' => ['riotAccount:read:get']]
 )]
-
+/**
+ * Récupère tous les invocateurs ainsi que leurs détails.
+ */
 #[ApiResource(
-    uriTemplate: '/riotAccount/ranked',
+    uriTemplate: '/riot-account/ranked',
     operations: [ new GetCollection ],
     normalizationContext: ['groups' => ['riotAccount:read:get']],
-    processor: RiotAccountProcessor::class
 )]
 #[ApiFilter(OrderFilter::class, properties: ['score' => 'DESC'])]
 
