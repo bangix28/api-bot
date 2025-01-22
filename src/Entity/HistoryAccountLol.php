@@ -2,9 +2,12 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
 use App\Repository\HistoryAccountLolRepository;
 use App\State\RiotAccountProcessor;
 use Doctrine\DBAL\Types\Types;
@@ -13,12 +16,33 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints\Json;
 
 #[ORM\Entity(repositoryClass: HistoryAccountLolRepository::class)]
+
+/**
+ * Endpoint permettant de récuperer l'historique des 3
+ * dernieres game sans le details de data
+ */
 #[ApiResource(
     uriTemplate: '/riot-account/{id}/history-account-lol',
     operations: [ new GetCollection() ],
+    uriVariables: [
+        'id' => new Link(
+            fromProperty: 'historyAccountLols',
+            fromClass: RiotAccount::class
+        )
+    ],
     normalizationContext: ['groups' => ['historyAccount:read:get']],
-    paginationItemsPerPage: 3
+    paginationItemsPerPage: 3,
 )]
+
+/**
+ * Endpoint permettant de récuperer
+ * les détails complets d'une game
+ */
+#[ApiResource(
+    uriTemplate: '/history-account-lol/{id}',
+    operations: [ new Get ]
+)]
+
 class HistoryAccountLol
 {
     #[ORM\Id]
@@ -38,12 +62,15 @@ class HistoryAccountLol
     private ?RiotAccount $riotAccount = null;
 
     #[ORM\Column]
+    #[Groups(['historyAccount:read:get'])]
     private ?bool $isWin = null;
 
     #[ORM\Column]
+    #[Groups(['historyAccount:read:get'])]
     private ?int $championId = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['historyAccount:read:get'])]
     private ?\DateTimeInterface $dateGameEnd = null;
 
     public function getId(): ?int
