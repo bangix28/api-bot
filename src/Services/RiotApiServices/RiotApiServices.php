@@ -24,7 +24,6 @@ class RiotApiServices
     {
         $response = $this->getRankedInformations($riotAccount->getRiotId());
 
-
         if ($response->status && !empty($response->data)) {
             $rankedSoloSummonerInfo = $response->data;
             $score = $this->scoreServices->getScoreSummoner($rankedSoloSummonerInfo);
