@@ -61,6 +61,7 @@ class RiotApiServices
      */
     public function getDailyElo(RiotAccount $riotAccount): RiotAccount
     {
+        $listeAccount = $this->riotAccountRepository->findAll();
         $existing = $this->summonerEloDailyRepository
             ->findOneBy([
                 'riotAccount' => $riotAccount,
@@ -99,6 +100,16 @@ class RiotApiServices
         } catch (Exception) {
             return array('status' => 'false', 'error');
         }
+    }
+
+    public function getListAccount(): array
+    {
+        $listeAccount = $this->riotAccountRepository->findAll();
+        foreach ($listeAccount as $account) {
+            $this->getDailyElo($account);
+        }
+
+        return ['status' => true, 'data' => $listeAccount];
     }
 
     /**

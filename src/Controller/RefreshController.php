@@ -43,7 +43,7 @@ class RefreshController extends AbstractController
         return new JsonResponse($listeAccount, Response::HTTP_OK);
     }
     #[Route('/getDailyElo', name: 'app_daily_elo')]
-    public function getDailyElo()
+    public function getDailyElo(): JsonResponse
     {
         $listeAccount = $this->riotAccountRepository->findAll();
         $dataToShow = [];
