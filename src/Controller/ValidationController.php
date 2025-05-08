@@ -29,6 +29,11 @@ class ValidationController
        return $callApiRiot;
    }
 
+   public function getSummonerAcountsDetails($summonerId)
+   {
+       $callApiRiot =  $this->riotApi->riotApiInit()->getSummonerByPUUID($summonerId);
+       return $callApiRiot;
+   }
     /**
      * @return array
      * @throws GeneralException

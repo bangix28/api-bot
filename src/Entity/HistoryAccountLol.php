@@ -119,7 +119,7 @@ class HistoryAccountLol
         return $this;
     }
 
-    public function isWin(): ?bool
+    public function getIsWin(): bool
     {
         return $this->isWin;
     }

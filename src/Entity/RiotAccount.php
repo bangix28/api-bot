@@ -7,16 +7,14 @@ use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Link;
-use ApiPlatform\Metadata\Post;
 use App\Repository\RiotAccountRepository;
-use App\State\RiotAccountProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
+use App\Validator as AcmeAssert;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
 #[UniqueEntity(
@@ -46,6 +44,7 @@ class RiotAccount
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['riotAccount:read:get'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -97,9 +96,20 @@ class RiotAccount
     #[ORM\OneToMany(mappedBy: 'riotAccount', targetEntity: HistoryAccountLol::class, orphanRemoval: true)]
     private Collection $historyAccountLols;
 
+    #[ORM\Column(length: 255)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $logoId = null;
+
+    /**
+     * @var Collection<int, SummonerEloDaily>
+     */
+    #[ORM\OneToMany(mappedBy: 'riotAccount', targetEntity: SummonerEloDaily::class)]
+    private Collection $summonerEloDailies;
+
     public function __construct()
     {
         $this->historyAccountLols = new ArrayCollection();
+        $this->summonerEloDailies = new ArrayCollection();
     }
 
 
@@ -264,6 +274,48 @@ class RiotAccount
             // set the owning side to null (unless already changed)
             if ($historyAccountLol->getRiotAccountId() === $this) {
                 $historyAccountLol->setRiotAccountId(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getLogoId(): ?string
+    {
+        return $this->logoId;
+    }
+
+    public function setLogoId(string $logoId): static
+    {
+        $this->logoId = $logoId;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, SummonerEloDaily>
+     */
+    public function getSummonerEloDailies(): Collection
+    {
+        return $this->summonerEloDailies;
+    }
+
+    public function addSummonerEloDaily(SummonerEloDaily $summonerEloDaily): static
+    {
+        if (!$this->summonerEloDailies->contains($summonerEloDaily)) {
+            $this->summonerEloDailies->add($summonerEloDaily);
+            $summonerEloDaily->setRiotAccount($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSummonerEloDaily(SummonerEloDaily $summonerEloDaily): static
+    {
+        if ($this->summonerEloDailies->removeElement($summonerEloDaily)) {
+            // set the owning side to null (unless already changed)
+            if ($summonerEloDaily->getRiotAccount() === $this) {
+                $summonerEloDaily->setRiotAccount(null);
             }
         }
 

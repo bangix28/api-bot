@@ -4,24 +4,24 @@ namespace App\Services\RiotApiServices;
 
 use App\Controller\ValidationController;
 use App\Entity\RiotAccount;
+use App\Entity\SummonerEloDaily;
 use App\Repository\RiotAccountRepository;
+use App\Repository\SummonerEloDailyRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use RiotAPI\Base\Exceptions\GeneralException;
-use RiotAPI\Base\Exceptions\RequestException;
-use RiotAPI\Base\Exceptions\ServerException;
-use RiotAPI\Base\Exceptions\ServerLimitException;
-use RiotAPI\Base\Exceptions\SettingsException;
-use Symfony\Component\Validator\Constraints\DateTime;
 
 class RiotApiServices
 {
-    public function __construct(private ValidationController $validationController,private RiotAccountRepository $riotAccountRepository,private EntityManagerInterface $entityManager,private ScoreServices $scoreServices)
+    public function __construct(private readonly ValidationController       $validationController,
+                                private readonly RiotAccountRepository      $riotAccountRepository,
+                                private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
+                                private readonly EntityManagerInterface     $entityManager,
+                                private readonly ScoreServices              $scoreServices,
+    )
     {
-
-
     }
-    public function riotAccountFill(RiotAccount $riotAccount)
+    public function riotAccountFill(RiotAccount $riotAccount): RiotAccount
     {
+        $summonerDetails = $this->validationController->getSummonerAcountsDetails($riotAccount->getPuuid());
         $response = $this->getRankedInformations($riotAccount->getRiotId());
 
         if ($response->status && !empty($response->data)) {
@@ -34,22 +34,59 @@ class RiotApiServices
                 ->setSummonerRankedSoloTier($rankedSoloSummonerInfo->tier)
                 ->setSummonerRankedSoloWins($rankedSoloSummonerInfo->wins)
                 ->setScore($score)
+                ->setLogoId($summonerDetails->profileIconId ?? 0)
+                ->setSummonerLevel($summonerDetails->summonerLevel ?? 0)
                 ->setLastUpdate(new \DateTime('now'));
 
-        }else{
+        } else {
             $riotAccount->setSummonerRankedSoloLeaguePoints(0)
                 ->setSummonerRankedSoloRank('non classée')
                 ->setSummonerRankedSoloTier(null)
                 ->setScore(0)
                 ->setSummonerRankedSoloWins(null)
                 ->setSummonerRankedSoloLosses(null)
+                ->setLogoId($summonerDetails->profileIconId ?? 0)
+                ->setSummonerLevel($summonerDetails->summonerLevel ?? 0)
                 ->setLastUpdate(new \DateTime('now'));
         }
         $this->entityManager->flush();
         return $riotAccount;
     }
 
-    public function getRankedInformations($summonerId)
+    /**
+     * On vérifie qu'il n'y a pas d'entrée pour aujourd'hui et si pas d'entrée,
+     * alors on ajoute une entrée avec la l'elo le plus récent.
+     * @param RiotAccount $riotAccount
+     * @return RiotAccount
+     */
+    public function getDailyElo(RiotAccount $riotAccount): RiotAccount
+    {
+        $existing = $this->summonerEloDailyRepository
+            ->findOneBy([
+                'riotAccount' => $riotAccount,
+                'dateScore' => new \DateTime('now'),
+            ]);
+
+        if ($existing) {
+            return $riotAccount;
+        }
+
+        $response = $this->getRankedInformations($riotAccount->getRiotId());
+        if ($response->status && !empty($response->data)) {
+            $score = $this->scoreServices->getScoreSummoner($response->data);
+            $dailyElo = new SummonerEloDaily();
+            $dailyElo->setRiotAccount($riotAccount)
+                ->setScore($score)
+                ->setDateScore(new \DateTime('now'));
+
+            $this->entityManager->persist($dailyElo);
+            $this->entityManager->flush();
+
+        }
+        return $riotAccount;
+    }
+
+    public function getRankedInformations($summonerId): array|object
     {
         try {
             $rankedSummonerInformations = $this->validationController->getRankedsInformationsById($summonerId);
