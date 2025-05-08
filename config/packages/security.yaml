@@ -58,6 +58,7 @@ security:
        - { path: ^/api/login, roles: PUBLIC_ACCESS }
        - { path: ^/admin, roles: ROLE_ADMIN }
        - { path: ^/refresh, roles: ROLE_ADMIN }
+       - { path: ^/getDailyElo, roles: ROLE_ADMIN }
        - { path: ^/register, roles: ROLE_ADMIN }
        - { path: ^/api, roles: PUBLIC_ACCESS } # Allows accessing the Swagger UI docs
 
