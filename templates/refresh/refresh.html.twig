@@ -1,0 +1,7 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Refresh des comptes{% endblock %}
+
+{% block body %}
+  {% include 'refresh/_accounts_table.html.twig' with { accounts: accounts, page_title: page_title|default('Refresh des comptes') } %}
+{% endblock %}

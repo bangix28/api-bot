@@ -8,8 +8,6 @@ use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
 use RiotAPI\Base\Exceptions\ServerLimitException;
 use RiotAPI\Base\Exceptions\SettingsException;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-
 class ValidationController
 {
    public function __construct(private RiotApi $riotApi)

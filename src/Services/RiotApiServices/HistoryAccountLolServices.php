@@ -15,8 +15,9 @@ use RiotAPI\Base\Exceptions\ServerException;
 use RiotAPI\Base\Exceptions\ServerLimitException;
 use RiotAPI\Base\Exceptions\SettingsException;
 use RiotAPI\LeagueAPI\Objects\MatchDto;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-class HistoryAccountLolServices
+class HistoryAccountLolServices extends AbstractController
 {
     public function __construct(private ValidationController $validationController,private HistoryAccountLolRepository $historyAccountLolRepository,private DataChallengeRepository $dataChallengeRepository,private EntityManagerInterface $entityManager)
     {
@@ -31,6 +32,10 @@ class HistoryAccountLolServices
      */
     public function getHistoryAccountLol(RiotAccount $riotAccount): void
     {
+        if (!$riotAccount->getSummonerRankedSoloTier())
+        {
+            return ;
+        }
         if ($riotAccount->getLastUpdate()){
             $lastUpdateTimeStamp = $riotAccount->getLastUpdate()->getTimestamp();
         }else{
@@ -49,8 +54,6 @@ class HistoryAccountLolServices
         $dataMatch = $dataMatchHistoryLol->getData();
         $gameInfo = $dataMatch['info'] ?? [];
         $listOfParticipants = $gameInfo['participants'] ?? [];
-
-
         // Validation des données nécessaires
         if (empty($gameInfo) || empty($listOfParticipants)) {
             throw new \InvalidArgumentException('Les données de la partie sont invalides ou incomplètes.');
@@ -62,6 +65,7 @@ class HistoryAccountLolServices
 
         // Transformation du timestamp en DateTime et converti le timestamp de l'API de millisecondes en secondes
         $dateTimeEndGame = (new \DateTime())->setTimestamp((int) ($gameInfo['gameEndTimestamp'] / 1000));
+        $dateTimeDuration = (int)($gameInfo['gameDuration'] / 60);
 
         // Création et configuration de l'entité HistoryAccountLol
         $historyAccountLol = (new HistoryAccountLol())
@@ -70,6 +74,10 @@ class HistoryAccountLolServices
             ->setUpdatedAt(new \DateTimeImmutable())
             ->setDateGameEnd($dateTimeEndGame)
             ->setChampionId($dataSummoner['championId'] ?? 0)
+            ->setKillPlayer($dataSummoner['kills'] ?? 0)
+            ->setAssistPlayer($dataSummoner['assists'] ?? 0)
+            ->setDeathPlayer($dataSummoner['deaths'] ?? 0)
+            ->setGameDuration($dateTimeDuration)
             ->setData($clearedSummonerData);
 
         // Persistance de l'entité

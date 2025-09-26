@@ -10,6 +10,8 @@
 composer.lock
 .env.
 
+.env
+.env.dev
 ###< symfony/framework-bundle ###
 
 ###> lexik/jwt-authentication-bundle ###

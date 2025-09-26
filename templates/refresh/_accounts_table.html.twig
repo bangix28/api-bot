@@ -1,0 +1,48 @@
+<style>
+  .accounts-wrapper { margin: 1em auto; max-width: 1100px; width: 95%; font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  table.accounts { border-collapse: collapse; width: 100%; background: #fff; }
+  table.accounts th, table.accounts td { border: 1px solid #ddd; padding: 8px; }
+  table.accounts th { background: #f7f7f7; text-align: left; }
+  caption { padding: 8px 0; font-weight: 600; text-align: left; }
+  .muted { margin-top: 12px; font-size: 12px; color: #666; }
+</style>
+
+<div class="accounts-wrapper">
+  {% if page_title is defined %}
+    <h1>{{ page_title }}</h1>
+  {% endif %}
+
+  <p>Total comptes: {{ accounts|length }}</p>
+
+  <table class="accounts">
+    <caption>Comptes Riot</caption>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ID</th>
+        <th>Summoner</th>
+        <th>Tier</th>
+        <th>Rank</th>
+        <th>LP</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for account in accounts %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ account.id|default('-') }}</td>
+        <td>{{ account.summonerName|default(account.name|default('-')) }}</td>
+        <td>{{ account.tier|default('-') }}</td>
+        <td>{{ account.rank|default('-') }}</td>
+        <td>{{ account.leaguePoints|default(account.lp|default('-')) }}</td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="6" style="text-align:center;color:#666">Aucun compte à afficher.</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="muted">Note: Cette page est rendue via Twig (text/html) pour permettre l'affichage de la barre de debug Symfony en environnement de développement.</p>
+</div>

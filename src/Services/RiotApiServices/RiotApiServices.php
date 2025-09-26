@@ -22,7 +22,7 @@ class RiotApiServices
     public function riotAccountFill(RiotAccount $riotAccount): RiotAccount
     {
         $summonerDetails = $this->validationController->getSummonerAcountsDetails($riotAccount->getPuuid());
-        $response = $this->getRankedInformations($riotAccount->getRiotId());
+        $response = $this->getRankedInformations($riotAccount->getPuuid());
 
         if ($response->status && !empty($response->data)) {
             $rankedSoloSummonerInfo = $response->data;
@@ -72,7 +72,7 @@ class RiotApiServices
             return $riotAccount;
         }
 
-        $response = $this->getRankedInformations($riotAccount->getRiotId());
+        $response = $this->getRankedInformations($riotAccount->getPuuid());
         if ($response->status && !empty($response->data)) {
             $score = $this->scoreServices->getScoreSummoner($response->data);
             $dailyElo = new SummonerEloDaily();

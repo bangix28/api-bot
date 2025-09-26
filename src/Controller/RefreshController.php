@@ -5,16 +5,6 @@ namespace App\Controller;
 use App\Repository\RiotAccountRepository;
 use App\Services\RiotApiServices\HistoryAccountLolServices;
 use App\Services\RiotApiServices\RiotApiServices;
-use RiotAPI\Base\BaseAPI;
-use RiotAPI\Base\Exceptions\GeneralException;
-use RiotAPI\Base\Exceptions\RequestException;
-use RiotAPI\Base\Exceptions\RequestParameterException;
-use RiotAPI\Base\Exceptions\ServerException;
-use RiotAPI\Base\Exceptions\ServerLimitException;
-use RiotAPI\Base\Exceptions\SettingsException;
-use RiotAPI\LeagueAPI\Objects\ProviderRegistrationParameters;
-use RiotAPI\LeagueAPI\Objects\TournamentCodeParameters;
-use RiotAPI\LeagueAPI\Objects\TournamentRegistrationParameters;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -32,18 +22,24 @@ class RefreshController extends AbstractController
      * @throws \Exception
      */
     #[Route('/refresh', name: 'app_refresh')]
-    public function refreshSummoner(): JsonResponse
+    public function refreshSummoner(): Response
     {
         $listeAccount = $this->riotAccountRepository->findAll();
+        $dataToShow = [];
+        dump($listeAccount);
         foreach ($listeAccount as $account) {
             $this->historyAccountLolServices->getHistoryAccountLol($account);
             $this->riotApiService->riotAccountFill($account);
+            $dataToShow[] = $account;
         }
 
-        return new JsonResponse($listeAccount, Response::HTTP_OK);
+        return $this->render('refresh/refresh.html.twig', [
+            'page_title' => 'Refresh des comptes',
+            'accounts' => $dataToShow,
+        ]);
     }
     #[Route('/getDailyElo', name: 'app_daily_elo')]
-    public function getDailyElo(): JsonResponse
+    public function getDailyElo(): Response
     {
         $listeAccount = $this->riotAccountRepository->findAll();
         $dataToShow = [];
@@ -51,7 +47,11 @@ class RefreshController extends AbstractController
             $this->riotApiService->getDailyElo($account);
             $dataToShow[] = $account;
         }
-        return new JsonResponse($dataToShow, Response::HTTP_OK,);
+
+        return $this->render('refresh/daily_elo.html.twig', [
+            'page_title' => 'Daily Elo',
+            'accounts' => $dataToShow,
+        ]);
     }
 
     /**

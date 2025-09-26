@@ -18,7 +18,7 @@ use Symfony\Component\Validator\Constraints\Json;
 #[ORM\Entity(repositoryClass: HistoryAccountLolRepository::class)]
 
 /**
- * Endpoint permettant de récuperer l'historique des 3
+ * Endpoint permettant de récuperer l'historique des 5
  * dernieres game sans le details de data
  */
 #[ApiResource(
@@ -31,7 +31,8 @@ use Symfony\Component\Validator\Constraints\Json;
         )
     ],
     normalizationContext: ['groups' => ['historyAccount:read:get']],
-    paginationItemsPerPage: 3,
+    order: ['dateGameEnd' => 'DESC'],
+    paginationItemsPerPage: 5
 )]
 
 /**
@@ -72,6 +73,22 @@ class HistoryAccountLol
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(['historyAccount:read:get'])]
     private ?\DateTimeInterface $dateGameEnd = null;
+
+    #[ORM\Column]
+    #[Groups(['historyAccount:read:get'])]
+    private ?int $killPlayer = null;
+
+    #[ORM\Column]
+    #[Groups(['historyAccount:read:get'])]
+    private ?int $deathPlayer = null;
+
+    #[ORM\Column]
+    #[Groups(['historyAccount:read:get'])]
+    private ?int $assistPlayer = null;
+
+    #[ORM\Column(length: 1000)]
+    #[Groups(['historyAccount:read:get'])]
+    private ?string $gameDuration = null;
 
     public function getId(): ?int
     {
@@ -151,6 +168,54 @@ class HistoryAccountLol
     public function setDateGameEnd(\DateTimeInterface $dateGameEnd): static
     {
         $this->dateGameEnd = $dateGameEnd;
+
+        return $this;
+    }
+
+    public function getKillPlayer(): ?int
+    {
+        return $this->killPlayer;
+    }
+
+    public function setKillPlayer(int $killPlayer): static
+    {
+        $this->killPlayer = $killPlayer;
+
+        return $this;
+    }
+
+    public function getDeathPlayer(): ?int
+    {
+        return $this->deathPlayer;
+    }
+
+    public function setDeathPlayer(int $deathPlayer): static
+    {
+        $this->deathPlayer = $deathPlayer;
+
+        return $this;
+    }
+
+    public function getAssistPlayer(): ?int
+    {
+        return $this->assistPlayer;
+    }
+
+    public function setAssistPlayer(int $assistPlayer): static
+    {
+        $this->assistPlayer = $assistPlayer;
+
+        return $this;
+    }
+
+    public function getGameDuration(): ?string
+    {
+        return $this->gameDuration;
+    }
+
+    public function setGameDuration(string $gameDuration): static
+    {
+        $this->gameDuration = $gameDuration;
 
         return $this;
     }
