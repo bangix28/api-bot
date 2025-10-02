@@ -16,6 +16,7 @@ class RiotApiServices
                                 private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
                                 private readonly EntityManagerInterface     $entityManager,
                                 private readonly ScoreServices              $scoreServices,
+                                private readonly HistoryAccountLolServices $historyAccountLolServices
     )
     {
     }
@@ -106,6 +107,7 @@ class RiotApiServices
     {
         $listeAccount = $this->riotAccountRepository->findAll();
         foreach ($listeAccount as $account) {
+            $this->historyAccountLolServices->getHistoryAccountLol($account);
             $this->getDailyElo($account);
         }
 
@@ -119,6 +121,7 @@ class RiotApiServices
     {
         $listeAccount = $this->riotAccountRepository->findAll();
         foreach ($listeAccount as $account) {
+            $this->historyAccountLolServices->getHistoryAccountLol($account);
             $this->riotAccountFill($account);
         }
         return ['status' => true, 'data' => $listeAccount];
