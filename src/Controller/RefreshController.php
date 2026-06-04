@@ -26,7 +26,6 @@ class RefreshController extends AbstractController
     {
         $listeAccount = $this->riotAccountRepository->findAll();
         $dataToShow = [];
-        dump($listeAccount);
         foreach ($listeAccount as $account) {
             $this->historyAccountLolServices->getHistoryAccountLol($account);
             $this->riotApiService->riotAccountFill($account);

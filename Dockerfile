@@ -1,31 +1,38 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
-# Mettre à jour les paquets et installer les dépendances nécessaires
-RUN apt-get update && apt-get install -y \
+# Installer les dépendances système + extensions PHP en une seule couche
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     zip \
+    unzip \
     git \
     gnupg \
     libicu-dev \
     libpq-dev \
     default-mysql-client \
-    && docker-php-ext-install pdo pdo_mysql
+    && docker-php-ext-install pdo pdo_mysql intl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update && apt install -y libicu-dev && rm -rf /var/lib/apt/lists/*
-RUN docker-php-ext-install intl
-# Installer Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Ajouter le dépôt de Node.js et installer Node.js et NPM
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get install -y nodejs
-
-# Ajouter le code source de l'application
-ADD . /usr/src/api
-
-# Exposer le port 9000
-EXPOSE 9000
+# Installer Composer depuis l'image officielle (plus fiable que le script)
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 # Définir le répertoire de travail
 WORKDIR /usr/src/api
+
+# Copier uniquement les fichiers de dépendances d'abord (cache Docker)
+COPY composer.json composer.lock ./
+
+# Installer les dépendances PHP sans les scripts (pas besoin de l'app complète)
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+
+# Copier le reste du code source
+COPY . .
+
+# Finaliser l'autoloader
+RUN composer dump-autoload --optimize
+
+EXPOSE 9000
