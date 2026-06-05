@@ -110,9 +110,30 @@
       <path value="$PROJECT_DIR$/app/vendor/symfony/uid" />
       <path value="$PROJECT_DIR$/app/vendor/symfony/translation" />
       <path value="$PROJECT_DIR$/app/vendor/symfony/form" />
+      <path value="$PROJECT_DIR$/vendor/vendor/doctrine" />
+      <path value="$PROJECT_DIR$/vendor/vendor/dolejska-daniel" />
+      <path value="$PROJECT_DIR$/vendor/vendor/easycorp" />
+      <path value="$PROJECT_DIR$/vendor/vendor/guzzlehttp" />
+      <path value="$PROJECT_DIR$/vendor/vendor/lcobucci" />
+      <path value="$PROJECT_DIR$/vendor/vendor/lexik" />
+      <path value="$PROJECT_DIR$/vendor/vendor/monolog" />
+      <path value="$PROJECT_DIR$/vendor/vendor/namshi" />
+      <path value="$PROJECT_DIR$/vendor/vendor/nelmio" />
+      <path value="$PROJECT_DIR$/vendor/vendor/nikic" />
+      <path value="$PROJECT_DIR$/vendor/vendor/phpdocumentor" />
+      <path value="$PROJECT_DIR$/vendor/vendor/phpstan" />
+      <path value="$PROJECT_DIR$/vendor/vendor/psr" />
+      <path value="$PROJECT_DIR$/vendor/vendor/ralouphie" />
+      <path value="$PROJECT_DIR$/vendor/vendor/symfony" />
+      <path value="$PROJECT_DIR$/vendor/vendor/twig" />
+      <path value="$PROJECT_DIR$/vendor/vendor/webmozart" />
+      <path value="$PROJECT_DIR$/vendor/vendor/willdurand" />
+      <path value="$PROJECT_DIR$/vendor/vendor/api-platform" />
+      <path value="$PROJECT_DIR$/vendor/vendor/bin" />
+      <path value="$PROJECT_DIR$/vendor/vendor/composer" />
     </include_path>
   </component>
-  <component name="PhpProjectSharedConfiguration" php_language_level="8.1" />
+  <component name="PhpProjectSharedConfiguration" php_language_level="8.4" />
   <component name="PhpStanOptionsConfiguration">
     <option name="transferred" value="true" />
   </component>
