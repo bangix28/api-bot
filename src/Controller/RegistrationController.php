@@ -2,19 +2,28 @@
 
 namespace App\Controller;
 
+use App\Application\User\Register\RegisterUserCommand;
+use App\Application\User\Register\RegisterUserHandler;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 class RegistrationController extends AbstractController
 {
+
+    public function __construct(private RegisterUserHandler $registrationUserHandler)
+    {
+    }
+
+    /**
+     * @param Request $request
+     * @return Response
+     */
     #[Route('/register', name: 'app_register')]
-    public function register(Request $request, UserPasswordHasherInterface $userPasswordHasher, EntityManagerInterface $entityManager): Response
+    public function register(Request $request): Response
     {
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user);
@@ -24,15 +33,13 @@ class RegistrationController extends AbstractController
             /** @var string $plainPassword */
             $plainPassword = $form->get('plainPassword')->getData();
 
-            // encode the plain password
-            $user->setPassword($userPasswordHasher->hashPassword($user, $plainPassword));
-
-            $entityManager->persist($user);
-            $entityManager->flush();
-
-            // do anything else you need here, like send an email
-
-            return $this->redirectToRoute('admin');
+            $registerUserCommand = new RegisterUserCommand($user->getEmail(), $plainPassword);
+            try {
+                $this->registrationUserHandler->handle($registerUserCommand);
+                return $this->redirectToRoute('admin');
+            } catch (\Exception $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('registration/register.html.twig', [
