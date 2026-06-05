@@ -24,5 +24,10 @@ services:
             $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
         #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Domain\User\UserRepositoryInterface:
+        alias: App\Infrastructure\User\DoctrineUserRepository
+
+
+    Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher: ~
+    App\Domain\User\PasswordHasherInterface:
+        alias: Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher
