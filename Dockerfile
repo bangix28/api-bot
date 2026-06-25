@@ -27,7 +27,7 @@ WORKDIR /usr/src/api
 COPY composer.json composer.lock ./
 
 # Installer les dépendances PHP sans les scripts (pas besoin de l'app complète)
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-scripts --no-autoloader --prefer-dist
 
 # Copier le reste du code source
 COPY . .
