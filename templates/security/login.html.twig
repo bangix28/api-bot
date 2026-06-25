@@ -16,33 +16,31 @@
                     </div>
                 {% endif %}
 
-                <h1 class="h3 mb-3 font-weight-normal text-center">Connectez-vous</h1>
+                <h1 class="h3 mb-3 fw-normal text-center">Connectez-vous</h1>
 
-                <div class="form-group">
+                <div class="mb-3">
                     <label for="username">Email</label>
                     <input type="email" value="{{ last_username }}" name="_username" id="username" class="form-control" autocomplete="email" required autofocus>
                 </div>
 
-                <div class="form-group">
+                <div class="mb-3">
                     <label for="password">Mot de passe</label>
                     <input type="password" name="_password" id="password" class="form-control" autocomplete="current-password" required>
                 </div>
 
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-                <div class="form-group form-check p-3">
+                <div class="form-check p-3">
                     <input type="checkbox" name="_remember_me" id="_remember_me" class="form-check-input">
                     <label for="_remember_me" class="form-check-label">Se souvenir de moi</label>
                 </div>
 
                 <div class="text-center">
-                    <button class="btn btn-lg btn-success btn-block" type="submit">
+                    <button class="btn btn-lg btn-success w-100" type="submit">
                         Se connecter
                     </button>
                 </div>
             </form>
         </div>
     </div>
-
-
 {% endblock %}
