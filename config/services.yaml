@@ -19,10 +19,6 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
-    App\State\UserStateProcessor:
-        bind:
-            #$persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
-            #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
     App\State\RiotAccountProcessor:
         bind:
             $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'

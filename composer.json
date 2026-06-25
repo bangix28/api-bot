@@ -5,45 +5,69 @@
     "prefer-stable": true,
     "repositories": [
         {
+            "type": "package",
+            "package": {
+                "name": "dolejska-daniel/riot-api-base",
+                "version": "v2.0.1",
+                "require": {
+                    "php": ">=8.1",
+                    "ext-json": "*",
+                    "guzzlehttp/guzzle": "^7",
+                    "psr/cache": "^3",
+                    "symfony/cache": "^6|^7|^8"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "RiotAPI\\Base\\": "src/Base",
+                        "RiotAPI\\Tests\\": "src/Tests"
+                    }
+                },
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/dolejska-daniel/riot-api-base.git",
+                    "reference": "1e3fc01dc842415646fe7e8fe1bfb3505f19aeec"
+                }
+            }
+        },
+        {
             "type": "vcs",
             "url": "https://github.com/bangix28/riot-api-league.git"
         }
     ],
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "ext-intl": "*",
         "ext-zlib": "*",
-        "api-platform/core": "^v4.0.2",
-        "doctrine/annotations": "^2.0",
-        "doctrine/doctrine-bundle": "^2.8",
-        "doctrine/doctrine-migrations-bundle": "^3.2",
-        "doctrine/orm": "^2.14",
+        "api-platform/core": "^4.0",
+        "doctrine/doctrine-bundle": "^3.0",
+        "doctrine/doctrine-migrations-bundle": "^3.3",
+        "doctrine/orm": "^3.0",
         "dolejska-daniel/riot-api-league": "dev-master",
         "easycorp/easyadmin-bundle": "^4.12",
-        "lexik/jwt-authentication-bundle": "^2.21",
-        "nelmio/cors-bundle": "^2.2",
+        "lexik/jwt-authentication-bundle": "^3.0",
+        "nelmio/cors-bundle": "^2.5",
         "phpdocumentor/reflection-docblock": "^5.3",
         "phpstan/phpdoc-parser": "^1.15",
         "symfony/apache-pack": "*",
-        "symfony/asset": "6.4.*",
-        "symfony/cache": "6.4.*",
-        "symfony/console": "6.4.*",
-        "symfony/dotenv": "6.4.*",
-        "symfony/expression-language": "6.4.*",
+        "symfony/asset": "^8.0",
+        "symfony/cache": "^8.0",
+        "symfony/console": "^8.0",
+        "symfony/dotenv": "^8.0",
+        "symfony/expression-language": "^8.0",
         "symfony/flex": "^2",
-        "symfony/framework-bundle": "6.4.*",
-        "symfony/monolog-bundle": "^3.0",
-        "symfony/property-access": "6.4.*",
-        "symfony/property-info": "6.4.*",
-        "symfony/runtime": "6.4.*",
-        "symfony/security-bundle": "6.4.*",
-        "symfony/serializer": "6.4.*",
-        "symfony/twig-bundle": "6.4.*",
-        "symfony/validator": "6.4.*",
+        "symfony/framework-bundle": "^8.0",
+        "symfony/monolog-bundle": "^4.0",
+        "symfony/property-access": "^8.0",
+        "symfony/property-info": "^8.0",
+        "symfony/runtime": "^8.0",
+        "symfony/security-bundle": "^8.0",
+        "symfony/serializer": "^8.0",
+        "symfony/twig-bundle": "^8.0",
+        "symfony/validator": "^8.0",
         "symfony/webpack-encore-bundle": "^2.2",
-        "symfony/yaml": "6.4.*"
+        "symfony/yaml": "^8.0"
     },
     "config": {
         "allow-plugins": {
@@ -64,12 +88,7 @@
     },
     "replace": {
         "symfony/polyfill-ctype": "*",
-        "symfony/polyfill-iconv": "*",
-        "symfony/polyfill-php72": "*",
-        "symfony/polyfill-php73": "*",
-        "symfony/polyfill-php74": "*",
-        "symfony/polyfill-php80": "*",
-        "symfony/polyfill-php81": "*"
+        "symfony/polyfill-iconv": "*"
     },
     "scripts": {
         "auto-scripts": {
@@ -89,13 +108,14 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "^6.4"
+            "require": "^8.0"
         }
     },
     "require-dev": {
-        "symfony/debug-bundle": "^6.4",
-        "symfony/maker-bundle": "^1.48",
-        "symfony/stopwatch": "^6.4",
-        "symfony/web-profiler-bundle": "^6.4"
+        "phpunit/phpunit": "^12.4",
+        "symfony/debug-bundle": "^8.0",
+        "symfony/maker-bundle": "^1.60",
+        "symfony/stopwatch": "^8.0",
+        "symfony/web-profiler-bundle": "^8.0"
     }
 }
