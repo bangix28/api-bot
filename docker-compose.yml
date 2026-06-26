@@ -9,8 +9,8 @@ services:
     volumes:
       - ./:/usr/src/api
       - /var/run/php/php8.4-fpm.sock
-      - /var:/usr/src/api/var
-      - /vendor:/usr/src/api/vendor
+      - var:/usr/src/api/var
+      - vendor:/usr/src/api/vendor
     depends_on:
       - mysql
   mysql:

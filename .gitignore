@@ -1,5 +1,6 @@
 
 ###> symfony/framework-bundle ###
+/config/reference.php
 /.env.local
 /.env.local.php
 /config/secrets/prod/prod.decrypt.private.php
@@ -24,3 +25,20 @@ composer.lock
 npm-debug.log
 yarn-error.log
 ###< symfony/webpack-encore-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+### PhpStorm ###
+/.idea/
+/composer.phar
+
+### Claude Code ###
+/.claude/
+
+### Node ###
+/package-lock.json
+
+
