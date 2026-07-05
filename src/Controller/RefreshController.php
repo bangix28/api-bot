@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
 use App\Repository\RiotAccountRepository;
 use App\Services\RiotApiServices\HistoryAccountLolServices;
 use App\Services\RiotApiServices\RiotApiServices;
@@ -22,13 +23,13 @@ class RefreshController extends AbstractController
      * @throws \Exception
      */
     #[Route('/refresh', name: 'app_refresh')]
-    public function refreshSummoner(): Response
+    public function refreshSummoner(RefreshRiotAccountDataHandler $handler): Response
     {
+        $handler->handle();
         $listeAccount = $this->riotAccountRepository->findAll();
         $dataToShow = [];
         foreach ($listeAccount as $account) {
             $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $this->riotApiService->riotAccountFill($account);
             $dataToShow[] = $account;
         }
 

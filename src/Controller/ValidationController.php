@@ -21,10 +21,9 @@ class ValidationController
      * @throws RequestException
      * @throws GeneralException
      */
-    public function getRankedsInformationsById($summonerId)
-   {
-       $callApiRiot = $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId);
-       return $callApiRiot;
+    public function getRankedsInformationsById($summonerId): ?array
+    {
+        return $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId);
    }
 
    public function getSummonerAcountsDetails($summonerId)

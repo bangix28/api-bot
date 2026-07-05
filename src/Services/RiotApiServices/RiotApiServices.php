@@ -3,6 +3,8 @@
 namespace App\Services\RiotApiServices;
 
 use App\Controller\ValidationController;
+use App\Domain\RiotAccount\RankedRank;
+use App\Domain\RiotAccount\RankedTier;
 use App\Entity\RiotAccount;
 use App\Entity\SummonerEloDaily;
 use App\Repository\RiotAccountRepository;
@@ -15,7 +17,6 @@ class RiotApiServices
                                 private readonly RiotAccountRepository      $riotAccountRepository,
                                 private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
                                 private readonly EntityManagerInterface     $entityManager,
-                                private readonly ScoreServices              $scoreServices,
                                 private readonly HistoryAccountLolServices $historyAccountLolServices
     )
     {
@@ -27,7 +28,9 @@ class RiotApiServices
 
         if ($response->status && !empty($response->data)) {
             $rankedSoloSummonerInfo = $response->data;
-            $score = $this->scoreServices->getScoreSummoner($rankedSoloSummonerInfo);
+            $score = RankedTier::fromString($rankedSoloSummonerInfo->tier)->getScore()
+                + RankedRank::fromString($rankedSoloSummonerInfo->rank)->getScore()
+                + (int) $rankedSoloSummonerInfo->leaguePoints;
 
             $riotAccount->setSummonerRankedSoloLeaguePoints($rankedSoloSummonerInfo->leaguePoints)
                 ->setSummonerRankedSoloLosses($rankedSoloSummonerInfo->losses)
@@ -75,7 +78,9 @@ class RiotApiServices
 
         $response = $this->getRankedInformations($riotAccount->getPuuid());
         if ($response->status && !empty($response->data)) {
-            $score = $this->scoreServices->getScoreSummoner($response->data);
+            $score = RankedTier::fromString($response->data->tier)->getScore()
+                + RankedRank::fromString($response->data->rank)->getScore()
+                + (int) $response->data->leaguePoints;
             $dailyElo = new SummonerEloDaily();
             $dailyElo->setRiotAccount($riotAccount)
                 ->setScore($score)
