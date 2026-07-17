@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
+use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Repository\RiotAccountRepository;
 use App\Services\RiotApiServices\HistoryAccountLolServices;
 use App\Services\RiotApiServices\RiotApiServices;
@@ -25,17 +26,17 @@ class RefreshController extends AbstractController
     #[Route('/refresh', name: 'app_refresh')]
     public function refreshSummoner(RefreshRiotAccountDataHandler $handler): Response
     {
-        $handler->handle();
+        $presenter = new RefreshViewPresenter();
+        $handler->handle($presenter);
         $listeAccount = $this->riotAccountRepository->findAll();
-        $dataToShow = [];
+
         foreach ($listeAccount as $account) {
             $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $dataToShow[] = $account;
         }
 
         return $this->render('refresh/refresh.html.twig', [
             'page_title' => 'Refresh des comptes',
-            'accounts' => $dataToShow,
+            'accounts' => $presenter->viewModel(),
         ]);
     }
     #[Route('/getDailyElo', name: 'app_daily_elo')]

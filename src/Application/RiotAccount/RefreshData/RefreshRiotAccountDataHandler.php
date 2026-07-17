@@ -13,11 +13,11 @@ class RefreshRiotAccountDataHandler
         private RiotApiClientInterface $riotApiService
     ) {}
 
-    public function handle(): void
+    public function handle(RefreshPresenterInterface $presenter): void
     {
-
         $listAccounts = $this->repositoryService->getListAccount();
 
+        $refreshedAccounts = [];
         foreach ($listAccounts as $account)
         {
             $refreshData = $this->riotApiService->getAccount($account->getPuuid());
@@ -28,9 +28,11 @@ class RefreshRiotAccountDataHandler
                 ->withLogoId($refreshData->logoId);
 
             $this->repositoryService->save($updateAccount);
+
+            $refreshedAccounts[] = $updateAccount;
         }
 
-
+        $presenter->present($refreshedAccounts);
     }
 
 }
