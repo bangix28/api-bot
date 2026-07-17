@@ -8,37 +8,40 @@ class  GameHistoryFactory
     const int MILLISECONDS_PER_SECOND = 1000;
 
     /**
-     * @throws \DateMalformedStringException
+     * @param MatchData $matchInfo
+     * @param string $playerPuuid
+     * @return GameHistoryEntity
+     * @throws \Exception
      */
     public static function fromMatchInfo(
-        array  $matchInfo,
+        MatchData  $matchInfo,
         string $playerPuuid,
     ): GameHistoryEntity
     {
         $dataParticipantFromMatch = self::extractedPlayerDataFromPuuid($matchInfo, $playerPuuid);
-        $secondes = intdiv($matchInfo['gameEndTimestamp'], self::MILLISECONDS_PER_SECOND);
+        $secondes = intdiv($matchInfo->gameEndTimeStamp, self::MILLISECONDS_PER_SECOND);
 
         return new GameHistoryEntity(
-            $dataParticipantFromMatch['win'],
-            $dataParticipantFromMatch['championId'],
-            $dataParticipantFromMatch['kills'],
-            $dataParticipantFromMatch['deaths'],
-            $dataParticipantFromMatch['assists'],
+            $dataParticipantFromMatch->win,
+            $dataParticipantFromMatch->championId,
+            $dataParticipantFromMatch->kills,
+            $dataParticipantFromMatch->deaths,
+            $dataParticipantFromMatch->assists,
             new \DateTimeImmutable('@' . $secondes),
-            intdiv($matchInfo['gameDuration'], self::SECONDS_PER_MINUTE)
+            intdiv($matchInfo->gameDuration, self::SECONDS_PER_MINUTE)
         );
     }
 
     /**
-     * @param array $matchInfo
+     * @param MatchData $matchInfo
      * @param string $playerPuuid
-     * @return array
+     * @return ParticipantData
      */
-    private static function extractedPlayerDataFromPuuid(array $matchInfo, string $playerPuuid): array
+    private static function extractedPlayerDataFromPuuid(MatchData $matchInfo, string $playerPuuid): ParticipantData
     {
         $playerData = array_find(
-            $matchInfo['participants'],
-            static fn($dataParticipant) => $dataParticipant['puuid'] === $playerPuuid
+            $matchInfo->participants,
+            static fn(ParticipantData $dataParticipant) => $dataParticipant->puuid === $playerPuuid
         );
 
         if ($playerData === null)

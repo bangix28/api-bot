@@ -10,16 +10,13 @@ class GameHistoryFactoryTest extends TestCase
 {
     public function testExtractsTargetParticipantStats(): void
     {
-        $info = [
-            'gameEndTimestamp' => 1700000000000,
-            'gameDuration'     => 1800,
-            'participants' => [
-                ['puuid' => 'autre',   'win' => false, 'championId' => 1,  'kills' => 0,  'deaths' => 9, 'assists' => 1],
-                ['puuid' => 'puuid-1', 'win' => true,  'championId' => 64, 'kills' => 10, 'deaths' => 2, 'assists' => 8],
-            ],
-        ];
+        $match = MatchDataBuilder::aMatch()
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->withPuuid('autre')->build())
+            ->build();
 
-        $game = GameHistoryFactory::fromMatchInfo($info, 'puuid-1', ['kda']);
+
+        $game = GameHistoryFactory::fromMatchInfo($match, 'puuid-1');
 
         $this->assertTrue($game->isWin);
         $this->assertSame(64, $game->championId);
@@ -30,47 +27,35 @@ class GameHistoryFactoryTest extends TestCase
 
     public function testConvertsGameEndTimestampToDate()
     {
-        $info = [
-            'gameEndTimestamp' => 1700000000000,
-            'gameDuration'     => 1800,
-            'participants' => [
-                ['puuid' => 'autre',   'win' => false, 'championId' => 1,  'kills' => 0,  'deaths' => 9, 'assists' => 1, 'challenges' => []],
-                ['puuid' => 'puuid-1', 'win' => true,  'championId' => 64, 'kills' => 10, 'deaths' => 2, 'assists' => 8, 'challenges' => ['kda' => 9]],
-            ],
-        ];
+        $match = MatchDataBuilder::aMatch()
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->withPuuid('autre')->build())
+            ->build();
 
-        $game = GameHistoryFactory::fromMatchInfo($info, 'puuid-1', ['kda']);
+        $game = GameHistoryFactory::fromMatchInfo($match, 'puuid-1');
         $this->assertEquals(new \DateTimeImmutable('@1700000000'), $game->gameEnd);
     }
 
     public function testConvertsDurationToMinutes()
     {
-        $info = [
-            'gameEndTimestamp' => 1700000000000,
-            'gameDuration'     => 1800,
-            'participants' => [
-                ['puuid' => 'autre',   'win' => false, 'championId' => 1,  'kills' => 0,  'deaths' => 9, 'assists' => 1, 'challenges' => []],
-                ['puuid' => 'puuid-1', 'win' => true,  'championId' => 64, 'kills' => 10, 'deaths' => 2, 'assists' => 8, 'challenges' => ['kda' => 9]],
-            ],
-        ];
+        $match = MatchDataBuilder::aMatch()
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->withPuuid('autre')->build())
+            ->build();
 
-        $game = GameHistoryFactory::fromMatchInfo($info, 'puuid-1', ['kda']);
+        $game = GameHistoryFactory::fromMatchInfo($match, 'puuid-1');
         $this->assertEquals(30, $game->gameDuration);
     }
 
 
     public function testCreateGameHistoryFactoryWithMissingParticipantsPuiid(): void
     {
-        $info = [
-            'gameEndTimestamp' => 1700000000000,
-            'gameDuration'     => 1800,
-            'participants' => [
-                ['puuid' => 'autre',   'win' => false, 'championId' => 1,  'kills' => 0,  'deaths' => 9, 'assists' => 1, 'challenges' => []],
-            ],
-        ];
+        $match = MatchDataBuilder::aMatch()
+            ->withParticipantData(ParticipantDataBuilder::aParticipant()->withPuuid('autre')->build())
+            ->build();
 
         $this->expectException(ParticipantsNotFoundException::class);
-        GameHistoryFactory::fromMatchInfo($info, 'puuid-1', ['kda']);
+        GameHistoryFactory::fromMatchInfo($match, 'puuid-1');
     }
 
 }
