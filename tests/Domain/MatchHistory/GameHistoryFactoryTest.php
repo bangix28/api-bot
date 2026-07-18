@@ -23,6 +23,7 @@ class GameHistoryFactoryTest extends TestCase
         $this->assertSame(10, $game->kills);
         $this->assertSame(2,  $game->deaths);
         $this->assertSame(8,  $game->assists);
+        $this->assertSame('puuid-1', $game->puuid);
     }
 
     public function testConvertsGameEndTimestampToDate()

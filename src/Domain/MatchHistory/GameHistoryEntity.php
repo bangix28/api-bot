@@ -11,7 +11,8 @@ readonly class GameHistoryEntity
         public int $deaths,
         public int $assists,
         public \DateTimeImmutable $gameEnd,
-        public int $gameDuration
+        public int $gameDuration,
+        public string $puuid,
     )
     {
     }

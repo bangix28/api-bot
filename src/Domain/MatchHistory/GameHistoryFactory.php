@@ -28,7 +28,8 @@ class  GameHistoryFactory
             $dataParticipantFromMatch->deaths,
             $dataParticipantFromMatch->assists,
             new \DateTimeImmutable('@' . $secondes),
-            intdiv($matchInfo->gameDuration, self::SECONDS_PER_MINUTE)
+            intdiv($matchInfo->gameDuration, self::SECONDS_PER_MINUTE),
+            $playerPuuid,
         );
     }
 
