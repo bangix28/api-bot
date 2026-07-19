@@ -2,21 +2,23 @@
 
 namespace App\Controller;
 
+use App\Application\MatchHistory\RefreshData\RefreshMatchHistoryCommand;
+use App\Application\MatchHistory\RefreshData\RefreshRiotMatchDataHandler;
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Repository\RiotAccountRepository;
-use App\Services\RiotApiServices\HistoryAccountLolServices;
 use App\Services\RiotApiServices\RiotApiServices;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\HttpFoundation\JsonResponse;
-
 
 class RefreshController extends AbstractController
 {
 
-    public function __construct(private RiotApiServices $riotApiService, private RiotAccountRepository $riotAccountRepository, private HistoryAccountLolServices $historyAccountLolServices)
+    public function __construct(
+        private RiotApiServices $riotApiService,
+        private RiotAccountRepository $riotAccountRepository
+    )
     {
     }
 
@@ -24,14 +26,19 @@ class RefreshController extends AbstractController
      * @throws \Exception
      */
     #[Route('/refresh', name: 'app_refresh')]
-    public function refreshSummoner(RefreshRiotAccountDataHandler $handler): Response
+    public function refreshSummoner(
+        RefreshRiotAccountDataHandler $handler,
+        RefreshRiotMatchDataHandler $matchDataHandler
+    ): Response
     {
         $presenter = new RefreshViewPresenter();
         $handler->handle($presenter);
-        $listeAccount = $this->riotAccountRepository->findAll();
 
-        foreach ($listeAccount as $account) {
-            $this->historyAccountLolServices->getHistoryAccountLol($account);
+        foreach ( $this->riotAccountRepository->findAll() as $account) {
+            $matchDataHandler->handle(new RefreshMatchHistoryCommand(
+               $account->getPuuid(),
+               $account->getLastUpdate()?->getTimestamp()
+            ));
         }
 
         return $this->render('refresh/refresh.html.twig', [
