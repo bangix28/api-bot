@@ -41,13 +41,14 @@ class LeagueApiRiotClient implements RiotApiClientInterface
         );
 
         if ($soloEntry === null) {
-            $ranked = new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0);
+            $ranked = new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0);
         } else {
             $ranked = new SummonerRankedEntity(
                 RankedRank::fromString($soloEntry->rank),
                 RankedTier::fromString($soloEntry->tier),
                 (int) $soloEntry->leaguePoints,
                 (int) $soloEntry->wins,
+                (int) $soloEntry->losses,
             );
         }
 

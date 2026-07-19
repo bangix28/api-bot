@@ -18,7 +18,7 @@ class RefreshViewPresenterTest extends TestCase
         $presenter->present([
             new RiotAccountEntity(
                 'Pseudo#EUW', 'puuid-1', 'Pseudo',
-                new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40),
+                new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
                 150, '20'
             ),
         ]);
