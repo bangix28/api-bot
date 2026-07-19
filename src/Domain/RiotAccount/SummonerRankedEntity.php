@@ -8,7 +8,8 @@ readonly class  SummonerRankedEntity
         private RankedRank $soloDivision,
         private RankedTier $soloTier,
         private int        $soloLeaguePoints,
-        private int        $soloWin
+        private int        $soloWin,
+        private int        $soloLosses
     )
     {
         $this->validateSummonerRanked();
@@ -22,6 +23,11 @@ readonly class  SummonerRankedEntity
     public function getSoloWin(): int
     {
         return $this->soloWin;
+    }
+
+    public function getSoloLosses(): int
+    {
+        return $this->soloLosses;
     }
 
     public function getSoloLeaguePoints(): int
@@ -38,6 +44,10 @@ readonly class  SummonerRankedEntity
     {
         if ($this->soloLeaguePoints < 0) {
             throw new \InvalidArgumentException("League points invalide : $this->soloLeaguePoints, il ne peut pas être négatif");
+        }
+
+        if ($this->soloLosses < 0) {
+            throw new \InvalidArgumentException("Nombre de défaites invalide : $this->soloLosses, il ne peut pas être négatif");
         }
 
         $isApex = in_array($this->soloTier, [

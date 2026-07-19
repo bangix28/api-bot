@@ -22,7 +22,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             'Pseudo#EUW',
             'puuid-1',
             'Pseudo',
-            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0),
+            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
             30,
             '10'
         );
@@ -30,7 +30,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         // ... et des données "fraîches" renvoyées par l'API : GOLD II, 50 LP, level 150
         $refreshData = new RiotAccountRefreshData(
-            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40),
+            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
             150,
             '20'
         );
@@ -62,7 +62,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             'Pseudo#EUW',
             'puuid-1',
             'Pseudo',
-            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0),
+            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
             30,
             '10'
         );
@@ -70,7 +70,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         // ... et des données "fraîches" renvoyées par l'API : GOLD II, 50 LP, level 150
         $refreshData = new RiotAccountRefreshData(
-            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40),
+            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
             150,
             '20'
         );

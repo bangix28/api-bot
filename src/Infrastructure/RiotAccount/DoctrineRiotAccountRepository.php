@@ -33,7 +33,8 @@ class DoctrineRiotAccountRepository implements RiotAccountRepositoryInterface
                     RankedRank::fromString($riotAccount->getSummonerRankedSoloRank()),
                     RankedTier::fromString($riotAccount->getSummonerRankedSoloTier()),
                     (int)$riotAccount->getSummonerRankedSoloLeaguePoints(),
-                    $riotAccount->getSummonerRankedSoloWins()
+                    $riotAccount->getSummonerRankedSoloWins(),
+                    (int)$riotAccount->getSummonerRankedSoloLosses()
                 ),
                 $riotAccount->getSummonerLevel(),
                 $riotAccount->getLogoId(),
@@ -66,6 +67,7 @@ class DoctrineRiotAccountRepository implements RiotAccountRepositoryInterface
             ->setSummonerRankedSoloRank($updatedRiotAccount->getRanked()->getSoloDivision()->value)
             ->setSummonerRankedSoloTier($updatedRiotAccount->getRanked()->getSoloTier()->value)
             ->setSummonerRankedSoloLeaguePoints((string)$updatedRiotAccount->getRanked()->getSoloLeaguePoints())
+            ->setSummonerRankedSoloLosses((string)$updatedRiotAccount->getRanked()->getSoloLosses())
             ->setSummonerRankedSoloWins($updatedRiotAccount->getRanked()->getSoloWin())
             ->setScore($updatedRiotAccount->getRanked()->getScore())
             ->setLastUpdate(new \DateTime());
