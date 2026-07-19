@@ -42,12 +42,16 @@ class RiotApiServices
                 ->setLastUpdate(new \DateTime('now'));
 
         } else {
+            // Représentation normalisée d'un compte non classé (cf. migration
+            // Version20260628111804 et RankedTier/RankedRank::UNRANKED). Écrire
+            // 'non classée'/null ici défait la normalisation et fait planter
+            // RankedTier::fromString(null) côté lecture hexagonale.
             $riotAccount->setSummonerRankedSoloLeaguePoints(0)
-                ->setSummonerRankedSoloRank('non classée')
-                ->setSummonerRankedSoloTier(null)
+                ->setSummonerRankedSoloRank(RankedRank::UNRANKED->value)
+                ->setSummonerRankedSoloTier(RankedTier::UNRANKED->value)
                 ->setScore(0)
-                ->setSummonerRankedSoloWins(null)
-                ->setSummonerRankedSoloLosses(null)
+                ->setSummonerRankedSoloWins(0)
+                ->setSummonerRankedSoloLosses(0)
                 ->setLogoId($summonerDetails->profileIconId ?? 0)
                 ->setSummonerLevel($summonerDetails->summonerLevel ?? 0)
                 ->setLastUpdate(new \DateTime('now'));
