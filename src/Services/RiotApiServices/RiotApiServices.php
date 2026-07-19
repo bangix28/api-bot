@@ -2,22 +2,22 @@
 
 namespace App\Services\RiotApiServices;
 
-use App\Controller\ValidationController;
 use App\Domain\RiotAccount\RankedRank;
 use App\Domain\RiotAccount\RankedTier;
 use App\Entity\RiotAccount;
 use App\Entity\SummonerEloDaily;
+use App\Infrastructure\Riot\RiotApiGateway;
 use App\Repository\RiotAccountRepository;
 use App\Repository\SummonerEloDailyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class RiotApiServices
 {
-    public function __construct(private readonly ValidationController       $validationController,
+    public function __construct(private readonly RiotApiGateway             $validationController,
                                 private readonly RiotAccountRepository      $riotAccountRepository,
                                 private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
                                 private readonly EntityManagerInterface     $entityManager,
-                                private readonly HistoryAccountLolServices $historyAccountLolServices
+                                private readonly HistoryAccountLolServices  $historyAccountLolServices
     )
     {
     }

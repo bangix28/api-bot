@@ -2,12 +2,12 @@
 
 namespace App\Infrastructure\RiotAccount;
 
-use App\Controller\ValidationController;
 use App\Domain\RiotAccount\RankedRank;
 use App\Domain\RiotAccount\RankedTier;
 use App\Domain\RiotAccount\RiotAccountRefreshData;
 use App\Domain\RiotAccount\RiotApiClientInterface;
 use App\Domain\RiotAccount\SummonerRankedEntity;
+use App\Infrastructure\Riot\RiotApiGateway;
 use RiotAPI\Base\Exceptions\GeneralException;
 use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
@@ -17,7 +17,7 @@ use RiotAPI\Base\Exceptions\SettingsException;
 class LeagueApiRiotClient implements RiotApiClientInterface
 {
 
-    public function __construct(private ValidationController $validationController)
+    public function __construct(private RiotApiGateway $validationController)
     {
     }
 

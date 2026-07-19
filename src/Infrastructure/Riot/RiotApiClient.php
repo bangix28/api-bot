@@ -1,18 +1,22 @@
 <?php
 
-namespace App\Controller;
+namespace App\Infrastructure\Riot;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use RiotAPI\Base\Definitions\Region;
 use RiotAPI\LeagueAPI\LeagueAPI;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-class RiotApi extends AbstractController
+readonly class RiotApiClient
 {
-    public function riotApiInit()
+    public function __construct(
+        #[Autowire('%app.riot.api.token%')]
+        private string $riotApiToken,
+    ) {}
+
+    public function riotApiInit(): LeagueAPI
     {
-        $riotApiToken = $this->getParameter('app.riot.api.token');
         return new LeagueAPI([
-            LeagueAPI::SET_KEY => $riotApiToken,
+            LeagueAPI::SET_KEY => $this->riotApiToken,
             LeagueAPI::SET_REGION => Region::EUROPE_WEST,
             LeagueAPI::SET_VERIFY_SSL => false,
             LeagueAPI::SET_DATADRAGON_INIT => true,

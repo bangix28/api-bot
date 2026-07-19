@@ -2,13 +2,12 @@
 
 namespace App\Services\RiotApiServices;
 
-use App\Controller\ValidationController;
 use App\Entity\HistoryAccountLol;
 use App\Entity\RiotAccount;
+use App\Infrastructure\Riot\RiotApiGateway;
 use App\Repository\DataChallengeRepository;
 use App\Repository\HistoryAccountLolRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use PhpParser\Node\Expr\Array_;
 use RiotAPI\Base\Exceptions\GeneralException;
 use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
@@ -19,7 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class HistoryAccountLolServices extends AbstractController
 {
-    public function __construct(private ValidationController $validationController,private HistoryAccountLolRepository $historyAccountLolRepository,private DataChallengeRepository $dataChallengeRepository,private EntityManagerInterface $entityManager)
+    public function __construct(private RiotApiGateway $validationController, private HistoryAccountLolRepository $historyAccountLolRepository, private DataChallengeRepository $dataChallengeRepository, private EntityManagerInterface $entityManager)
     {
     }
 
