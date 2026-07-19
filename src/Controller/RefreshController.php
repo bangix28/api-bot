@@ -2,8 +2,7 @@
 
 namespace App\Controller;
 
-use App\Application\MatchHistory\RefreshData\RefreshMatchHistoryCommand;
-use App\Application\MatchHistory\RefreshData\RefreshRiotMatchDataHandler;
+use App\Application\MatchHistory\RefreshData\RefreshAllMatchHistoryHandler;
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Repository\RiotAccountRepository;
@@ -28,18 +27,13 @@ class RefreshController extends AbstractController
     #[Route('/refresh', name: 'app_refresh')]
     public function refreshSummoner(
         RefreshRiotAccountDataHandler $handler,
-        RefreshRiotMatchDataHandler $matchDataHandler
+        RefreshAllMatchHistoryHandler $refreshAllMatchHistory
     ): Response
     {
         $presenter = new RefreshViewPresenter();
         $handler->handle($presenter);
 
-        foreach ( $this->riotAccountRepository->findAll() as $account) {
-            $matchDataHandler->handle(new RefreshMatchHistoryCommand(
-               $account->getPuuid(),
-               $account->getLastUpdate()?->getTimestamp()
-            ));
-        }
+        $refreshAllMatchHistory->handle();
 
         return $this->render('refresh/refresh.html.twig', [
             'page_title' => 'Refresh des comptes',

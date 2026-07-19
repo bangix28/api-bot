@@ -16,8 +16,7 @@ class RiotApiServices
     public function __construct(private readonly RiotApiGateway             $validationController,
                                 private readonly RiotAccountRepository      $riotAccountRepository,
                                 private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
-                                private readonly EntityManagerInterface     $entityManager,
-                                private readonly HistoryAccountLolServices  $historyAccountLolServices
+                                private readonly EntityManagerInterface     $entityManager
     )
     {
     }
@@ -108,27 +107,4 @@ class RiotApiServices
         }
     }
 
-    public function getListAccount(): array
-    {
-        $listeAccount = $this->riotAccountRepository->findAll();
-        foreach ($listeAccount as $account) {
-            $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $this->getDailyElo($account);
-        }
-
-        return ['status' => true, 'data' => $listeAccount];
-    }
-
-    /**
-     * @throws \Exception
-     */
-    public function getListRanked(): array
-    {
-        $listeAccount = $this->riotAccountRepository->findAll();
-        foreach ($listeAccount as $account) {
-            $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $this->riotAccountFill($account);
-        }
-        return ['status' => true, 'data' => $listeAccount];
-    }
 }
