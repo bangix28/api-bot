@@ -4,9 +4,7 @@ namespace App\State;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
-use App\Controller\ValidationController;
-use App\Exception\DiscordNotFoundException;
-use App\Exception\RiotAccountExistException;
+use App\Infrastructure\Riot\RiotApiGateway;
 use App\Repository\RiotAccountRepository;
 use App\Repository\UserRepository;
 use App\Services\RiotApiServices\RiotApiServices;
@@ -14,7 +12,7 @@ use Exception;
 
 class RiotAccountProcessor implements ProcessorInterface
 {
-    public function __construct(private ProcessorInterface $persistProcessor,private UserRepository $userRepository, private RiotAccountRepository $rioAccountRepository, private RiotApiServices $riotApiServices, private ValidationController $validationController)
+    public function __construct(private ProcessorInterface $persistProcessor,private UserRepository $userRepository, private RiotAccountRepository $rioAccountRepository, private RiotApiServices $riotApiServices, private RiotApiGateway $validationController)
     {
 
     }

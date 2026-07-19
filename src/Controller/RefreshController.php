@@ -2,19 +2,22 @@
 
 namespace App\Controller;
 
+use App\Application\MatchHistory\RefreshData\RefreshAllMatchHistoryHandler;
+use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
+use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Repository\RiotAccountRepository;
-use App\Services\RiotApiServices\HistoryAccountLolServices;
 use App\Services\RiotApiServices\RiotApiServices;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\HttpFoundation\JsonResponse;
-
 
 class RefreshController extends AbstractController
 {
 
-    public function __construct(private RiotApiServices $riotApiService, private RiotAccountRepository $riotAccountRepository, private HistoryAccountLolServices $historyAccountLolServices)
+    public function __construct(
+        private RiotApiServices $riotApiService,
+        private RiotAccountRepository $riotAccountRepository
+    )
     {
     }
 
@@ -22,19 +25,21 @@ class RefreshController extends AbstractController
      * @throws \Exception
      */
     #[Route('/refresh', name: 'app_refresh')]
-    public function refreshSummoner(): Response
+    public function refreshSummoner(
+        RefreshRiotAccountDataHandler $handler,
+        RefreshAllMatchHistoryHandler $refreshAllMatchHistory
+    ): Response
     {
-        $listeAccount = $this->riotAccountRepository->findAll();
-        $dataToShow = [];
-        foreach ($listeAccount as $account) {
-            $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $this->riotApiService->riotAccountFill($account);
-            $dataToShow[] = $account;
-        }
+        // L'historique d'abord : il lit lastUpdate (date du run précédent) comme
+        // curseur "since", avant que le refresh ranked ne l'écrase à maintenant.
+        $refreshAllMatchHistory->handle();
+
+        $presenter = new RefreshViewPresenter();
+        $handler->handle($presenter);
 
         return $this->render('refresh/refresh.html.twig', [
             'page_title' => 'Refresh des comptes',
-            'accounts' => $dataToShow,
+            'accounts' => $presenter->viewModel(),
         ]);
     }
     #[Route('/getDailyElo', name: 'app_daily_elo')]

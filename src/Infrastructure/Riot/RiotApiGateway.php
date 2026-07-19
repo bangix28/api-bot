@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller;
+namespace App\Infrastructure\Riot;
 
 use App\Enum\RiotApiEnum;
 use RiotAPI\Base\Exceptions\GeneralException;
@@ -8,9 +8,12 @@ use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
 use RiotAPI\Base\Exceptions\ServerLimitException;
 use RiotAPI\Base\Exceptions\SettingsException;
-class ValidationController
+use RiotAPI\LeagueAPI\Objects\MatchDto;
+use RiotAPI\LeagueAPI\Objects\SummonerDto;
+
+readonly class RiotApiGateway
 {
-   public function __construct(private RiotApi $riotApi)
+   public function __construct(private RiotApiClient $riotApi)
    {}
 
 
@@ -21,13 +24,21 @@ class ValidationController
      * @throws RequestException
      * @throws GeneralException
      */
-    public function getRankedsInformationsById($summonerId)
-   {
-       $callApiRiot = $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId);
-       return $callApiRiot;
+    public function getRankedsInformationsById($summonerId): ?array
+    {
+        return $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId);
    }
 
-   public function getSummonerAcountsDetails($summonerId)
+    /**
+     * @param $summonerId
+     * @return SummonerDto|null
+     * @throws GeneralException
+     * @throws RequestException
+     * @throws ServerException
+     * @throws ServerLimitException
+     * @throws SettingsException
+     */
+   public function getSummonerAcountsDetails($summonerId): ?SummonerDto
    {
        $callApiRiot =  $this->riotApi->riotApiInit()->getSummonerByPUUID($summonerId);
        return $callApiRiot;
@@ -41,13 +52,22 @@ class ValidationController
      * @throws SettingsException
      * Obtiens la liste des matchs d'un compte Lol en utilisant son PUUID
      */
-   public function getListIdMatchHistoryLol(string $puuid,string $startTime = null)
+   public function getListIdMatchHistoryLol(string $puuid,string $startTime = null): array
    {
        $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,RiotApiEnum::QUEUE_TYPE_RANKED_SOLO->value,null,RiotApiEnum::START_INDEX->value,RiotApiEnum::MATCH_COUNT_RETRIEVE->value,$startTime);
        return $callApiRiot;
    }
 
-   public function getDataMatchById(string $matchId)
+    /**
+     * @param string $matchId
+     * @return MatchDto|null
+     * @throws GeneralException
+     * @throws RequestException
+     * @throws ServerException
+     * @throws ServerLimitException
+     * @throws SettingsException
+     */
+   public function getDataMatchById(string $matchId): ?MatchDto
    {
        $callApiRiot = $this->riotApi->riotApiInit()->getMatch($matchId);
        return $callApiRiot;

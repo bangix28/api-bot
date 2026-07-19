@@ -2,13 +2,16 @@
 
 ## Stack
 
-- **PHP 8.1+**, Symfony 6.4
-- Doctrine ORM 2.14 + Migrations
+- **PHP 8.2+** (runtime 8.4), Symfony 8.0
+- Doctrine ORM 3.0 + Migrations
 - API Platform v4 (REST/JSON-LD)
 - Lexik JWT Authentication
 - EasyAdmin 4
 - PHPUnit 12.4
 - Webpack Encore (frontend assets)
+
+> Le projet tourne dans Docker (conteneur `api` pour PHP-FPM 8.4, `mysql`, `nginx`, `phpmyadmin`).
+> Lancer les commandes via `docker exec api php bin/console ...`. Base MySQL : `apibot` (root, mot de passe vide).
 
 ## Architecture — Hexagonal (Ports & Adapters)
 

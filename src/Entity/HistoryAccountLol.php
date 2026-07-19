@@ -52,9 +52,6 @@ class HistoryAccountLol
     #[Groups(['historyAccount:read:get'])]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'json', nullable: true)]
-    private $data = null;
-
     #[ORM\Column]
     private ?\DateTimeImmutable $updated_at = null;
 
@@ -93,23 +90,6 @@ class HistoryAccountLol
     public function getId(): ?int
     {
         return $this->id;
-    }
-    public function getData(): ?array
-    {
-        if ($this->data === null) {
-            return null;
-        }
-
-        return json_decode($this->data, true);
-    }
-
-    public function setData(array $data): static
-    {
-        $jsonData = json_encode($data);
-
-        $this->data = $jsonData;
-
-        return $this;
     }
 
     public function getUpdatedAt(): ?\DateTimeImmutable

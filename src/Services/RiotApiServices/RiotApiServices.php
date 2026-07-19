@@ -2,21 +2,21 @@
 
 namespace App\Services\RiotApiServices;
 
-use App\Controller\ValidationController;
+use App\Domain\RiotAccount\RankedRank;
+use App\Domain\RiotAccount\RankedTier;
 use App\Entity\RiotAccount;
 use App\Entity\SummonerEloDaily;
+use App\Infrastructure\Riot\RiotApiGateway;
 use App\Repository\RiotAccountRepository;
 use App\Repository\SummonerEloDailyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class RiotApiServices
 {
-    public function __construct(private readonly ValidationController       $validationController,
+    public function __construct(private readonly RiotApiGateway             $validationController,
                                 private readonly RiotAccountRepository      $riotAccountRepository,
                                 private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
-                                private readonly EntityManagerInterface     $entityManager,
-                                private readonly ScoreServices              $scoreServices,
-                                private readonly HistoryAccountLolServices $historyAccountLolServices
+                                private readonly EntityManagerInterface     $entityManager
     )
     {
     }
@@ -27,7 +27,9 @@ class RiotApiServices
 
         if ($response->status && !empty($response->data)) {
             $rankedSoloSummonerInfo = $response->data;
-            $score = $this->scoreServices->getScoreSummoner($rankedSoloSummonerInfo);
+            $score = RankedTier::fromString($rankedSoloSummonerInfo->tier)->getScore()
+                + RankedRank::fromString($rankedSoloSummonerInfo->rank)->getScore()
+                + (int) $rankedSoloSummonerInfo->leaguePoints;
 
             $riotAccount->setSummonerRankedSoloLeaguePoints($rankedSoloSummonerInfo->leaguePoints)
                 ->setSummonerRankedSoloLosses($rankedSoloSummonerInfo->losses)
@@ -40,12 +42,16 @@ class RiotApiServices
                 ->setLastUpdate(new \DateTime('now'));
 
         } else {
+            // Représentation normalisée d'un compte non classé (cf. migration
+            // Version20260628111804 et RankedTier/RankedRank::UNRANKED). Écrire
+            // 'non classée'/null ici défait la normalisation et fait planter
+            // RankedTier::fromString(null) côté lecture hexagonale.
             $riotAccount->setSummonerRankedSoloLeaguePoints(0)
-                ->setSummonerRankedSoloRank('non classée')
-                ->setSummonerRankedSoloTier(null)
+                ->setSummonerRankedSoloRank(RankedRank::UNRANKED->value)
+                ->setSummonerRankedSoloTier(RankedTier::UNRANKED->value)
                 ->setScore(0)
-                ->setSummonerRankedSoloWins(null)
-                ->setSummonerRankedSoloLosses(null)
+                ->setSummonerRankedSoloWins(0)
+                ->setSummonerRankedSoloLosses(0)
                 ->setLogoId($summonerDetails->profileIconId ?? 0)
                 ->setSummonerLevel($summonerDetails->summonerLevel ?? 0)
                 ->setLastUpdate(new \DateTime('now'));
@@ -75,7 +81,9 @@ class RiotApiServices
 
         $response = $this->getRankedInformations($riotAccount->getPuuid());
         if ($response->status && !empty($response->data)) {
-            $score = $this->scoreServices->getScoreSummoner($response->data);
+            $score = RankedTier::fromString($response->data->tier)->getScore()
+                + RankedRank::fromString($response->data->rank)->getScore()
+                + (int) $response->data->leaguePoints;
             $dailyElo = new SummonerEloDaily();
             $dailyElo->setRiotAccount($riotAccount)
                 ->setScore($score)
@@ -103,27 +111,4 @@ class RiotApiServices
         }
     }
 
-    public function getListAccount(): array
-    {
-        $listeAccount = $this->riotAccountRepository->findAll();
-        foreach ($listeAccount as $account) {
-            $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $this->getDailyElo($account);
-        }
-
-        return ['status' => true, 'data' => $listeAccount];
-    }
-
-    /**
-     * @throws \Exception
-     */
-    public function getListRanked(): array
-    {
-        $listeAccount = $this->riotAccountRepository->findAll();
-        foreach ($listeAccount as $account) {
-            $this->historyAccountLolServices->getHistoryAccountLol($account);
-            $this->riotAccountFill($account);
-        }
-        return ['status' => true, 'data' => $listeAccount];
-    }
 }
