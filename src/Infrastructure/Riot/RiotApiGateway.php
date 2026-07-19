@@ -52,7 +52,7 @@ readonly class RiotApiGateway
      * @throws SettingsException
      * Obtiens la liste des matchs d'un compte Lol en utilisant son PUUID
      */
-   public function getListIdMatchHistoryLol(string $puuid,string $startTime = null): array
+   public function getListIdMatchHistoryLol(string $puuid, ?int $startTime = null): array
    {
        $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,RiotApiEnum::QUEUE_TYPE_RANKED_SOLO->value,null,RiotApiEnum::START_INDEX->value,RiotApiEnum::MATCH_COUNT_RETRIEVE->value,$startTime);
        return $callApiRiot;

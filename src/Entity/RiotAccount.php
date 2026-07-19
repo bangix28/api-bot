@@ -21,21 +21,14 @@ use App\Validator as AcmeAssert;
     fields: ['riotId'],
     message: 'Vous êtes déja inscrit avec ce Riot ID !'
 )]
-/**
- * Récupère les détails d’un invocateur précis
- */
 #[ApiResource(
-    uriTemplate: '/riot-account/account/{id}',
-    operations: [ new Get ],
-    normalizationContext: ['groups' => ['riotAccount:read:get']]
-)]
-/**
- * Récupère tous les invocateurs ainsi que leurs détails.
- */
-#[ApiResource(
-    uriTemplate: '/riot-account/ranked',
-    operations: [ new GetCollection ],
     normalizationContext: ['groups' => ['riotAccount:read:get']],
+    operations: [
+        // Récupère les détails d’un invocateur précis
+        new Get(uriTemplate: '/riot-account/account/{id}'),
+        // Récupère tous les invocateurs ainsi que leurs détails
+        new GetCollection(uriTemplate: '/riot-account/ranked'),
+    ],
 )]
 #[ApiFilter(OrderFilter::class, properties: ['score' => 'DESC'])]
 

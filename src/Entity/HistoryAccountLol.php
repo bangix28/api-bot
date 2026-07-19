@@ -16,34 +16,27 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints\Json;
 
 #[ORM\Entity(repositoryClass: HistoryAccountLolRepository::class)]
-
-/**
- * Endpoint permettant de récuperer l'historique des 5
- * dernieres game sans le details de data
- */
 #[ApiResource(
-    uriTemplate: '/riot-account/{id}/history-account-lol',
-    operations: [ new GetCollection() ],
-    uriVariables: [
-        'id' => new Link(
-            fromProperty: 'historyAccountLols',
-            fromClass: RiotAccount::class
-        )
-    ],
-    normalizationContext: ['groups' => ['historyAccount:read:get']],
-    order: ['dateGameEnd' => 'DESC'],
-    paginationItemsPerPage: 5
+    operations: [
+        // Historique des 5 dernières games (sans le détail des data)
+        new GetCollection(
+            uriTemplate: '/riot-account/{id}/history-account-lol',
+            uriVariables: [
+                'id' => new Link(
+                    fromProperty: 'historyAccountLols',
+                    fromClass: RiotAccount::class
+                )
+            ],
+            normalizationContext: ['groups' => ['historyAccount:read:get']],
+            order: ['dateGameEnd' => 'DESC'],
+            paginationItemsPerPage: 5
+        ),
+        // Détails complets d'une game
+        new Get(
+            uriTemplate: '/history-account-lol/{id}'
+        ),
+    ]
 )]
-
-/**
- * Endpoint permettant de récuperer
- * les détails complets d'une game
- */
-#[ApiResource(
-    uriTemplate: '/history-account-lol/{id}',
-    operations: [ new Get ]
-)]
-
 class HistoryAccountLol
 {
     #[ORM\Id]
