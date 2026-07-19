@@ -17,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
 
+# La limite par défaut (128M) est insuffisante pour cache:clear en dev
+RUN echo 'memory_limit = 512M' > /usr/local/etc/php/conf.d/zz-memory-limit.ini
+
 # Installer Composer depuis l'image officielle (plus fiable que le script)
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
