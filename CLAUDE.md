@@ -6,7 +6,7 @@
 - Doctrine ORM 3.0 + Migrations
 - API Platform v4 (REST/JSON-LD)
 - Lexik JWT Authentication
-- EasyAdmin 4
+- EasyAdmin 5
 - PHPUnit 12.4
 - Webpack Encore (frontend assets)
 

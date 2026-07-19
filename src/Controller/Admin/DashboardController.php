@@ -2,8 +2,6 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\RiotAccount;
-use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
@@ -29,7 +27,7 @@ class DashboardController extends AbstractDashboardController
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
-        yield MenuItem::linkToCrud('User', 'fas fa-user', User::class);
-        yield MenuItem::linkToCrud('Compte riot', 'fas fa-user', RiotAccount::class);
+        yield MenuItem::linkTo(UserCrudController::class, 'User', 'fas fa-user');
+        yield MenuItem::linkTo(RiotAccountCrudController::class, 'Compte riot', 'fas fa-user');
     }
 }

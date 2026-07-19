@@ -45,7 +45,7 @@
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/orm": "^3.0",
         "dolejska-daniel/riot-api-league": "dev-master",
-        "easycorp/easyadmin-bundle": "^4.12",
+        "easycorp/easyadmin-bundle": "^5.0",
         "lexik/jwt-authentication-bundle": "^3.0",
         "nelmio/cors-bundle": "^2.5",
         "phpdocumentor/reflection-docblock": "^5.3",
