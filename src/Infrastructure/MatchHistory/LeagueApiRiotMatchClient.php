@@ -7,6 +7,7 @@ use App\Domain\MatchHistory\ParticipantData;
 use App\Domain\MatchHistory\RiotMatchApiClientInterface;
 use App\Infrastructure\Riot\RiotApiGateway;
 use RiotAPI\Base\Exceptions\GeneralException;
+use RiotAPI\LeagueAPI\Objects\ParticipantDto;
 use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
 use RiotAPI\Base\Exceptions\ServerLimitException;
@@ -38,12 +39,16 @@ class LeagueApiRiotMatchClient implements RiotMatchApiClientInterface
      * @throws RequestException
      * @throws GeneralException
      */
-    public function getMatch(string $matchId): MatchData
+    public function getMatch(string $matchId): ?MatchData
     {
        $match = $this->riotApiGateway->getDataMatchById($matchId);
 
+       if ($match === null) {
+           return null;
+       }
+
         $participants = array_map(
-            fn(array $p) => new ParticipantData($p->puuid, $p->win, $p->championId, $p->kills, $p->deaths, $p->assists),
+            fn(ParticipantDto $p) => new ParticipantData($p->puuid, $p->win, $p->championId, $p->kills, $p->deaths, $p->assists),
             $match->info->participants
         );
 

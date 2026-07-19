@@ -30,10 +30,12 @@ class RefreshController extends AbstractController
         RefreshAllMatchHistoryHandler $refreshAllMatchHistory
     ): Response
     {
+        // L'historique d'abord : il lit lastUpdate (date du run précédent) comme
+        // curseur "since", avant que le refresh ranked ne l'écrase à maintenant.
+        $refreshAllMatchHistory->handle();
+
         $presenter = new RefreshViewPresenter();
         $handler->handle($presenter);
-
-        $refreshAllMatchHistory->handle();
 
         return $this->render('refresh/refresh.html.twig', [
             'page_title' => 'Refresh des comptes',

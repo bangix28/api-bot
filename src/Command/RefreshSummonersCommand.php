@@ -31,11 +31,12 @@ class RefreshSummonersCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
+        // L'historique d'abord : il lit lastUpdate (date du run précédent) comme
+        // curseur "since", avant que le refresh ranked ne l'écrase à maintenant.
+        $this->refreshAllMatchHistory->handle();
+
         // Refresh ranked (pas de vue en CLI -> presenter no-op)
         $this->refreshRankedHandler->handle(new NullRefreshPresenter());
-
-        // Refresh de l'historique de tous les comptes
-        $this->refreshAllMatchHistory->handle();
 
         $io->success('Commande effectuée avec succès !');
 
