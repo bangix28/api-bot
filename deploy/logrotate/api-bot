@@ -1,0 +1,18 @@
+# Rotation des logs CRON d'api-bot.
+# Les logs Monolog (prod-*.log, app-*.log, deprecation-*.log) s'auto-rotent
+# via l'option max_files du handler rotating_file — ne PAS les gérer ici.
+#
+# Installation sur le VPS :
+#   sudo cp deploy/logrotate/api-bot /etc/logrotate.d/api-bot
+#   sudo logrotate -d /etc/logrotate.d/api-bot   # dry-run de vérification
+
+/var/www/beauce-tigers/api-bot/var/log/cron-*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    su www-data www-data
+    create 0664 www-data www-data
+}
