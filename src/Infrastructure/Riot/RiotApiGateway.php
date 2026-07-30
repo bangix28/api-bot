@@ -3,6 +3,9 @@
 namespace App\Infrastructure\Riot;
 
 use App\Enum\RiotApiEnum;
+use Monolog\Attribute\WithMonologChannel;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RiotAPI\Base\Exceptions\GeneralException;
 use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
@@ -11,11 +14,63 @@ use RiotAPI\Base\Exceptions\SettingsException;
 use RiotAPI\LeagueAPI\Objects\MatchDto;
 use RiotAPI\LeagueAPI\Objects\SummonerDto;
 
+#[WithMonologChannel('riot')]
 readonly class RiotApiGateway
 {
-   public function __construct(private RiotApiClient $riotApi)
-   {}
+   public function __construct(
+       private RiotApiClient $riotApi,
+       private LoggerInterface $logger = new NullLogger(),
+   ) {}
 
+    /**
+     * Exécute un appel Riot en le chronométrant et en journalisant son issue.
+     * Les exceptions sont relancées : le gateway observe, il ne décide pas —
+     * c'est aux couches supérieures de choisir quoi faire d'un échec.
+     */
+    private function call(string $endpoint, callable $fn): mixed
+    {
+        $start = hrtime(true);
+
+        try {
+            $result = $fn();
+
+            $this->logger->info('riot.api.call', [
+                'endpoint' => $endpoint,
+                'duration_ms' => $this->elapsedMs($start),
+            ]);
+
+            return $result;
+        } catch (ServerLimitException $e) {
+            $this->logger->warning('riot.api.rate_limited', [
+                'endpoint' => $endpoint,
+                'duration_ms' => $this->elapsedMs($start),
+                'message' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        } catch (ServerException $e) {
+            $this->logger->error('riot.api.server_error', [
+                'endpoint' => $endpoint,
+                'duration_ms' => $this->elapsedMs($start),
+                'message' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        } catch (RequestException $e) {
+            $this->logger->warning('riot.api.request_error', [
+                'endpoint' => $endpoint,
+                'duration_ms' => $this->elapsedMs($start),
+                'message' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function elapsedMs(int|float $start): float
+    {
+        return round((hrtime(true) - $start) / 1_000_000, 1);
+    }
 
     /**
      * @throws ServerLimitException
@@ -26,7 +81,10 @@ readonly class RiotApiGateway
      */
     public function getRankedsInformationsById($summonerId): ?array
     {
-        return $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId);
+        return $this->call(
+            'league-entries-for-summoner',
+            fn () => $this->riotApi->riotApiInit()->getLeagueEntriesForSummoner($summonerId),
+        );
    }
 
     /**
@@ -40,8 +98,10 @@ readonly class RiotApiGateway
      */
    public function getSummonerAcountsDetails($summonerId): ?SummonerDto
    {
-       $callApiRiot =  $this->riotApi->riotApiInit()->getSummonerByPUUID($summonerId);
-       return $callApiRiot;
+       return $this->call(
+           'summoner-by-puuid',
+           fn () => $this->riotApi->riotApiInit()->getSummonerByPUUID($summonerId),
+       );
    }
     /**
      * @return array
@@ -54,8 +114,10 @@ readonly class RiotApiGateway
      */
    public function getListIdMatchHistoryLol(string $puuid, ?int $startTime = null): array
    {
-       $callApiRiot = $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,RiotApiEnum::QUEUE_TYPE_RANKED_SOLO->value,null,RiotApiEnum::START_INDEX->value,RiotApiEnum::MATCH_COUNT_RETRIEVE->value,$startTime);
-       return $callApiRiot;
+       return $this->call(
+           'match-ids-by-puuid',
+           fn () => $this->riotApi->riotApiInit()->getMatchIdsByPUUID($puuid,RiotApiEnum::QUEUE_TYPE_RANKED_SOLO->value,null,RiotApiEnum::START_INDEX->value,RiotApiEnum::MATCH_COUNT_RETRIEVE->value,$startTime),
+       );
    }
 
     /**
@@ -69,7 +131,9 @@ readonly class RiotApiGateway
      */
    public function getDataMatchById(string $matchId): ?MatchDto
    {
-       $callApiRiot = $this->riotApi->riotApiInit()->getMatch($matchId);
-       return $callApiRiot;
+       return $this->call(
+           'get-match',
+           fn () => $this->riotApi->riotApiInit()->getMatch($matchId),
+       );
    }
 }

@@ -11,9 +11,9 @@ use Psr\Log\NullLogger;
 class RefreshRiotMatchDataHandler
 {
     public function __construct(
-       private RiotMatchApiClientInterface $apiClient,
+       private RiotMatchApiClientInterface     $apiClient,
        private MatchHistoryRepositoryInterface $repository,
-       private LoggerInterface $logger = new NullLogger(),
+       private LoggerInterface                 $refreshLogger = new NullLogger(),
     )
     {
     }
@@ -38,7 +38,7 @@ class RefreshRiotMatchDataHandler
             } catch (\Exception $e) {
                 // Un match corrompu (joueur absent, compte introuvable...) ne doit pas
                 // interrompre le refresh des autres matchs du compte.
-                $this->logger->warning('Refresh du match ignoré', [
+                $this->refreshLogger->warning('Refresh du match ignoré', [
                     'matchId' => $matchId,
                     'puuid' => $refreshMatchHistoryCommand->puuid,
                     'exception' => $e,

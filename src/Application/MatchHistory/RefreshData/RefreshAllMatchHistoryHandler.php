@@ -15,7 +15,7 @@ final readonly class RefreshAllMatchHistoryHandler
     public function __construct(
         private MatchHistoryRefreshTargetsProviderInterface $targetsProvider,
         private RefreshRiotMatchDataHandler                 $refreshRiotMatchDataHandler,
-        private LoggerInterface                             $logger = new NullLogger(),
+        private LoggerInterface                             $refreshLogger = new NullLogger(),
     ) {}
 
     public function handle(): void
@@ -28,7 +28,7 @@ final readonly class RefreshAllMatchHistoryHandler
             } catch (\Exception $e) {
                 // L'échec d'un compte (erreur API, etc.) ne doit pas interrompre
                 // le refresh des autres comptes.
-                $this->logger->warning('Refresh de l\'historique du compte ignoré', [
+                $this->refreshLogger->warning('Refresh de l\'historique du compte ignoré', [
                     'puuid' => $target->puuid,
                     'exception' => $e,
                 ]);

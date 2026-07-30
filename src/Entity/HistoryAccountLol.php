@@ -60,9 +60,9 @@ class HistoryAccountLol
     #[Groups(['historyAccount:read:get'])]
     private ?int $championId = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['historyAccount:read:get'])]
-    private ?\DateTimeInterface $dateGameEnd = null;
+    private ?\DateTimeImmutable $dateGameEnd = null;
 
     #[ORM\Column]
     #[Groups(['historyAccount:read:get'])]
@@ -133,12 +133,12 @@ class HistoryAccountLol
         return $this;
     }
 
-    public function getDateGameEnd(): ?\DateTimeInterface
+    public function getDateGameEnd(): ?\DateTimeImmutable
     {
         return $this->dateGameEnd;
     }
 
-    public function setDateGameEnd(\DateTimeInterface $dateGameEnd): static
+    public function setDateGameEnd(\DateTimeImmutable $dateGameEnd): static
     {
         $this->dateGameEnd = $dateGameEnd;
 

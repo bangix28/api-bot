@@ -1,0 +1,13 @@
+# Crontab de référence pour api-bot (prod VPS, sans Docker).
+#
+# À installer dans le crontab de www-data (même utilisateur que PHP-FPM,
+# pour que crons et web écrivent dans var/log sans conflit de droits) :
+#   sudo crontab -u www-data -e
+#
+# Les fichiers cron-*.log ne captent que la sortie console (résumés + erreurs
+# fatales) ; le détail horodaté vit dans var/log/app-YYYY-MM-DD.log (Monolog).
+# La rotation des cron-*.log est gérée par deploy/logrotate/api-bot.
+
+# m  h  dom mon dow  commande
+0  *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console refreshSummoners --env=prod >> var/log/cron-refresh.log 2>&1
+30 0   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console daily-elo --env=prod >> var/log/cron-daily-elo.log 2>&1

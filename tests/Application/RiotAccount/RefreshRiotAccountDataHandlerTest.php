@@ -9,6 +9,7 @@ use App\Domain\RiotAccount\RiotAccountEntity;
 use App\Domain\RiotAccount\RiotAccountRefreshData;
 use App\Domain\RiotAccount\SummonerRankedEntity;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
+use App\Tests\Domain\Logging\SpyLogger;
 use App\Tests\Domain\RiotAccount\FakeRiotApiClient;
 use App\Tests\Domain\RiotAccount\InMemoryRiotAccountRepository;
 use PHPUnit\Framework\TestCase;
@@ -90,5 +91,66 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
         $this->assertSame('II', $vm[0]->rank);
         $this->assertSame(50, $vm[0]->leaguePoints);
 
+    }
+
+    public function testHandleContinuesAndLogsWhenOneAccountFails()
+    {
+        $original = new RiotAccountEntity(
+            'Pseudo#EUW',
+            'puuid-1',
+            'Pseudo',
+            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            30,
+            '10'
+        );
+
+        $failedAccount = new RiotAccountEntity(
+            'Fake#EUW',
+            'fake',
+            'Pseudo',
+            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            25,
+            '10'
+        );
+
+        $repository = new InMemoryRiotAccountRepository([$original, $failedAccount]);
+
+        $refreshData = new RiotAccountRefreshData(
+            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            150,
+            '20'
+        );
+        // Un seul fake : données fraîches pour tout le monde, sauf le puuid 'fake' qui jette
+        $apiClient = new FakeRiotApiClient($refreshData, 'fake');
+
+        $presenter = new RefreshViewPresenter();
+        $logger = new SpyLogger();
+        $handler = new RefreshRiotAccountDataHandler($repository, $apiClient, $logger);
+
+        // Act
+        $handler->handle($presenter);
+
+        $vm = $presenter->viewModel();
+        $this->assertCount(1, $vm);
+        $this->assertSame('Pseudo', $vm[0]->summonerName);
+        $this->assertSame('GOLD', $vm[0]->tier);
+        $this->assertSame('II', $vm[0]->rank);
+        $this->assertSame(50, $vm[0]->leaguePoints);
+
+        $accounts = $repository->getListAccount();
+        $this->assertCount(2, $accounts);
+        $this->assertSame(RankedTier::GOLD, $accounts[0]->getRanked()->getSoloTier());
+        $this->assertSame(RankedTier::UNRANKED, $accounts[1]->getRanked()->getSoloTier());
+
+        $warnings = $logger->records('warning');
+        $this->assertCount(1, $warnings);
+        $this->assertSame('Refresh du compte ignoré', $warnings[0]['message']);
+        $this->assertSame('fake', $warnings[0]['context']['puuid']);
+
+        $infos = $logger->records('info');
+        $this->assertCount(1, $infos);
+        $this->assertSame('Refresh des comptes terminé', $infos[0]['message']);
+        $this->assertSame(1, $infos[0]['context']['ok']);
+        $this->assertSame(1, $infos[0]['context']['failed']);
     }
 }
