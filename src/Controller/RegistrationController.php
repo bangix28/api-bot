@@ -4,8 +4,10 @@ namespace App\Controller;
 
 use App\Application\User\Register\RegisterUserCommand;
 use App\Application\User\Register\RegisterUserHandler;
+use App\Domain\User\UserAlreadyExistException;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,8 +16,10 @@ use Symfony\Component\Routing\Attribute\Route;
 class RegistrationController extends AbstractController
 {
 
-    public function __construct(private RegisterUserHandler $registrationUserHandler)
-    {
+    public function __construct(
+        private RegisterUserHandler $registrationUserHandler,
+        private LoggerInterface $logger,
+    ) {
     }
 
     /**
@@ -37,8 +41,12 @@ class RegistrationController extends AbstractController
             try {
                 $this->registrationUserHandler->handle($registerUserCommand);
                 return $this->redirectToRoute('admin');
+            } catch (UserAlreadyExistException) {
+                // Cas métier attendu : l'utilisateur peut corriger lui-même, pas d'incident à loguer.
+                $this->addFlash('error', 'Un compte existe déjà avec cet email.');
             } catch (\Exception $e) {
-                $this->addFlash('error', $e->getMessage());
+                $this->logger->error('Échec de l\'inscription', ['exception' => $e]);
+                $this->addFlash('error', 'Une erreur est survenue, veuillez réessayer.');
             }
         }
 

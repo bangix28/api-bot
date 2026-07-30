@@ -7,16 +7,17 @@ use App\Domain\RiotAccount\RankedTier;
 use App\Entity\RiotAccount;
 use App\Entity\SummonerEloDaily;
 use App\Infrastructure\Riot\RiotApiGateway;
-use App\Repository\RiotAccountRepository;
 use App\Repository\SummonerEloDailyRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class RiotApiServices
 {
     public function __construct(private readonly RiotApiGateway             $validationController,
-                                private readonly RiotAccountRepository      $riotAccountRepository,
                                 private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
-                                private readonly EntityManagerInterface     $entityManager
+                                private readonly EntityManagerInterface     $entityManager,
+                                private readonly LoggerInterface            $riotLogger = new NullLogger(),
     )
     {
     }
@@ -68,7 +69,6 @@ class RiotApiServices
      */
     public function getDailyElo(RiotAccount $riotAccount): RiotAccount
     {
-        $listeAccount = $this->riotAccountRepository->findAll();
         $existing = $this->summonerEloDailyRepository
             ->findOneBy([
                 'riotAccount' => $riotAccount,
@@ -92,11 +92,16 @@ class RiotApiServices
             $this->entityManager->persist($dailyElo);
             $this->entityManager->flush();
 
+        } else {
+            // Trou dans les données quotidiennes : à surveiller, sinon il est invisible.
+            $this->riotLogger->warning('Snapshot elo quotidien non créé', [
+                'puuid' => $riotAccount->getPuuid(),
+            ]);
         }
         return $riotAccount;
     }
 
-    public function getRankedInformations($summonerId): array|object
+    public function getRankedInformations($summonerId): object
     {
         try {
             $rankedSummonerInformations = $this->validationController->getRankedsInformationsById($summonerId);
@@ -106,8 +111,15 @@ class RiotApiServices
                 }
             }
             return (object)array('status' => 'false');
-        } catch (Exception) {
-            return array('status' => 'false', 'error');
+        } catch (\Exception $e) {
+            // Conséquence métier : le compte sera traité comme « non classé ».
+            // Le détail technique de l'appel est déjà logué par RiotApiGateway.
+            $this->riotLogger->error('Échec de récupération du ranked', [
+                'puuid' => $summonerId,
+                'exception' => $e,
+            ]);
+
+            return (object)array('status' => 'false');
         }
     }
 

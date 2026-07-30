@@ -28,6 +28,12 @@ services:
         alias: App\Infrastructure\User\DoctrineUserRepository
 
 
+    # Hasher concret de Symfony, injecté dans l'adaptateur SymfonyPasswordHasher
     Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher: ~
-    App\Domain\User\PasswordHasherInterface:
+    Symfony\Component\PasswordHasher\PasswordHasherInterface:
         alias: Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher
+
+    # Port domaine → adaptateur Infrastructure (et non le hasher Symfony directement,
+    # qui n'implémente pas l'interface du domaine)
+    App\Domain\User\PasswordHasherInterface:
+        alias: App\Infrastructure\User\SymfonyPasswordHasher
