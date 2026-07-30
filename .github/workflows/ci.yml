@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  tests:
+    name: Tests (PHPUnit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, zlib
+          coverage: pcov
+
+      # .env est volontairement hors git (secrets locaux) mais tests/bootstrap.php
+      # exige sa présence — on en génère un minimal.
+      - name: Create .env
+        run: echo "APP_ENV=test" > .env
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-scripts --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPUnit
+        run: php bin/phpunit --log-junit var/junit.xml --coverage-cobertura var/cobertura.xml --coverage-text
+
+      - name: Publish JUnit report
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: var/junit.xml
+          check_name: PHPUnit report
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-cobertura
+          path: var/cobertura.xml
+          if-no-files-found: ignore
+
+  lint:
+    name: Lint (config Symfony)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, zlib
+          coverage: none
+
+      # Valeurs factices : le lint compile le container, qui exige que ces
+      # variables soient résolvables (RIOT_API_TOKEN notamment).
+      - name: Create .env
+        run: |
+          cat > .env <<'EOF'
+          APP_ENV=dev
+          APP_SECRET=ci
+          DATABASE_URL="mysql://root:@127.0.0.1:3306/apibot?serverVersion=8.0"
+          RIOT_API_TOKEN=ci-dummy-token
+          JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+          JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+          JWT_PASSPHRASE=ci
+          CORS_ALLOW_ORIGIN='^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
+          EOF
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-scripts --prefer-dist --no-progress --no-interaction
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+
+      - name: Generate JWT keypair
+        run: php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
+      - name: Lint YAML config
+        run: php bin/console lint:yaml config --parse-tags
+
+      - name: Lint Twig templates
+        run: php bin/console lint:twig templates
+
+      - name: Lint service container
+        run: php bin/console lint:container
