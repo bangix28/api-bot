@@ -8,6 +8,6 @@
 # fatales) ; le détail horodaté vit dans var/log/app-YYYY-MM-DD.log (Monolog).
 # La rotation des cron-*.log est gérée par deploy/logrotate/api-bot.
 
-# m  h  dom mon dow  commande
-0  *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console refreshSummoners --env=prod >> var/log/cron-refresh.log 2>&1
-30 0   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console daily-elo --env=prod >> var/log/cron-daily-elo.log 2>&1
+# m    h  dom mon dow  commande
+*/30 *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console refreshSummoners --env=prod >> var/log/cron-refresh.log 2>&1
+0    3   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console daily-elo --env=prod >> var/log/cron-daily-elo.log 2>&1
