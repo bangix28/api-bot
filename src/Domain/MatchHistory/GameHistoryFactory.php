@@ -22,11 +22,16 @@ class  GameHistoryFactory
         $secondes = intdiv($matchInfo->gameEndTimeStamp, self::MILLISECONDS_PER_SECOND);
 
         return new GameHistoryEntity(
+            $matchInfo->matchId,
+            $matchInfo->queueId,
             $dataParticipantFromMatch->win,
             $dataParticipantFromMatch->championId,
-            $dataParticipantFromMatch->kills,
-            $dataParticipantFromMatch->deaths,
-            $dataParticipantFromMatch->assists,
+            $dataParticipantFromMatch->championName,
+            $dataParticipantFromMatch->teamPosition,
+            $dataParticipantFromMatch->score,
+            $dataParticipantFromMatch->build,
+            $dataParticipantFromMatch->combat,
+            $dataParticipantFromMatch->performance,
             new \DateTimeImmutable('@' . $secondes),
             intdiv($matchInfo->gameDuration, self::SECONDS_PER_MINUTE),
             $playerPuuid,

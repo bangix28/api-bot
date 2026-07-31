@@ -20,10 +20,36 @@ class GameHistoryFactoryTest extends TestCase
 
         $this->assertTrue($game->isWin);
         $this->assertSame(64, $game->championId);
-        $this->assertSame(10, $game->kills);
-        $this->assertSame(2,  $game->deaths);
-        $this->assertSame(8,  $game->assists);
+        $this->assertSame(10, $game->score->kills);
+        $this->assertSame(2,  $game->score->deaths);
+        $this->assertSame(8,  $game->score->assists);
         $this->assertSame('puuid-1', $game->puuid);
+    }
+
+    public function testPassesThroughMatchContextAndParticipantDetails(): void
+    {
+        $participant = ParticipantDataBuilder::aParticipant()
+            ->withChampionName('LeeSin')
+            ->withTeamPosition('JUNGLE')
+            ->build();
+
+        $match = MatchDataBuilder::aMatch()
+            ->withMatchId('EUW1_42')
+            ->withQueueId(420)
+            ->withParticipantData($participant)
+            ->build();
+
+        $game = GameHistoryFactory::fromMatchInfo($match, 'puuid-1');
+
+        $this->assertSame('EUW1_42', $game->matchId);
+        $this->assertSame(420, $game->queueId);
+        $this->assertSame('LeeSin', $game->championName);
+        $this->assertSame('JUNGLE', $game->teamPosition);
+        // Les VOs du participant sont transmis tels quels, sans copie ni transformation
+        $this->assertSame($participant->score, $game->score);
+        $this->assertSame($participant->build, $game->build);
+        $this->assertSame($participant->combat, $game->combat);
+        $this->assertSame($participant->performance, $game->performance);
     }
 
     public function testConvertsGameEndTimestampToDate()

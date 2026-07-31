@@ -15,13 +15,13 @@ class RefreshViewPresenter implements RefreshPresenterInterface
     public function present(array $accounts): void
     {
         foreach ($accounts as $account) {
-            $ranked = $account->getRanked();
+            $ranked = $account->getRankedSolo();
 
             $this->viewModel[] = new AccountViewModel(
                 $account->getSummonerName(),
-                $ranked->getSoloTier()->value,
-                $ranked->getSoloDivision()->value,
-                $ranked->getSoloLeaguePoints(),
+                $ranked->getTier()->value,
+                $ranked->getDivision()->value,
+                $ranked->getLeaguePoints(),
             );
         }
     }

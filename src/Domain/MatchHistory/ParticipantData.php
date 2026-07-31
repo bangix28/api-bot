@@ -8,9 +8,12 @@ readonly class ParticipantData
         public string $puuid,
         public bool $win,
         public int $championId,
-        public int $kills,
-        public int $deaths,
-        public int $assists,
+        public string $championName,
+        public string $teamPosition,
+        public ScoreLine $score,
+        public PlayerBuild $build,
+        public CombatStats $combat,
+        public MatchPerformance $performance,
     )
     {
 
