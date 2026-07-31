@@ -4,3 +4,7 @@ doctrine_migrations:
         # as migrations classes should NOT be autoloaded
         'DoctrineMigrations': '%kernel.project_dir%/migrations'
     enable_profiler: false
+    # MySQL commite implicitement chaque DDL : la transaction par migration est
+    # illusoire et déclenche une deprecation depuis doctrine/migrations 3.7.
+    # https://www.doctrine-project.org/projects/doctrine-migrations/en/stable/explanation/implicit-commits.html
+    transactional: false
