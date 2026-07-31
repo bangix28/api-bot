@@ -40,4 +40,7 @@ yarn-error.log
 ### Node ###
 /package-lock.json
 
+### Déploiement (drapeau créé/supprimé par deploy/deploy.sh) ###
+/maintenance.on
+
 
