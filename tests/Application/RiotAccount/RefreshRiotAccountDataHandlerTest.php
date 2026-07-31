@@ -3,11 +3,12 @@
 namespace App\Tests\Application\RiotAccount;
 
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
+use App\Domain\RiotAccount\MiniSeries;
+use App\Domain\RiotAccount\RankedQueueEntity;
 use App\Domain\RiotAccount\RankedRank;
 use App\Domain\RiotAccount\RankedTier;
 use App\Domain\RiotAccount\RiotAccountEntity;
 use App\Domain\RiotAccount\RiotAccountRefreshData;
-use App\Domain\RiotAccount\SummonerRankedEntity;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Tests\Domain\Logging\SpyLogger;
 use App\Tests\Domain\RiotAccount\FakeRiotApiClient;
@@ -23,7 +24,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             'Pseudo#EUW',
             'puuid-1',
             'Pseudo',
-            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
             30,
             '10'
         );
@@ -31,7 +32,8 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         // ... et des données "fraîches" renvoyées par l'API : GOLD II, 50 LP, level 150
         $refreshData = new RiotAccountRefreshData(
-            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
             150,
             '20'
         );
@@ -44,16 +46,63 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         // Assert : les données ranked/level/logo ont été rafraîchies
         $updated = $repository->getListAccount()[0];
-        $this->assertSame(RankedTier::GOLD, $updated->getRanked()->getSoloTier());
-        $this->assertSame(RankedRank::II, $updated->getRanked()->getSoloDivision());
-        $this->assertSame(50, $updated->getRanked()->getSoloLeaguePoints());
+        $this->assertSame(RankedTier::GOLD, $updated->getRankedSolo()->getTier());
+        $this->assertSame(RankedRank::II, $updated->getRankedSolo()->getDivision());
+        $this->assertSame(50, $updated->getRankedSolo()->getLeaguePoints());
         $this->assertSame(150, $updated->getSummonerLevel());
         $this->assertSame('20', $updated->getLogoId());
+        $this->assertNull($updated->getRankedFlex());
 
         // ... et l'identité est préservée (vient de l'entité d'origine, pas du DTO)
         $this->assertSame('Pseudo#EUW', $updated->getRiotID());
         $this->assertSame('puuid-1', $updated->getPuuid());
         $this->assertSame('Pseudo', $updated->getSummonerName());
+    }
+
+    public function testHandleUpdatesAccountWithFlexAndSoloFlags(): void
+    {
+        $original = new RiotAccountEntity(
+            'Pseudo#EUW',
+            'puuid-1',
+            'Pseudo',
+            new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            30,
+            '10'
+        );
+        $repository = new InMemoryRiotAccountRepository([$original]);
+
+        // SoloQ en série de victoires + Bo5 en cours, et un rang Flex distinct
+        $refreshData = new RiotAccountRefreshData(
+            new RankedQueueEntity(
+                RankedRank::I, RankedTier::GOLD, 99, 40, 20,
+                hotStreak: true,
+                veteran: false,
+                freshBlood: true,
+                miniSeries: new MiniSeries(2, 1, 3, 'WLW'),
+            ),
+            new RankedQueueEntity(RankedRank::IV, RankedTier::SILVER, 10, 12, 8),
+            150,
+            '20'
+        );
+        $apiClient = new FakeRiotApiClient($refreshData);
+
+        $handler = new RefreshRiotAccountDataHandler($repository, $apiClient);
+        $handler->handle(new RefreshViewPresenter());
+
+        $updated = $repository->getListAccount()[0];
+
+        $solo = $updated->getRankedSolo();
+        $this->assertTrue($solo->isHotStreak());
+        $this->assertFalse($solo->isVeteran());
+        $this->assertTrue($solo->isFreshBlood());
+        $this->assertSame(2, $solo->getMiniSeries()->wins);
+        $this->assertSame('WLW', $solo->getMiniSeries()->progress);
+
+        $flex = $updated->getRankedFlex();
+        $this->assertNotNull($flex);
+        $this->assertSame(RankedTier::SILVER, $flex->getTier());
+        $this->assertSame(RankedRank::IV, $flex->getDivision());
+        $this->assertSame(10, $flex->getLeaguePoints());
     }
 
     public function testHandleUpdatesAccountSendToPresenter()
@@ -63,7 +112,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             'Pseudo#EUW',
             'puuid-1',
             'Pseudo',
-            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
             30,
             '10'
         );
@@ -71,7 +120,8 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         // ... et des données "fraîches" renvoyées par l'API : GOLD II, 50 LP, level 150
         $refreshData = new RiotAccountRefreshData(
-            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
             150,
             '20'
         );
@@ -99,7 +149,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             'Pseudo#EUW',
             'puuid-1',
             'Pseudo',
-            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
             30,
             '10'
         );
@@ -108,7 +158,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             'Fake#EUW',
             'fake',
             'Pseudo',
-            new SummonerRankedEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
             25,
             '10'
         );
@@ -116,7 +166,8 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
         $repository = new InMemoryRiotAccountRepository([$original, $failedAccount]);
 
         $refreshData = new RiotAccountRefreshData(
-            new SummonerRankedEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
             150,
             '20'
         );
@@ -139,8 +190,8 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         $accounts = $repository->getListAccount();
         $this->assertCount(2, $accounts);
-        $this->assertSame(RankedTier::GOLD, $accounts[0]->getRanked()->getSoloTier());
-        $this->assertSame(RankedTier::UNRANKED, $accounts[1]->getRanked()->getSoloTier());
+        $this->assertSame(RankedTier::GOLD, $accounts[0]->getRankedSolo()->getTier());
+        $this->assertSame(RankedTier::UNRANKED, $accounts[1]->getRankedSolo()->getTier());
 
         $warnings = $logger->records('warning');
         $this->assertCount(1, $warnings);

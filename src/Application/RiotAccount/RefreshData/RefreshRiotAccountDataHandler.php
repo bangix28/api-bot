@@ -27,7 +27,8 @@ class RefreshRiotAccountDataHandler
                 $refreshData = $this->riotApiService->getAccount($account->getPuuid());
 
                 $updateAccount = $account
-                    ->withRanked($refreshData->ranked)
+                    ->withRankedSolo($refreshData->rankedSolo)
+                    ->withRankedFlex($refreshData->rankedFlex)
                     ->withSummonerLevel($refreshData->summonerLevel)
                     ->withLogoId($refreshData->logoId);
 

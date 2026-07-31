@@ -41,14 +41,14 @@ class RiotAccount
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['riotAccount:read:get','riotAccount:write'])]
+    #[Groups(['riotAccount:read:get'])]
     private ?string $riotId = null;
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?string $puuid = '';
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['riotAccount:write', 'riotAccount:read:get'])]
+    #[Groups(['riotAccount:read:get'])]
     private ?string $summonerName = '';
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -82,6 +82,56 @@ class RiotAccount
     #[ORM\Column(nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?int $summoner_ranked_solo_wins = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?bool $soloHotStreak = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?bool $soloVeteran = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?bool $soloFreshBlood = null;
+
+    // Bo5 de promotion en cours : null = pas de série.
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $soloMiniSeriesWins = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $soloMiniSeriesLosses = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $soloMiniSeriesTarget = null;
+
+    #[ORM\Column(length: 5, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $soloMiniSeriesProgress = null;
+
+    // Ranked Flex : colonnes à null = compte non classé en Flex.
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedFlexTier = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?string $summonerRankedFlexRank = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $summonerRankedFlexLeaguePoints = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $summonerRankedFlexWins = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['riotAccount:read:get'])]
+    private ?int $summonerRankedFlexLosses = null;
 
     /**
      * @var Collection<int, HistoryAccountLol>
@@ -239,6 +289,150 @@ class RiotAccount
     public function setSummonerRankedSoloWins(?int $summoner_ranked_solo_wins): static
     {
         $this->summoner_ranked_solo_wins = $summoner_ranked_solo_wins;
+
+        return $this;
+    }
+
+    public function getSoloHotStreak(): ?bool
+    {
+        return $this->soloHotStreak;
+    }
+
+    public function setSoloHotStreak(?bool $soloHotStreak): static
+    {
+        $this->soloHotStreak = $soloHotStreak;
+
+        return $this;
+    }
+
+    public function getSoloVeteran(): ?bool
+    {
+        return $this->soloVeteran;
+    }
+
+    public function setSoloVeteran(?bool $soloVeteran): static
+    {
+        $this->soloVeteran = $soloVeteran;
+
+        return $this;
+    }
+
+    public function getSoloFreshBlood(): ?bool
+    {
+        return $this->soloFreshBlood;
+    }
+
+    public function setSoloFreshBlood(?bool $soloFreshBlood): static
+    {
+        $this->soloFreshBlood = $soloFreshBlood;
+
+        return $this;
+    }
+
+    public function getSoloMiniSeriesWins(): ?int
+    {
+        return $this->soloMiniSeriesWins;
+    }
+
+    public function setSoloMiniSeriesWins(?int $soloMiniSeriesWins): static
+    {
+        $this->soloMiniSeriesWins = $soloMiniSeriesWins;
+
+        return $this;
+    }
+
+    public function getSoloMiniSeriesLosses(): ?int
+    {
+        return $this->soloMiniSeriesLosses;
+    }
+
+    public function setSoloMiniSeriesLosses(?int $soloMiniSeriesLosses): static
+    {
+        $this->soloMiniSeriesLosses = $soloMiniSeriesLosses;
+
+        return $this;
+    }
+
+    public function getSoloMiniSeriesTarget(): ?int
+    {
+        return $this->soloMiniSeriesTarget;
+    }
+
+    public function setSoloMiniSeriesTarget(?int $soloMiniSeriesTarget): static
+    {
+        $this->soloMiniSeriesTarget = $soloMiniSeriesTarget;
+
+        return $this;
+    }
+
+    public function getSoloMiniSeriesProgress(): ?string
+    {
+        return $this->soloMiniSeriesProgress;
+    }
+
+    public function setSoloMiniSeriesProgress(?string $soloMiniSeriesProgress): static
+    {
+        $this->soloMiniSeriesProgress = $soloMiniSeriesProgress;
+
+        return $this;
+    }
+
+    public function getSummonerRankedFlexTier(): ?string
+    {
+        return $this->summonerRankedFlexTier;
+    }
+
+    public function setSummonerRankedFlexTier(?string $summonerRankedFlexTier): static
+    {
+        $this->summonerRankedFlexTier = $summonerRankedFlexTier;
+
+        return $this;
+    }
+
+    public function getSummonerRankedFlexRank(): ?string
+    {
+        return $this->summonerRankedFlexRank;
+    }
+
+    public function setSummonerRankedFlexRank(?string $summonerRankedFlexRank): static
+    {
+        $this->summonerRankedFlexRank = $summonerRankedFlexRank;
+
+        return $this;
+    }
+
+    public function getSummonerRankedFlexLeaguePoints(): ?int
+    {
+        return $this->summonerRankedFlexLeaguePoints;
+    }
+
+    public function setSummonerRankedFlexLeaguePoints(?int $summonerRankedFlexLeaguePoints): static
+    {
+        $this->summonerRankedFlexLeaguePoints = $summonerRankedFlexLeaguePoints;
+
+        return $this;
+    }
+
+    public function getSummonerRankedFlexWins(): ?int
+    {
+        return $this->summonerRankedFlexWins;
+    }
+
+    public function setSummonerRankedFlexWins(?int $summonerRankedFlexWins): static
+    {
+        $this->summonerRankedFlexWins = $summonerRankedFlexWins;
+
+        return $this;
+    }
+
+    public function getSummonerRankedFlexLosses(): ?int
+    {
+        return $this->summonerRankedFlexLosses;
+    }
+
+    public function setSummonerRankedFlexLosses(?int $summonerRankedFlexLosses): static
+    {
+        $this->summonerRankedFlexLosses = $summonerRankedFlexLosses;
 
         return $this;
     }

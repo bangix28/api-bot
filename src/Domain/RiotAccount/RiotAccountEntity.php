@@ -8,24 +8,39 @@ class RiotAccountEntity
         private string $riotID,
         private string $puuid,
         private string $summonerName,
-        private SummonerRankedEntity $ranked,
+        private RankedQueueEntity $rankedSolo,
         private int $summonerLevel,
-        private string $logoId
+        private string $logoId,
+        private ?RankedQueueEntity $rankedFlex = null,
     )
     {
 
     }
 
 
-    public function withRanked(SummonerRankedEntity $ranked): self
+    public function withRankedSolo(RankedQueueEntity $rankedSolo): self
     {
         return new self(
             $this->riotID,
             $this->puuid,
             $this->summonerName,
-            $ranked,
+            $rankedSolo,
             $this->summonerLevel,
-            $this->logoId
+            $this->logoId,
+            $this->rankedFlex,
+        );
+    }
+
+    public function withRankedFlex(?RankedQueueEntity $rankedFlex): self
+    {
+        return new self(
+            $this->riotID,
+            $this->puuid,
+            $this->summonerName,
+            $this->rankedSolo,
+            $this->summonerLevel,
+            $this->logoId,
+            $rankedFlex,
         );
     }
 
@@ -35,9 +50,10 @@ class RiotAccountEntity
             $this->riotID,
             $this->puuid,
             $this->summonerName,
-            $this->ranked,
+            $this->rankedSolo,
             $summonerLevel,
-            $this->logoId
+            $this->logoId,
+            $this->rankedFlex,
         );
     }
 
@@ -47,9 +63,10 @@ class RiotAccountEntity
             $this->riotID,
             $this->puuid,
             $this->summonerName,
-            $this->ranked,
+            $this->rankedSolo,
             $this->summonerLevel,
-            $logoId
+            $logoId,
+            $this->rankedFlex,
         );
     }
 
@@ -68,9 +85,14 @@ class RiotAccountEntity
         return $this->riotID;
     }
 
-    public function getRanked(): SummonerRankedEntity
+    public function getRankedSolo(): RankedQueueEntity
     {
-        return $this->ranked;
+        return $this->rankedSolo;
+    }
+
+    public function getRankedFlex(): ?RankedQueueEntity
+    {
+        return $this->rankedFlex;
     }
 
     public function getSummonerLevel(): int

@@ -27,6 +27,11 @@ class RefreshRiotMatchDataHandler
 
         foreach ($matchIds as $matchId) {
             try {
+                // Match déjà en base : pas d'appel Riot, pas d'insertion (idempotence).
+                if ($this->repository->exists($matchId, $refreshMatchHistoryCommand->puuid)) {
+                    continue;
+                }
+
                 $matchData = $this->apiClient->getMatch($matchId);
 
                 if ($matchData === null) {
