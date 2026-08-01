@@ -17,7 +17,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\UniqueConstraint(name: 'uniq_match_per_account', columns: ['match_id', 'riot_account_id'])]
 #[ApiResource(
     operations: [
-        // Historique des 5 dernières games (sans le détail des data)
+        // Historique des 5 dernières games (socle + stats per-minute, sans le build)
         new GetCollection(
             uriTemplate: '/riot-account/{id}/history-account-lol',
             uriVariables: [
@@ -202,24 +202,26 @@ class HistoryAccountLol
     private ?bool $gameEndedInSurrender = null;
 
     // Challenges Riot : null = donnée absente (vieux match, mode spécial).
+    // Exposés aussi dans la collection (groupe :get) : le front calcule les
+    // moyennes du joueur (radar "vs moyennes") à partir de la liste des matchs.
     #[ORM\Column(nullable: true)]
-    #[Groups(['historyAccount:read:detail'])]
+    #[Groups(['historyAccount:read:get'])]
     private ?float $kda = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['historyAccount:read:detail'])]
+    #[Groups(['historyAccount:read:get'])]
     private ?float $killParticipation = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['historyAccount:read:detail'])]
+    #[Groups(['historyAccount:read:get'])]
     private ?float $damagePerMinute = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['historyAccount:read:detail'])]
+    #[Groups(['historyAccount:read:get'])]
     private ?float $goldPerMinute = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['historyAccount:read:detail'])]
+    #[Groups(['historyAccount:read:get'])]
     private ?float $visionScorePerMinute = null;
 
     // Durée en minutes.
