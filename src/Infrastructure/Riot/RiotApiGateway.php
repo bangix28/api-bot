@@ -17,6 +17,12 @@ use RiotAPI\LeagueAPI\Objects\SummonerDto;
 #[WithMonologChannel('riot')]
 readonly class RiotApiGateway
 {
+    // Clé Riot : 100 requêtes / 2 min. Un backfill (10 comptes x ~11 appels)
+    // dépasse la fenêtre : plutôt que de sauter les matchs restants, on attend
+    // la fin de la fenêtre et on retente.
+    private const int RATE_LIMIT_MAX_ATTEMPTS = 3;
+    private const int RATE_LIMIT_WAIT_SECONDS = 125;
+
    public function __construct(
        private RiotApiClient $riotApi,
        private LoggerInterface $logger = new NullLogger(),
@@ -26,44 +32,55 @@ readonly class RiotApiGateway
      * Exécute un appel Riot en le chronométrant et en journalisant son issue.
      * Les exceptions sont relancées : le gateway observe, il ne décide pas —
      * c'est aux couches supérieures de choisir quoi faire d'un échec.
+     * Seule exception : le rate limit Riot, retenté ici après attente (en CLI)
+     * car aucune couche supérieure ne peut le résoudre autrement.
      */
     private function call(string $endpoint, callable $fn): mixed
     {
-        $start = hrtime(true);
+        for ($attempt = 1; true; $attempt++) {
+            $start = hrtime(true);
 
-        try {
-            $result = $fn();
+            try {
+                $result = $fn();
 
-            $this->logger->info('riot.api.call', [
-                'endpoint' => $endpoint,
-                'duration_ms' => $this->elapsedMs($start),
-            ]);
+                $this->logger->info('riot.api.call', [
+                    'endpoint' => $endpoint,
+                    'duration_ms' => $this->elapsedMs($start),
+                ]);
 
-            return $result;
-        } catch (ServerLimitException $e) {
-            $this->logger->warning('riot.api.rate_limited', [
-                'endpoint' => $endpoint,
-                'duration_ms' => $this->elapsedMs($start),
-                'message' => $e->getMessage(),
-            ]);
+                return $result;
+            } catch (ServerLimitException $e) {
+                $this->logger->warning('riot.api.rate_limited', [
+                    'endpoint' => $endpoint,
+                    'duration_ms' => $this->elapsedMs($start),
+                    'message' => $e->getMessage(),
+                    'attempt' => $attempt,
+                ]);
 
-            throw $e;
-        } catch (ServerException $e) {
-            $this->logger->error('riot.api.server_error', [
-                'endpoint' => $endpoint,
-                'duration_ms' => $this->elapsedMs($start),
-                'message' => $e->getMessage(),
-            ]);
+                // Attente bloquante réservée au CLI (cron, backfill) : une requête
+                // web (/refresh) ne peut pas rester suspendue plusieurs minutes
+                if (PHP_SAPI !== 'cli' || $attempt >= self::RATE_LIMIT_MAX_ATTEMPTS) {
+                    throw $e;
+                }
 
-            throw $e;
-        } catch (RequestException $e) {
-            $this->logger->warning('riot.api.request_error', [
-                'endpoint' => $endpoint,
-                'duration_ms' => $this->elapsedMs($start),
-                'message' => $e->getMessage(),
-            ]);
+                sleep(self::RATE_LIMIT_WAIT_SECONDS);
+            } catch (ServerException $e) {
+                $this->logger->error('riot.api.server_error', [
+                    'endpoint' => $endpoint,
+                    'duration_ms' => $this->elapsedMs($start),
+                    'message' => $e->getMessage(),
+                ]);
 
-            throw $e;
+                throw $e;
+            } catch (RequestException $e) {
+                $this->logger->warning('riot.api.request_error', [
+                    'endpoint' => $endpoint,
+                    'duration_ms' => $this->elapsedMs($start),
+                    'message' => $e->getMessage(),
+                ]);
+
+                throw $e;
+            }
         }
     }
 
