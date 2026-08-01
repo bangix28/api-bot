@@ -17,7 +17,8 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\UniqueConstraint(name: 'uniq_match_per_account', columns: ['match_id', 'riot_account_id'])]
 #[ApiResource(
     operations: [
-        // Historique des 5 dernières games (socle + stats per-minute, sans le build)
+        // Historique des dernières games (socle + stats per-minute, sans le build).
+        // 5 par défaut (accueil) ; le client peut demander plus via ?itemsPerPage=10 (page compte), plafonné à 30.
         new GetCollection(
             uriTemplate: '/riot-account/{id}/history-account-lol',
             uriVariables: [
@@ -28,7 +29,9 @@ use Symfony\Component\Serializer\Attribute\Groups;
             ],
             normalizationContext: ['groups' => ['historyAccount:read:get']],
             order: ['dateGameEnd' => 'DESC'],
-            paginationItemsPerPage: 5
+            paginationItemsPerPage: 5,
+            paginationClientItemsPerPage: true,
+            paginationMaximumItemsPerPage: 30
         ),
         // Détails complets d'une game
         new Get(

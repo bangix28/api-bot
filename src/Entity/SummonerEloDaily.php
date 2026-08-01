@@ -2,15 +2,36 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
 use App\Repository\SummonerEloDailyRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 
 #[ORM\Entity(repositoryClass: SummonerEloDailyRepository::class)]
 #[UniqueEntity(fields: ['riot_account_id', 'date_score'])]
-
+#[ApiResource(
+    operations: [
+        // Courbe d'évolution quotidienne de l'elo (score = tier*1000 + division*100 + LP).
+        // Pagination désactivée : 1 point/jour max (~365/an), le front filtre la période en mémoire.
+        new GetCollection(
+            uriTemplate: '/riot-account/{id}/elo-daily',
+            uriVariables: [
+                'id' => new Link(
+                    fromProperty: 'summonerEloDailies',
+                    fromClass: RiotAccount::class
+                )
+            ],
+            normalizationContext: ['groups' => ['eloDaily:read:get']],
+            order: ['dateScore' => 'ASC'],
+            paginationEnabled: false
+        ),
+    ]
+)]
 class SummonerEloDaily
 {
     #[ORM\Id]
@@ -19,9 +40,11 @@ class SummonerEloDaily
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['eloDaily:read:get'])]
     private ?string $score = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[Groups(['eloDaily:read:get'])]
     private ?\DateTimeInterface $dateScore = null;
 
     #[ORM\ManyToOne(inversedBy: 'summonerEloDailies')]
