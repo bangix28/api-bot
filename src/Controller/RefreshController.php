@@ -2,11 +2,11 @@
 
 namespace App\Controller;
 
+use App\Application\EloSnapshot\SnapshotDailyElo\SnapshotDailyEloHandler;
 use App\Application\MatchHistory\RefreshData\RefreshAllMatchHistoryHandler;
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Repository\RiotAccountRepository;
-use App\Services\RiotApiServices\RiotApiServices;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -15,7 +15,6 @@ class RefreshController extends AbstractController
 {
 
     public function __construct(
-        private RiotApiServices $riotApiService,
         private RiotAccountRepository $riotAccountRepository
     )
     {
@@ -43,18 +42,18 @@ class RefreshController extends AbstractController
         ]);
     }
     #[Route('/getDailyElo', name: 'app_daily_elo')]
-    public function getDailyElo(): Response
+    public function getDailyElo(SnapshotDailyEloHandler $snapshotDailyElo): Response
     {
-        $listeAccount = $this->riotAccountRepository->findAll();
-        $dataToShow = [];
-        foreach ($listeAccount as $account) {
-            $this->riotApiService->getDailyElo($account);
-            $dataToShow[] = $account;
-        }
+        $summary = $snapshotDailyElo->handleAll();
 
         return $this->render('refresh/daily_elo.html.twig', [
-            'page_title' => 'Daily Elo',
-            'accounts' => $dataToShow,
+            'page_title' => sprintf(
+                'Daily Elo — %d créé(s), %d ignoré(s), %d en échec',
+                $summary->ok,
+                $summary->skipped,
+                $summary->failed,
+            ),
+            'accounts' => $this->riotAccountRepository->findAll(),
         ]);
     }
 

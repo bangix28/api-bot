@@ -5,9 +5,7 @@ namespace App\Services\RiotApiServices;
 use App\Domain\RiotAccount\RankedRank;
 use App\Domain\RiotAccount\RankedTier;
 use App\Entity\RiotAccount;
-use App\Entity\SummonerEloDaily;
 use App\Infrastructure\Riot\RiotApiGateway;
-use App\Repository\SummonerEloDailyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -15,7 +13,6 @@ use Psr\Log\NullLogger;
 class RiotApiServices
 {
     public function __construct(private readonly RiotApiGateway             $validationController,
-                                private readonly SummonerEloDailyRepository $summonerEloDailyRepository,
                                 private readonly EntityManagerInterface     $entityManager,
                                 private readonly LoggerInterface            $riotLogger = new NullLogger(),
     )
@@ -58,46 +55,6 @@ class RiotApiServices
                 ->setLastUpdate(new \DateTime('now'));
         }
         $this->entityManager->flush();
-        return $riotAccount;
-    }
-
-    /**
-     * On vérifie qu'il n'y a pas d'entrée pour aujourd'hui et si pas d'entrée,
-     * alors on ajoute une entrée avec la l'elo le plus récent.
-     * @param RiotAccount $riotAccount
-     * @return RiotAccount
-     */
-    public function getDailyElo(RiotAccount $riotAccount): RiotAccount
-    {
-        $existing = $this->summonerEloDailyRepository
-            ->findOneBy([
-                'riotAccount' => $riotAccount,
-                'dateScore' => new \DateTime('now'),
-            ]);
-
-        if ($existing) {
-            return $riotAccount;
-        }
-
-        $response = $this->getRankedInformations($riotAccount->getPuuid());
-        if ($response->status && !empty($response->data)) {
-            $score = RankedTier::fromString($response->data->tier)->getScore()
-                + RankedRank::fromString($response->data->rank)->getScore()
-                + (int) $response->data->leaguePoints;
-            $dailyElo = new SummonerEloDaily();
-            $dailyElo->setRiotAccount($riotAccount)
-                ->setScore($score)
-                ->setDateScore(new \DateTime('now'));
-
-            $this->entityManager->persist($dailyElo);
-            $this->entityManager->flush();
-
-        } else {
-            // Trou dans les données quotidiennes : à surveiller, sinon il est invisible.
-            $this->riotLogger->warning('Snapshot elo quotidien non créé', [
-                'puuid' => $riotAccount->getPuuid(),
-            ]);
-        }
         return $riotAccount;
     }
 

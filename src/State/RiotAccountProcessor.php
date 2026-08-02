@@ -4,17 +4,20 @@ namespace App\State;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
-use App\Infrastructure\Riot\RiotApiGateway;
-use App\Repository\RiotAccountRepository;
-use App\Repository\UserRepository;
+use App\Application\EloSnapshot\SnapshotDailyElo\SnapshotDailyEloHandler;
 use App\Services\RiotApiServices\RiotApiServices;
 use Exception;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class RiotAccountProcessor implements ProcessorInterface
 {
-    public function __construct(private ProcessorInterface $persistProcessor,private UserRepository $userRepository, private RiotAccountRepository $rioAccountRepository, private RiotApiServices $riotApiServices, private RiotApiGateway $validationController)
-    {
-
+    public function __construct(
+        private ProcessorInterface $persistProcessor,
+        private RiotApiServices $riotApiServices,
+        private SnapshotDailyEloHandler $snapshotDailyElo,
+        private LoggerInterface $refreshLogger = new NullLogger(),
+    ) {
     }
 
     /**
@@ -22,19 +25,20 @@ class RiotAccountProcessor implements ProcessorInterface
      */
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = [])
     {
-        /*$discordId = $uriVariables['discordId'];
-        //$user = $this->userRepository->findOneBy(array('discordId' => $discordId));
-        /*if ($user === null)
-        {
-            throw new RiotAccountExistException(sprintf('Le compte discord "%s" n\'est pas lié au Bot', $discordId));
-        }*/
-       /* if (!empty($user->getRiotAccount())) {
-            throw new DiscordNotFoundException(sprintf('Le compte discord "%s" est deja lié a un utilisateur.', $user->getDiscordId()));
-        }*/
-
-
-
         $data = $this->riotApiServices->riotAccountFill($data);
-        return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+
+        // Snapshot initial : le joueur entre dans la Ranked Race dès son inscription,
+        // sans attendre le cron de 3h. Best effort : un échec ne doit pas annuler l'inscription.
+        try {
+            $this->snapshotDailyElo->handleOne($data->getPuuid());
+        } catch (Exception $e) {
+            $this->refreshLogger->warning('Snapshot elo initial impossible à l\'inscription', [
+                'puuid' => $data->getPuuid(),
+                'exception' => $e,
+            ]);
+        }
+
+        return $result;
     }
 }

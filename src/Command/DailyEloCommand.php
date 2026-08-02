@@ -2,9 +2,8 @@
 
 namespace App\Command;
 
+use App\Application\EloSnapshot\SnapshotDailyElo\SnapshotDailyEloHandler;
 use App\Application\MatchHistory\RefreshData\RefreshAllMatchHistoryHandler;
-use App\Repository\RiotAccountRepository;
-use App\Services\RiotApiServices\RiotApiServices;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -15,15 +14,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'daily-elo',
-    description: 'Enregistre l\'elo quotidien et rafraîchit l\'historique des joueurs',
+    description: 'Enregistre l\'elo quotidien (solo + flex) et rafraîchit l\'historique des joueurs',
 )]
 class DailyEloCommand extends Command
 {
     public function __construct(
-        private readonly RiotApiServices              $riotApiService,
+        private readonly SnapshotDailyEloHandler       $snapshotDailyElo,
         private readonly RefreshAllMatchHistoryHandler $refreshAllMatchHistory,
-        private readonly RiotAccountRepository        $riotAccountRepository,
-        private readonly LoggerInterface              $refreshLogger = new NullLogger(),
+        private readonly LoggerInterface               $refreshLogger = new NullLogger(),
     ) {
         parent::__construct();
     }
@@ -39,9 +37,7 @@ class DailyEloCommand extends Command
             $this->refreshAllMatchHistory->handle();
 
             // Snapshot d'elo quotidien (feature propre à cette commande)
-            foreach ($this->riotAccountRepository->findAll() as $account) {
-                $this->riotApiService->getDailyElo($account);
-            }
+            $summary = $this->snapshotDailyElo->handleAll();
         } catch (\Exception $e) {
             $this->refreshLogger->error('Commande daily-elo échouée', [
                 'duration_s' => $this->elapsedSeconds($start),
@@ -56,9 +52,15 @@ class DailyEloCommand extends Command
         $this->refreshLogger->info('Commande daily-elo terminée', [
             'duration_s' => $this->elapsedSeconds($start),
         ]);
-        $io->success('Commande effectuée avec succès !');
+        $io->success(sprintf(
+            'Snapshots elo : %d créé(s), %d ignoré(s), %d en échec.',
+            $summary->ok,
+            $summary->skipped,
+            $summary->failed,
+        ));
 
-        return Command::SUCCESS;
+        // Échec partiel : les autres comptes sont passés, mais cron doit le voir (ADR-0002).
+        return $summary->failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 
     private function elapsedSeconds(int|float $start): float
