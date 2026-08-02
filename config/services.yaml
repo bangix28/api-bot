@@ -5,6 +5,11 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.riot.api.token: '%env(RIOT_API_TOKEN)%'
+    # Suspension de la course Progression pendant la fenêtre de placements de début
+    # de saison (les deltas y seraient absurdes). Passer à 1 dans .env.local, puis
+    # cache:clear ; repasser à 0 une fois les inscrits majoritairement placés.
+    # Le classement Winrate, lui, continue pendant la suspension.
+    env(RANKED_RACE_PROGRESSION_SUSPENDED): '0'
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -29,6 +34,10 @@ services:
         bind:
             $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
         #$removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
+
+    App\Application\RankedRace\ComputeStandings\ComputeRankedRaceStandingsHandler:
+        arguments:
+            $progressionSuspended: '%env(bool:RANKED_RACE_PROGRESSION_SUSPENDED)%'
 
     App\Domain\User\UserRepositoryInterface:
         alias: App\Infrastructure\User\DoctrineUserRepository

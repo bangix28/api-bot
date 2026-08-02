@@ -2,7 +2,6 @@
 
 namespace App\Infrastructure\RiotAccount;
 
-use App\Domain\RiotAccount\MiniSeries;
 use App\Domain\RiotAccount\RankedQueueEntity;
 use App\Domain\RiotAccount\RankedRank;
 use App\Domain\RiotAccount\RankedTier;
@@ -14,7 +13,6 @@ use RiotAPI\Base\Exceptions\RequestException;
 use RiotAPI\Base\Exceptions\ServerException;
 use RiotAPI\Base\Exceptions\ServerLimitException;
 use RiotAPI\Base\Exceptions\SettingsException;
-use RiotAPI\LeagueAPI\Objects\LeagueEntryDto;
 
 class LeagueApiRiotClient implements RiotApiClientInterface
 {
@@ -49,43 +47,14 @@ class LeagueApiRiotClient implements RiotApiClientInterface
 
         // SoloQ : UNRANKED par défaut (le score du classement en dépend).
         // Flex : null si non classé — l'absence est une info, pas un UNRANKED synthétique.
-        $rankedSolo = $this->mapEntry($soloEntry)
+        $rankedSolo = LeagueEntryMapper::map($soloEntry)
             ?? new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0);
 
         return new RiotAccountRefreshData(
             $rankedSolo,
-            $this->mapEntry($flexEntry),
+            LeagueEntryMapper::map($flexEntry),
             (int) ($summoner->summonerLevel ?? 0),
             (string) ($summoner->profileIconId ?? 0),
-        );
-    }
-
-    private function mapEntry(?LeagueEntryDto $entry): ?RankedQueueEntity
-    {
-        if ($entry === null) {
-            return null;
-        }
-
-        $miniSeries = null;
-        if (isset($entry->miniSeries)) {
-            $miniSeries = new MiniSeries(
-                (int) $entry->miniSeries->wins,
-                (int) $entry->miniSeries->losses,
-                (int) $entry->miniSeries->target,
-                (string) $entry->miniSeries->progress,
-            );
-        }
-
-        return new RankedQueueEntity(
-            RankedRank::fromString($entry->rank),
-            RankedTier::fromString($entry->tier),
-            (int) $entry->leaguePoints,
-            (int) $entry->wins,
-            (int) $entry->losses,
-            (bool) ($entry->hotStreak ?? false),
-            (bool) ($entry->veteran ?? false),
-            (bool) ($entry->freshBlood ?? false),
-            $miniSeries,
         );
     }
 }
