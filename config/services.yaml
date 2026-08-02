@@ -39,6 +39,10 @@ services:
         arguments:
             $progressionSuspended: '%env(bool:RANKED_RACE_PROGRESSION_SUSPENDED)%'
 
+    App\Application\RankedRace\ComputeEventStandings\ComputeEventStandingsHandler:
+        arguments:
+            $progressionSuspended: '%env(bool:RANKED_RACE_PROGRESSION_SUSPENDED)%'
+
     App\Domain\User\UserRepositoryInterface:
         alias: App\Infrastructure\User\DoctrineUserRepository
 
