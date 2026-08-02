@@ -111,6 +111,7 @@
         }
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^4.3",
         "phpunit/phpunit": "^12.4",
         "symfony/debug-bundle": "^8.0",
         "symfony/maker-bundle": "^1.60",
