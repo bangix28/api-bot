@@ -56,6 +56,21 @@ class DoctrineRiotAccountRepository implements RiotAccountRepositoryInterface
         return $listRiotAccountEntity;
     }
 
+    public function findByPuuid(string $puuid): ?RiotAccountEntity
+    {
+        $riotAccount = $this->entityManager
+            ->getRepository(RiotAccount::class)
+            ->findOneBy(['puuid' => $puuid]);
+
+        if ($riotAccount === null) {
+            return null;
+        }
+
+        // Pas de catch ici, contrairement à getListAccount() : la lecture d'un compte
+        // précis répond à une action synchrone, l'appelant doit voir l'échec.
+        return RiotAccountRowMapper::map($riotAccount);
+    }
+
     public function save(RiotAccountEntity $updatedRiotAccount): void
     {
         $riotAccount = $this->entityManager
