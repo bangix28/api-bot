@@ -2,20 +2,21 @@
 
 namespace App\Infrastructure\RiotAccount;
 
-use App\Domain\RiotAccount\MiniSeries;
-use App\Domain\RiotAccount\RankedQueueEntity;
-use App\Domain\RiotAccount\RankedRank;
-use App\Domain\RiotAccount\RankedTier;
 use App\Domain\RiotAccount\RiotAccountEntity;
 use App\Domain\RiotAccount\RiotAccountNotExistException;
 use App\Domain\RiotAccount\RiotAccountRepositoryInterface;
 use App\Entity\RiotAccount;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class DoctrineRiotAccountRepository implements RiotAccountRepositoryInterface
 {
 
-    public function __construct(private EntityManagerInterface $entityManager)
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private LoggerInterface $refreshLogger = new NullLogger(),
+    )
     {
     }
 
@@ -23,33 +24,51 @@ class DoctrineRiotAccountRepository implements RiotAccountRepositoryInterface
     {
         $listAccount = $this->entityManager->getRepository(RiotAccount::class)->findAll();
 
-
         $listRiotAccountEntity = [];
         foreach ($listAccount as $riotAccount) {
-            $riotAccountEntity = new RiotAccountEntity(
-                $riotAccount->getRiotId(),
-                $riotAccount->getPuuid(),
-                $riotAccount->getSummonerName(),
-                new RankedQueueEntity(
-                    RankedRank::fromString($riotAccount->getSummonerRankedSoloRank()),
-                    RankedTier::fromString($riotAccount->getSummonerRankedSoloTier()),
-                    (int)$riotAccount->getSummonerRankedSoloLeaguePoints(),
-                    $riotAccount->getSummonerRankedSoloWins(),
-                    (int)$riotAccount->getSummonerRankedSoloLosses(),
-                    (bool)$riotAccount->getSoloHotStreak(),
-                    (bool)$riotAccount->getSoloVeteran(),
-                    (bool)$riotAccount->getSoloFreshBlood(),
-                    $this->hydrateMiniSeries($riotAccount),
-                ),
-                $riotAccount->getSummonerLevel(),
-                $riotAccount->getLogoId(),
-                $this->hydrateFlex($riotAccount),
-            );
+            // Sans puuid (aucun appel Riot possible) ni riotId (clé de save()),
+            // la ligne est inexploitable : on la signale et on passe.
+            if (($riotAccount->getPuuid() ?? '') === '' || ($riotAccount->getRiotId() ?? '') === '') {
+                $this->refreshLogger->warning('Compte ignoré : identité incomplète en base', [
+                    'id' => $riotAccount->getId(),
+                    'riotId' => $riotAccount->getRiotId(),
+                ]);
 
-            $listRiotAccountEntity[] = $riotAccountEntity;
+                continue;
+            }
+
+            try {
+                $listRiotAccountEntity[] = RiotAccountRowMapper::map($riotAccount);
+            } catch (\Throwable $exception) {
+                // \Throwable et non \Exception : une valeur aberrante en base produit
+                // un TypeError (qui étend Error) ou une exception de validation du
+                // domaine. Sans ce filet, une seule ligne corrompue casse la lecture
+                // pour tous les comptes — donc les crons refreshSummoners et daily-elo
+                // en entier (écart assumé à l'ADR-0002, qui isole les échecs par compte).
+                $this->refreshLogger->warning('Compte ignoré : ligne illisible en base', [
+                    'id' => $riotAccount->getId(),
+                    'riotId' => $riotAccount->getRiotId(),
+                    'exception' => $exception,
+                ]);
+            }
         }
 
         return $listRiotAccountEntity;
+    }
+
+    public function findByPuuid(string $puuid): ?RiotAccountEntity
+    {
+        $riotAccount = $this->entityManager
+            ->getRepository(RiotAccount::class)
+            ->findOneBy(['puuid' => $puuid]);
+
+        if ($riotAccount === null) {
+            return null;
+        }
+
+        // Pas de catch ici, contrairement à getListAccount() : la lecture d'un compte
+        // précis répond à une action synchrone, l'appelant doit voir l'échec.
+        return RiotAccountRowMapper::map($riotAccount);
     }
 
     public function save(RiotAccountEntity $updatedRiotAccount): void
@@ -95,35 +114,5 @@ class DoctrineRiotAccountRepository implements RiotAccountRepositoryInterface
             ->setLastUpdate(new \DateTime());
 
         $this->entityManager->flush();
-    }
-
-    private function hydrateMiniSeries(RiotAccount $riotAccount): ?MiniSeries
-    {
-        if ($riotAccount->getSoloMiniSeriesTarget() === null) {
-            return null;
-        }
-
-        return new MiniSeries(
-            (int)$riotAccount->getSoloMiniSeriesWins(),
-            (int)$riotAccount->getSoloMiniSeriesLosses(),
-            $riotAccount->getSoloMiniSeriesTarget(),
-            (string)$riotAccount->getSoloMiniSeriesProgress(),
-        );
-    }
-
-    private function hydrateFlex(RiotAccount $riotAccount): ?RankedQueueEntity
-    {
-        // Colonnes flex à null = compte jamais classé en Flex.
-        if ($riotAccount->getSummonerRankedFlexTier() === null) {
-            return null;
-        }
-
-        return new RankedQueueEntity(
-            RankedRank::fromString($riotAccount->getSummonerRankedFlexRank()),
-            RankedTier::fromString($riotAccount->getSummonerRankedFlexTier()),
-            (int)$riotAccount->getSummonerRankedFlexLeaguePoints(),
-            (int)$riotAccount->getSummonerRankedFlexWins(),
-            (int)$riotAccount->getSummonerRankedFlexLosses(),
-        );
     }
 }

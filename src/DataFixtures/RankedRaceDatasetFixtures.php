@@ -275,7 +275,7 @@ class RankedRaceDatasetFixtures extends Fixture
                 ->setScore($solo->getScore());
         } else {
             // Représentation normalisée d'un compte non classé en solo
-            // (cf. RiotApiServices::riotAccountFill, branche « non classé »).
+            // (cf. Infrastructure\RiotAccount\RiotAccountDefaults::applyUnranked).
             $account->setSummonerRankedSoloTier(RankedTier::UNRANKED->value)
                 ->setSummonerRankedSoloRank(RankedRank::UNRANKED->value)
                 ->setSummonerRankedSoloLeaguePoints('0')

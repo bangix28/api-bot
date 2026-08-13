@@ -14,12 +14,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Attribute\Groups;
-use App\Validator as AcmeAssert;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
 #[UniqueEntity(
     fields: ['riotId'],
     message: 'Vous êtes déja inscrit avec ce Riot ID !'
+)]
+// Le puuid identifie le compte côté Application (refresh, snapshots elo) :
+// un doublon rendrait findByPuuid() ambigu.
+#[UniqueEntity(
+    fields: ['puuid'],
+    message: 'Ce PUUID est déjà enregistré !'
 )]
 #[ApiResource(
     normalizationContext: ['groups' => ['riotAccount:read:get']],

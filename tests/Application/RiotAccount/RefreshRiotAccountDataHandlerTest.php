@@ -8,6 +8,7 @@ use App\Domain\RiotAccount\RankedQueueEntity;
 use App\Domain\RiotAccount\RankedRank;
 use App\Domain\RiotAccount\RankedTier;
 use App\Domain\RiotAccount\RiotAccountEntity;
+use App\Domain\RiotAccount\RiotAccountNotExistException;
 use App\Domain\RiotAccount\RiotAccountRefreshData;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
 use App\Tests\Domain\Logging\SpyLogger;
@@ -203,5 +204,78 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
         $this->assertSame('Refresh des comptes terminé', $infos[0]['message']);
         $this->assertSame(1, $infos[0]['context']['ok']);
         $this->assertSame(1, $infos[0]['context']['failed']);
+    }
+
+    public function testHandleOneRefreshesOnlyTheTargetAccount(): void
+    {
+        // Arrange : deux comptes non classés
+        $repository = new InMemoryRiotAccountRepository([
+            $this->unrankedAccount('Pseudo#EUW', 'puuid-1'),
+            $this->unrankedAccount('Autre#EUW', 'puuid-2'),
+        ]);
+
+        $refreshData = new RiotAccountRefreshData(
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
+            150,
+            '20'
+        );
+        $handler = new RefreshRiotAccountDataHandler($repository, new FakeRiotApiClient($refreshData));
+
+        // Act : on n'enrichit que le premier compte
+        $handler->handleOne('puuid-1');
+
+        // Assert : le second n'a pas été touché
+        $accounts = $repository->getListAccount();
+        $this->assertSame(RankedTier::GOLD, $accounts[0]->getRankedSolo()->getTier());
+        $this->assertSame(150, $accounts[0]->getSummonerLevel());
+        $this->assertSame(RankedTier::UNRANKED, $accounts[1]->getRankedSolo()->getTier());
+        $this->assertSame(30, $accounts[1]->getSummonerLevel());
+    }
+
+    public function testHandleOneThrowsWhenAccountIsUnknown(): void
+    {
+        $repository = new InMemoryRiotAccountRepository([$this->unrankedAccount('Pseudo#EUW', 'puuid-1')]);
+
+        $refreshData = new RiotAccountRefreshData(
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
+            150,
+            '20'
+        );
+        $handler = new RefreshRiotAccountDataHandler($repository, new FakeRiotApiClient($refreshData));
+
+        $this->expectException(RiotAccountNotExistException::class);
+        $handler->handleOne('puuid-inconnu');
+    }
+
+    public function testHandleOneLetsRiotFailureBubbleUp(): void
+    {
+        // Le contrat dont dépend l'adaptateur admin : handleOne ne rattrape rien,
+        // c'est l'appelant qui décide du best effort.
+        $repository = new InMemoryRiotAccountRepository([$this->unrankedAccount('Pseudo#EUW', 'puuid-1')]);
+
+        $refreshData = new RiotAccountRefreshData(
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
+            150,
+            '20'
+        );
+        $handler = new RefreshRiotAccountDataHandler($repository, new FakeRiotApiClient($refreshData, 'puuid-1'));
+
+        $this->expectException(\RuntimeException::class);
+        $handler->handleOne('puuid-1');
+    }
+
+    private function unrankedAccount(string $riotId, string $puuid): RiotAccountEntity
+    {
+        return new RiotAccountEntity(
+            $riotId,
+            $puuid,
+            'Pseudo',
+            new RankedQueueEntity(RankedRank::UNRANKED, RankedTier::UNRANKED, 0, 0, 0),
+            30,
+            '10'
+        );
     }
 }

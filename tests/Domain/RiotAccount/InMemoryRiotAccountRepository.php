@@ -23,6 +23,17 @@ class InMemoryRiotAccountRepository implements RiotAccountRepositoryInterface
         return array_values($this->accounts);
     }
 
+    public function findByPuuid(string $puuid): ?RiotAccountEntity
+    {
+        foreach ($this->accounts as $account) {
+            if ($account->getPuuid() === $puuid) {
+                return $account;
+            }
+        }
+
+        return null;
+    }
+
     public function save(RiotAccountEntity $updatedRiotAccount): void
     {
         $this->accounts[$updatedRiotAccount->getRiotID()] = $updatedRiotAccount; // écrase
