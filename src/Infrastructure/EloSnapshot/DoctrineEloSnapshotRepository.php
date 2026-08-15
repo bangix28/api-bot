@@ -4,21 +4,17 @@ namespace App\Infrastructure\EloSnapshot;
 
 use App\Domain\EloSnapshot\DailyEloSnapshot;
 use App\Domain\EloSnapshot\EloSnapshotRepositoryInterface;
-use App\Domain\EloSnapshot\RankedQueueType;
-use App\Domain\RankedRace\RacePlayer;
-use App\Domain\RankedRace\RaceSnapshot;
-use App\Domain\RankedRace\RaceSnapshotRepositoryInterface;
-use App\Domain\RankedRace\RaceWindow;
-use App\Domain\RiotAccount\RankedQueueEntity;
-use App\Domain\RiotAccount\RankedRank;
-use App\Domain\RiotAccount\RankedTier;
 use App\Domain\RiotAccount\RiotAccountNotExistException;
 use App\Entity\RiotAccount;
 use App\Entity\SummonerEloDaily;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
 
-class DoctrineEloSnapshotRepository implements EloSnapshotRepositoryInterface, RaceSnapshotRepositoryInterface
+/**
+ * Maille quotidienne, désormais dédiée à la seule courbe publique /elo-daily.
+ * La course lit summoner_elo_snapshot via DoctrineRaceSnapshotRepository.
+ */
+class DoctrineEloSnapshotRepository implements EloSnapshotRepositoryInterface
 {
     public function __construct(private readonly EntityManagerInterface $entityManager)
     {
@@ -71,46 +67,4 @@ class DoctrineEloSnapshotRepository implements EloSnapshotRepositoryInterface, R
         $this->entityManager->flush();
     }
 
-    public function findForWindow(RankedQueueType $queue, RaceWindow $window): array
-    {
-        /** @var SummonerEloDaily[] $rows */
-        $rows = $this->entityManager->createQueryBuilder()
-            ->select('snapshot', 'account')
-            ->from(SummonerEloDaily::class, 'snapshot')
-            ->join('snapshot.riotAccount', 'account')
-            ->where('snapshot.queueType = :queue')
-            // Intervalle demi-ouvert : la borne de fin est l'instant qui suit la
-            // fenêtre (minuit du lendemain), elle ne doit donc pas être incluse.
-            ->andWhere('snapshot.dateScore >= :start')
-            ->andWhere('snapshot.dateScore < :end')
-            // Lignes historiques (avant la Ranked Race) : score aplati sans détail
-            // de rang ni wins/losses -> inexploitables pour la course.
-            ->andWhere('snapshot.tier IS NOT NULL')
-            ->orderBy('account.riotId', 'ASC')
-            ->addOrderBy('snapshot.dateScore', 'ASC')
-            ->setParameter('queue', $queue->value)
-            ->setParameter('start', $window->startsAt, Types::DATE_IMMUTABLE)
-            ->setParameter('end', $window->endsAt, Types::DATE_IMMUTABLE)
-            ->getQuery()
-            ->getResult();
-
-        return array_map(
-            static fn(SummonerEloDaily $row) => new RaceSnapshot(
-                new RacePlayer(
-                    (string) $row->getRiotAccount()->getRiotId(),
-                    (string) $row->getRiotAccount()->getSummonerName(),
-                    (string) $row->getRiotAccount()->getLogoId(),
-                ),
-                \DateTimeImmutable::createFromInterface($row->getDateScore()),
-                new RankedQueueEntity(
-                    RankedRank::fromString((string) $row->getDivision()),
-                    RankedTier::fromString((string) $row->getTier()),
-                    (int) $row->getLeaguePoints(),
-                    (int) $row->getWins(),
-                    (int) $row->getLosses(),
-                ),
-            ),
-            $rows,
-        );
-    }
 }

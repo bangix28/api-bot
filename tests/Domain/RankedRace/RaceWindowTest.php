@@ -85,6 +85,34 @@ class RaceWindowTest extends TestCase
         $this->assertSame('2026-08-09', $window->endDate());
     }
 
+    public function testLeReportEstCaleSurLaCadenceDeCollecte(): void
+    {
+        $window = RaceWindow::fromDays(
+            new \DateTimeImmutable('2026-08-03'),
+            new \DateTimeImmutable('2026-08-09'),
+        );
+
+        $this->assertSame('2026-08-02 22:00:00', $window->carryInStart()->format('Y-m-d H:i:s'));
+    }
+
+    public function testIsCarryInNAccepteQueLesRelevesAnterieursEtImmediats(): void
+    {
+        $window = RaceWindow::fromDays(
+            new \DateTimeImmutable('2026-08-03'),
+            new \DateTimeImmutable('2026-08-09'),
+        );
+
+        // Le relevé de 23h30, une demi-heure avant la fenêtre : report valable.
+        $this->assertTrue($window->isCarryIn(new \DateTimeImmutable('2026-08-02 23:30:00')));
+        // Bornes : le début de la plage de report est inclus, la fenêtre exclue.
+        $this->assertTrue($window->isCarryIn(new \DateTimeImmutable('2026-08-02 22:00:00')));
+        // La veille au matin : trop ancien. Le segment le reliant au premier
+        // relevé de la fenêtre crediterait à celle-ci les parties de la veille.
+        $this->assertFalse($window->isCarryIn(new \DateTimeImmutable('2026-08-02 03:00:00')));
+        // Un relevé DANS la fenêtre n'est pas un report.
+        $this->assertFalse($window->isCarryIn(new \DateTimeImmutable('2026-08-03 00:00:00')));
+    }
+
     public function testBetweenAccepteDesInstantsQuelconques(): void
     {
         $window = RaceWindow::between(

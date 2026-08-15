@@ -80,6 +80,45 @@ class ComputeRankedRaceStandingsHandlerTest extends TestCase
         $this->assertCount(1, $view->winrate->notQualified); // 0/5 parties
     }
 
+    public function testLeReportSertDeRangDeDepartAUnJoueurInactifEnDebutDeSemaine(): void
+    {
+        // Toto joue le dimanche soir jusqu'à 23h30, puis une partie le mercredi.
+        // Le relevé de 23h30 précède la fenêtre : sans le report, le rang de
+        // départ serait celui d'APRÈS sa partie du mercredi, qui serait perdue.
+        $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
+        $repository = new InMemoryRaceSnapshotRepository([
+            $this->snapshot($toto, '2026-08-02 23:30', RankedTier::GOLD, RankedRank::I, 30, 10, 10),
+            $this->snapshot($toto, '2026-08-05 21:00', RankedTier::GOLD, RankedRank::I, 48, 11, 10),
+        ]);
+
+        $view = $this->handler($repository)->handle(new ComputeRankedRaceStandingsCommand());
+
+        $this->assertCount(1, $view->progression);
+        // La partie du mercredi est bien comptée, depuis le rang du dimanche.
+        $this->assertSame(18, $view->progression[0]->rawDelta);
+        $this->assertSame(1, $view->progression[0]->gamesPlayed);
+        $this->assertSame(30, $view->progression[0]->start->leaguePoints);
+    }
+
+    public function testUnReportTropAncienNEstPasUtilise(): void
+    {
+        // Relevé de la veille au matin : le segment le reliant au premier relevé
+        // de la semaine créditerait à celle-ci les 20 parties du dimanche. On
+        // préfère un joueur à zéro partie qu'un score gonflé par la période
+        // précédente. C'est ce que produisent les données quotidiennes reprises.
+        $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
+        $repository = new InMemoryRaceSnapshotRepository([
+            $this->snapshot($toto, '2026-08-02 03:00', RankedTier::SILVER, RankedRank::IV, 0, 40, 40),
+            $this->snapshot($toto, '2026-08-05 21:00', RankedTier::GOLD, RankedRank::I, 48, 60, 40),
+        ]);
+
+        $view = $this->handler($repository)->handle(new ComputeRankedRaceStandingsCommand());
+
+        $this->assertCount(1, $view->progression);
+        $this->assertSame(0, $view->progression[0]->rawDelta);
+        $this->assertSame(0, $view->progression[0]->gamesPlayed);
+    }
+
     public function testSuspensionPendantLesPlacements(): void
     {
         $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
