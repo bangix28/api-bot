@@ -14,6 +14,22 @@ namespace App\Domain\RankedRace;
  */
 final readonly class RaceWindow
 {
+    /**
+     * Ancienneté maximale du report : le dernier relevé connu juste AVANT la
+     * fenêtre, qui affine le rang de départ d'un joueur ayant joué très tôt
+     * dans la période.
+     *
+     * Calée sur la cadence de collecte (30 minutes) et non sur des jours. Le
+     * battement quotidien garantit déjà une ligne À L'INTÉRIEUR de chaque
+     * fenêtre : le report n'a donc pas à faire apparaître un joueur, seulement
+     * à capter le relevé immédiatement antérieur.
+     *
+     * Une borne large serait activement nuisible : le segment reliant un relevé
+     * de la veille au premier relevé de la fenêtre crediterait à celle-ci
+     * toutes les parties jouées entre les deux, c'est-à-dire avant son début.
+     */
+    private const string CARRY_IN_MAX_AGE = '-2 hours';
+
     private function __construct(
         public \DateTimeImmutable $startsAt,
         public \DateTimeImmutable $endsAt,
@@ -44,6 +60,18 @@ final readonly class RaceWindow
     public function contains(\DateTimeImmutable $at): bool
     {
         return $at >= $this->startsAt && $at < $this->endsAt;
+    }
+
+    /** Borne basse de recherche du report : [carryInStart, startsAt[. */
+    public function carryInStart(): \DateTimeImmutable
+    {
+        return $this->startsAt->modify(self::CARRY_IN_MAX_AGE);
+    }
+
+    /** Le relevé est-il un report exploitable pour cette fenêtre ? */
+    public function isCarryIn(\DateTimeImmutable $at): bool
+    {
+        return $at < $this->startsAt && $at >= $this->carryInStart();
     }
 
     public function startDate(): string

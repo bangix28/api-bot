@@ -16,9 +16,47 @@ final readonly class InMemoryRaceSnapshotRepository implements RaceSnapshotRepos
 
     public function findForWindow(RankedQueueType $queue, RaceWindow $window): array
     {
-        return array_values(array_filter(
+        $inside = array_filter(
             $this->snapshots,
-            static fn(RaceSnapshot $snapshot) => $window->contains($snapshot->capturedAt),
-        ));
+            static fn(RaceSnapshot $s) => $window->contains($s->capturedAt),
+        );
+
+        $result = [...array_values($inside), ...$this->carryIn($window)];
+
+        usort(
+            $result,
+            static fn(RaceSnapshot $a, RaceSnapshot $b) => [$a->player->riotId, $a->capturedAt]
+                <=> [$b->player->riotId, $b->capturedAt],
+        );
+
+        return $result;
+    }
+
+    /**
+     * Reproduit le report de l'adaptateur Doctrine : le dernier relevé de
+     * chaque joueur avant la fenêtre, dans la limite d'ancienneté admise.
+     * Sans cela, les tests d'application valideraient un comportement que la
+     * production n'a pas.
+     *
+     * @return RaceSnapshot[]
+     */
+    private function carryIn(RaceWindow $window): array
+    {
+        $latestByPlayer = [];
+
+        foreach ($this->snapshots as $snapshot) {
+            if (!$window->isCarryIn($snapshot->capturedAt)) {
+                continue;
+            }
+
+            $riotId = $snapshot->player->riotId;
+            $known = $latestByPlayer[$riotId] ?? null;
+
+            if ($known === null || $snapshot->capturedAt > $known->capturedAt) {
+                $latestByPlayer[$riotId] = $snapshot;
+            }
+        }
+
+        return array_values($latestByPlayer);
     }
 }
