@@ -5,7 +5,9 @@ namespace App\Application\RankedRace\ComputeEventStandings;
 use App\Application\RankedRace\StandingsViewAssembler;
 use App\Domain\RankedRace\RaceEventNotFoundException;
 use App\Domain\RankedRace\RaceEventRepositoryInterface;
+use App\Domain\RankedRace\RaceFreshness;
 use App\Domain\RankedRace\RaceSnapshotRepositoryInterface;
+use App\Domain\RankedRace\RaceStatus;
 use App\Domain\Shared\ClockInterface;
 
 final readonly class ComputeEventStandingsHandler
@@ -32,6 +34,9 @@ final readonly class ComputeEventStandingsHandler
             $this->snapshots->findForWindow($event->queue, $event->window)
         );
 
+        $now = $this->clock->now();
+        $freshness = RaceFreshness::at($now, $this->snapshots->lastCapturedAt($event->queue));
+
         return new RankedRaceEventStandingsView(
             $event->id,
             $event->name,
@@ -43,6 +48,15 @@ final readonly class ComputeEventStandingsHandler
             $this->progressionSuspended,
             $this->progressionSuspended ? [] : $this->assembler->progression($series),
             $this->assembler->winrate($series, $event->minGamesToQualify),
+            RaceStatus::of($event->window, $this->assembler->hasAnyGame($series), $now)->value,
+            [
+                'start' => $event->window->startsAt->format(\DateTimeInterface::ATOM),
+                'endExclusive' => $event->window->endsAt->format(\DateTimeInterface::ATOM),
+            ],
+            $freshness->lastSnapshotAt?->format(\DateTimeInterface::ATOM),
+            $freshness->nextRefreshAt?->format(\DateTimeInterface::ATOM),
+            $freshness->generatedAt->format(\DateTimeInterface::ATOM),
+            $freshness->snapshotAgeSeconds,
         );
     }
 }

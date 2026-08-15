@@ -33,6 +33,23 @@ class DoctrineRaceSnapshotRepository implements RaceSnapshotRepositoryInterface
         return $snapshots;
     }
 
+    public function lastCapturedAt(?RankedQueueType $queue = null): ?\DateTimeImmutable
+    {
+        // Couvert par idx_elo_snapshot_queue_at : un MAX indexé, assez léger pour
+        // être appelé à chaque requête, y compris pour valider un ETag.
+        $builder = $this->entityManager->createQueryBuilder()
+            ->select('MAX(snapshot.capturedAt)')
+            ->from(SummonerEloSnapshot::class, 'snapshot');
+
+        if ($queue !== null) {
+            $builder->where('snapshot.queueType = :queue')->setParameter('queue', $queue->value);
+        }
+
+        $max = $builder->getQuery()->getSingleScalarResult();
+
+        return $max === null ? null : new \DateTimeImmutable((string) $max);
+    }
+
     /** @return RaceSnapshot[] */
     private function insideWindow(RankedQueueType $queue, RaceWindow $window): array
     {

@@ -62,10 +62,31 @@ final readonly class StandingsViewAssembler
                 $standing->rankWeighted,
                 $playerSeries->gamesPlayed(),
                 $playerSeries->winrate(),
+                $playerSeries->offRaceDelta(),
+                self::iso($playerSeries->startedAt()),
+                self::iso($playerSeries->lastActivityAt()),
             );
         }
 
         return $entries;
+    }
+
+    /** @param PlayerRaceSeries[] $series */
+    public function hasAnyGame(array $series): bool
+    {
+        foreach ($series as $playerSeries) {
+            if ($playerSeries->hasStarted()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** ISO-8601 avec décalage : le front ne doit jamais deviner le fuseau. */
+    private static function iso(?\DateTimeImmutable $at): ?string
+    {
+        return $at?->format(\DateTimeInterface::ATOM);
     }
 
     /** @param PlayerRaceSeries[] $series */

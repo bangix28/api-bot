@@ -73,6 +73,14 @@ final class PlayerRaceSeries
         return $segments === [] ? null : $segments[0]->to->capturedAt;
     }
 
+    /** Instant du relevé ayant constaté la dernière partie du joueur. */
+    public function lastActivityAt(): ?\DateTimeImmutable
+    {
+        $segments = $this->segments();
+
+        return $segments === [] ? null : $segments[count($segments) - 1]->to->capturedAt;
+    }
+
     /**
      * Rang de départ : le snapshot qui précède la première partie.
      * À défaut de partie jouée, le dernier rang connu — le joueur est alors
