@@ -32,6 +32,19 @@ final readonly class InMemoryRaceSnapshotRepository implements RaceSnapshotRepos
         return $result;
     }
 
+    public function lastCapturedAt(?RankedQueueType $queue = null): ?\DateTimeImmutable
+    {
+        $latest = null;
+
+        foreach ($this->snapshots as $snapshot) {
+            if ($latest === null || $snapshot->capturedAt > $latest) {
+                $latest = $snapshot->capturedAt;
+            }
+        }
+
+        return $latest;
+    }
+
     /**
      * Reproduit le report de l'adaptateur Doctrine : le dernier relevé de
      * chaque joueur avant la fenêtre, dans la limite d'ancienneté admise.

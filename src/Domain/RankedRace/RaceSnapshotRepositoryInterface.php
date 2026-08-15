@@ -23,4 +23,13 @@ interface RaceSnapshotRepositoryInterface
      * @return RaceSnapshot[] triés par joueur puis par instant croissant
      */
     public function findForWindow(RankedQueueType $queue, RaceWindow $window): array;
+
+    /**
+     * Instant du dernier relevé connu, pour une file donnée ou toutes files
+     * confondues. Renseigne la fraîcheur exposée au front, et sert de version
+     * de contenu pour la validation conditionnelle HTTP.
+     *
+     * null si la file n'a jamais été collectée.
+     */
+    public function lastCapturedAt(?RankedQueueType $queue = null): ?\DateTimeImmutable;
 }

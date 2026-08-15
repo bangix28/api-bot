@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\QueryParameter;
 use App\Application\RankedRace\ComputeStandings\RankedRaceStandingsView;
 use App\Application\RankedRace\ComputeStandings\WinrateStandingsView;
+use App\Domain\RankedRace\RaceFreshness;
 use App\State\RankedRaceProvider;
 
 /**
@@ -33,7 +34,9 @@ use App\State\RankedRaceProvider;
 class RankedRace
 {
     /**
-     * @param array{start: string, end: string} $window
+     * @param array{start: string, end: string} $window bornes au jour, dernier jour INCLUS
+     * @param array{start: string, endExclusive: string} $windowIso ISO-8601 avec décalage, fin EXCLUE
+     * @param array{snapshotAgeSeconds: int|null, snapshotIntervalSeconds: int} $staleness
      * @param \App\Application\RankedRace\ComputeStandings\ProgressionEntryView[] $progression
      */
     public function __construct(
@@ -43,6 +46,12 @@ class RankedRace
         public bool $progressionSuspended,
         public array $progression,
         public WinrateStandingsView $winrate,
+        public string $raceStatus,
+        public array $windowIso,
+        public ?string $lastSnapshotAt,
+        public ?string $nextRefreshAt,
+        public ?string $generatedAt,
+        public array $staleness,
     ) {
     }
 
@@ -55,6 +64,15 @@ class RankedRace
             $view->progressionSuspended,
             $view->progression,
             $view->winrate,
+            $view->raceStatus,
+            $view->windowIso,
+            $view->lastSnapshotAt,
+            $view->nextRefreshAt,
+            $view->generatedAt,
+            [
+                'snapshotAgeSeconds' => $view->snapshotAgeSeconds,
+                'snapshotIntervalSeconds' => RaceFreshness::SNAPSHOT_INTERVAL_SECONDS,
+            ],
         );
     }
 }

@@ -119,6 +119,67 @@ class ComputeRankedRaceStandingsHandlerTest extends TestCase
         $this->assertSame(0, $view->progression[0]->gamesPlayed);
     }
 
+    public function testLesChampsDeFraicheurEtDeStatutSontRenseignes(): void
+    {
+        $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
+        $repository = new InMemoryRaceSnapshotRepository([
+            $this->snapshot($toto, '2026-08-03 03:00', RankedTier::GOLD, RankedRank::I, 80, 10, 10),
+            $this->snapshot($toto, '2026-08-05 21:00', RankedTier::PLATINUM, RankedRank::IV, 10, 18, 14),
+        ]);
+
+        // Mercredi 23h00, dernier relevé à 21h00 : deux heures de retard.
+        $handler = new ComputeRankedRaceStandingsHandler(
+            $repository,
+            new FixedClock(new \DateTimeImmutable('2026-08-05 23:00')),
+        );
+        $view = $handler->handle(new ComputeRankedRaceStandingsCommand());
+
+        $this->assertSame('running', $view->raceStatus);
+        $this->assertSame('2026-08-03T00:00:00+00:00', $view->windowIso['start']);
+        // Fin EXCLUE : lundi minuit, pas dimanche 23h59.
+        $this->assertSame('2026-08-10T00:00:00+00:00', $view->windowIso['endExclusive']);
+        $this->assertSame('2026-08-05T21:00:00+00:00', $view->lastSnapshotAt);
+        $this->assertSame('2026-08-05T21:30:00+00:00', $view->nextRefreshAt);
+        $this->assertSame(7200, $view->snapshotAgeSeconds);
+
+        // Départ et dernière activité du joueur, pour le badge « en série ».
+        $this->assertSame('2026-08-05T21:00:00+00:00', $view->progression[0]->startedAt);
+        $this->assertSame('2026-08-05T21:00:00+00:00', $view->progression[0]->lastActivityAt);
+        $this->assertSame(0, $view->progression[0]->offRaceDelta);
+    }
+
+    public function testStatutQuandPersonneNAJoueDeLaSemaine(): void
+    {
+        $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
+        $repository = new InMemoryRaceSnapshotRepository([
+            $this->snapshot($toto, '2026-08-03 00:00', RankedTier::GOLD, RankedRank::I, 80, 10, 10),
+            $this->snapshot($toto, '2026-08-04 00:00', RankedTier::GOLD, RankedRank::I, 80, 10, 10),
+        ]);
+
+        $view = $this->handler($repository)->handle(new ComputeRankedRaceStandingsCommand());
+
+        $this->assertSame('awaiting_first_game', $view->raceStatus);
+        $this->assertNull($view->progression[0]->startedAt);
+    }
+
+    public function testLeStatutEstIndependantDeLaSuspension(): void
+    {
+        // Une course peut être en cours avec la Progression masquée pendant
+        // les placements : les deux notions ne doivent pas être fusionnées.
+        $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
+        $repository = new InMemoryRaceSnapshotRepository([
+            $this->snapshot($toto, '2026-08-03 03:00', RankedTier::GOLD, RankedRank::I, 80, 10, 10),
+            $this->snapshot($toto, '2026-08-05 03:00', RankedTier::PLATINUM, RankedRank::IV, 10, 18, 14),
+        ]);
+
+        $view = $this->handler($repository, progressionSuspended: true)
+            ->handle(new ComputeRankedRaceStandingsCommand());
+
+        $this->assertSame('running', $view->raceStatus);
+        $this->assertTrue($view->progressionSuspended);
+        $this->assertSame([], $view->progression);
+    }
+
     public function testSuspensionPendantLesPlacements(): void
     {
         $toto = new RacePlayer('Toto#EUW', 'Toto', '685');
