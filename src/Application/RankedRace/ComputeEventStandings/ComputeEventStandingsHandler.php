@@ -46,7 +46,7 @@ final readonly class ComputeEventStandingsHandler
             $event->statusAt($this->clock->today())->value,
             $event->minGamesToQualify,
             $this->progressionSuspended,
-            $this->progressionSuspended ? [] : $this->assembler->progression($series),
+            $this->progressionSuspended ? [] : $this->assembler->progression($series, $event->queue, $event->window),
             $this->assembler->winrate($series, $event->minGamesToQualify),
             RaceStatus::of($event->window, $this->assembler->hasAnyGame($series), $now)->value,
             [

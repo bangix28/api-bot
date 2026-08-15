@@ -48,6 +48,13 @@ services:
         arguments:
             $progressionSuspended: '%env(bool:RANKED_RACE_PROGRESSION_SUSPENDED)%'
 
+    # Deux implémentations existent (l'adaptateur Doctrine et l'objet nul qui
+    # sert de défaut aux tests) : sans cet alias l'autowiring est ambigu, retombe
+    # silencieusement sur l'objet nul, et l'affinage de la date de départ ne fait
+    # plus rien — sans qu'aucun test ne le voie.
+    App\Domain\RankedRace\FirstRankedGameFinderInterface:
+        alias: App\Infrastructure\RankedRace\DoctrineFirstRankedGameFinder
+
     App\Domain\User\UserRepositoryInterface:
         alias: App\Infrastructure\User\DoctrineUserRepository
 
