@@ -12,6 +12,73 @@ Adapte les valeurs entre `< >` à ta prod :
 
 ---
 
+## ⚠️ Spécificités de la release « Ranked Race live » (30 min + départ à la partie)
+
+Décisions et justifications complètes : **`docs/adr/0003-course-a-la-partie-snapshots-30-min.md`**.
+Contrat pour l'équipe front : **`docs/front/ranked-race-live.md`**.
+
+1. **Aucune nouvelle variable d'environnement.** Le fuseau (`app.timezone`) et le
+   store de verrou (`flock`) sont figés en configuration. Rien à ajouter dans
+   `.env.local`.
+2. **Nouvelle dépendance `symfony/lock`** → le `composer install` de l'étape 4 est
+   obligatoire avant de relancer les crons. Le verrou s'écrit dans le répertoire
+   temporaire système ; aucun droit particulier à poser.
+3. **Migrations** : création de `summoner_elo_snapshot` puis reprise de
+   l'historique quotidien exploitable. `summoner_elo_daily` **n'est pas modifiée**
+   — la reprise est donc réversible sans perte, et `/elo-daily` est intact.
+4. **Le fuseau de PHP est aligné sur `Europe/Paris` au démarrage du Kernel.** Les
+   instants sont stockés en heure civile, il faut donc les relire dans le même
+   fuseau — sinon Doctrine les réhydrate en UTC et l'API annonce deux heures
+   d'avance. L'écart entre les deux commandes ci-dessous est normal et attendu :
+   ```bash
+   php -r 'echo date_default_timezone_get(), PHP_EOL;'   # PHP brut → souvent UTC
+   php bin/console about --env=prod | grep -i timezone   # avec Kernel → Europe/Paris
+   ```
+   Si la seconde ne dit pas `Europe/Paris`, le déploiement est incomplet.
+5. **Ordre de déploiement en deux temps.** Idéalement, déployer d'abord la version
+   qui *écrit* les relevés sans les lire, **laisser tourner 24 à 48 h**, puis
+   déployer la bascule de lecture. Si tout part d'un coup, la course n'aura que
+   l'historique repris tant que le cron n'a pas tourné plusieurs fois — les
+   fenêtres en cours seront pauvres pendant une journée.
+6. **`rankStart` change de sens sans changer de forme** : c'est désormais le rang
+   *juste avant la première partie* du joueur, plus le rang du lundi 3h. À
+   annoncer au front, sinon ça se lit comme un bug.
+
+### Contrôles spécifiques après déploiement
+
+```bash
+# Les relevés arrivent-ils ?
+mysql -u <DB_USER> -p <DB_NAME> -e "
+  SELECT DATE(captured_at) j, COUNT(*) n FROM summoner_elo_snapshot GROUP BY j ORDER BY j DESC LIMIT 3;"
+# ~60 lignes/jour pour 15 comptes (dédoublonnage actif). Beaucoup plus = dédup HS.
+
+# Les deux files sont-elles couvertes ?
+mysql -u <DB_USER> -p <DB_NAME> -e "
+  SELECT queue_type, COUNT(*) FROM summoner_elo_snapshot GROUP BY queue_type;"
+
+# Aucun compte oublié ?
+mysql -u <DB_USER> -p <DB_NAME> -e "
+  SELECT COUNT(DISTINCT riot_account_id) FROM summoner_elo_snapshot;"
+
+# Le verrou se déclenche-t-il anormalement souvent ?
+grep 'déjà en cours' var/log/app-$(date +%F).log
+
+# Des points de course perdus ?
+grep 'Point de course non enregistré' var/log/app-$(date +%F).log
+
+# Quota Riot (surtout après l'ajout de la collecte flex : +1 appel/compte/run)
+grep rate_limited var/log/app-$(date +%F).log
+```
+
+Puis vérifier les quatre combinaisons de `/api/ranked-race` et un événement passé,
+et qu'une seconde requête avec `If-None-Match` renvoie bien **304**.
+
+**Rollback** : `doctrine:migrations:migrate prev --env=prod` ne supprime que les
+points repris (03:00 pile) et laisse ceux écrits par le cron. `summoner_elo_daily`
+étant intacte, la course redevient calculable dès que le code repasse en arrière.
+
+---
+
 ## ⚠️ Spécificités de la release « refonte hexagonale /refresh »
 
 Cette release embarque **2 migrations** dont une **destructive**. Trois points de vigilance :
