@@ -16,7 +16,7 @@ class RaceEventTest extends TestCase
             1,
             'Sprint de début de saison',
             RankedQueueType::SOLO,
-            new RaceWindow(new \DateTimeImmutable('2026-08-10'), new \DateTimeImmutable('2026-08-24')),
+            RaceWindow::fromDays(new \DateTimeImmutable('2026-08-10'), new \DateTimeImmutable('2026-08-24')),
             10,
         );
 

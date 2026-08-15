@@ -35,8 +35,8 @@ final readonly class ComputeRankedRaceStandingsHandler
         return new RankedRaceStandingsView(
             $queue->toQueryParam(),
             $period->value,
-            $window->start->format('Y-m-d'),
-            $window->end->format('Y-m-d'),
+            $window->startDate(),
+            $window->endDate(),
             $this->progressionSuspended,
             $this->progressionSuspended ? [] : $this->assembler->progression($series),
             $this->assembler->winrate($series, $period->minGamesToQualify()),

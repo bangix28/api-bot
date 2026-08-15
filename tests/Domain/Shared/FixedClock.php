@@ -6,12 +6,17 @@ use App\Domain\Shared\ClockInterface;
 
 final readonly class FixedClock implements ClockInterface
 {
-    public function __construct(private \DateTimeImmutable $today)
+    public function __construct(private \DateTimeImmutable $now)
     {
+    }
+
+    public function now(): \DateTimeImmutable
+    {
+        return $this->now;
     }
 
     public function today(): \DateTimeImmutable
     {
-        return $this->today;
+        return $this->now->setTime(0, 0);
     }
 }
