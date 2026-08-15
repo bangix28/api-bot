@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -18,6 +19,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class DailyEloCommand extends Command
 {
+    use LockableTrait;
+
     public function __construct(
         private readonly SnapshotDailyEloHandler       $snapshotDailyElo,
         private readonly RefreshAllMatchHistoryHandler $refreshAllMatchHistory,
@@ -29,6 +32,16 @@ class DailyEloCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+
+        // Même protection que refreshSummoners : les deux commandes partagent
+        // l'orchestrateur d'historique et écrivent des snapshots.
+        if (!$this->lock()) {
+            $this->refreshLogger->warning('Commande daily-elo ignorée : un run est déjà en cours');
+            $io->warning('Un daily-elo est déjà en cours, run ignoré.');
+
+            return Command::SUCCESS;
+        }
+
         $start = hrtime(true);
         $this->refreshLogger->info('Commande daily-elo démarrée');
 
@@ -47,6 +60,8 @@ class DailyEloCommand extends Command
 
             // Exit code non nul : indispensable pour que cron/monitoring voie l'échec.
             return Command::FAILURE;
+        } finally {
+            $this->release();
         }
 
         $this->refreshLogger->info('Commande daily-elo terminée', [

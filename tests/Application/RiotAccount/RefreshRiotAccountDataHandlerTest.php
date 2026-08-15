@@ -3,6 +3,7 @@
 namespace App\Tests\Application\RiotAccount;
 
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
+use App\Domain\EloSnapshot\EloSnapshotRecorderInterface;
 use App\Domain\RiotAccount\MiniSeries;
 use App\Domain\RiotAccount\RankedQueueEntity;
 use App\Domain\RiotAccount\RankedRank;
@@ -11,13 +12,18 @@ use App\Domain\RiotAccount\RiotAccountEntity;
 use App\Domain\RiotAccount\RiotAccountNotExistException;
 use App\Domain\RiotAccount\RiotAccountRefreshData;
 use App\Infrastructure\RiotAccount\RefreshViewPresenter;
+use App\Tests\Domain\EloSnapshot\SpyEloSnapshotRecorder;
 use App\Tests\Domain\Logging\SpyLogger;
 use App\Tests\Domain\RiotAccount\FakeRiotApiClient;
 use App\Tests\Domain\RiotAccount\InMemoryRiotAccountRepository;
+use App\Tests\Domain\Shared\FixedClock;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class RefreshRiotAccountDataHandlerTest extends TestCase
 {
+    private const string OBSERVED_AT = '2026-08-03 14:30:00';
     public function testHandleUpdatesAccountWithFreshApiData(): void
     {
         // Arrange : un compte "original" non classé, level 30
@@ -40,7 +46,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
         );
         $apiClient = new FakeRiotApiClient($refreshData);
 
-        $handler = new RefreshRiotAccountDataHandler($repository, $apiClient);
+        $handler = $this->handler($repository, $apiClient);
 
         // Act
         $handler->handle(new RefreshViewPresenter());
@@ -87,7 +93,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
         );
         $apiClient = new FakeRiotApiClient($refreshData);
 
-        $handler = new RefreshRiotAccountDataHandler($repository, $apiClient);
+        $handler = $this->handler($repository, $apiClient);
         $handler->handle(new RefreshViewPresenter());
 
         $updated = $repository->getListAccount()[0];
@@ -129,7 +135,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
         $apiClient = new FakeRiotApiClient($refreshData);
 
         $presenter = new RefreshViewPresenter();
-        $handler = new RefreshRiotAccountDataHandler($repository, $apiClient);
+        $handler = $this->handler($repository, $apiClient);
 
         // Act
         $handler->handle($presenter);
@@ -177,7 +183,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
 
         $presenter = new RefreshViewPresenter();
         $logger = new SpyLogger();
-        $handler = new RefreshRiotAccountDataHandler($repository, $apiClient, $logger);
+        $handler = $this->handler($repository, $apiClient, $logger);
 
         // Act
         $handler->handle($presenter);
@@ -220,7 +226,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             150,
             '20'
         );
-        $handler = new RefreshRiotAccountDataHandler($repository, new FakeRiotApiClient($refreshData));
+        $handler = $this->handler($repository, new FakeRiotApiClient($refreshData));
 
         // Act : on n'enrichit que le premier compte
         $handler->handleOne('puuid-1');
@@ -243,7 +249,7 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             150,
             '20'
         );
-        $handler = new RefreshRiotAccountDataHandler($repository, new FakeRiotApiClient($refreshData));
+        $handler = $this->handler($repository, new FakeRiotApiClient($refreshData));
 
         $this->expectException(RiotAccountNotExistException::class);
         $handler->handleOne('puuid-inconnu');
@@ -261,10 +267,88 @@ class RefreshRiotAccountDataHandlerTest extends TestCase
             150,
             '20'
         );
-        $handler = new RefreshRiotAccountDataHandler($repository, new FakeRiotApiClient($refreshData, 'puuid-1'));
+        $handler = $this->handler($repository, new FakeRiotApiClient($refreshData, 'puuid-1'));
 
         $this->expectException(\RuntimeException::class);
         $handler->handleOne('puuid-1');
+    }
+
+    public function testLePointDeCourseEstEnregistreSansAppelRiotSupplementaire(): void
+    {
+        // La garantie qui rend tout le chantier viable : les rangs sont déjà en
+        // mémoire, l'écriture du point de course ne coûte aucun appel de plus.
+        $repository = new InMemoryRiotAccountRepository([
+            $this->unrankedAccount('Pseudo#EUW', 'puuid-1'),
+            $this->unrankedAccount('Autre#EUW', 'puuid-2'),
+        ]);
+        $apiClient = new FakeRiotApiClient(new RiotAccountRefreshData(
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            new RankedQueueEntity(RankedRank::IV, RankedTier::SILVER, 10, 12, 8),
+            150,
+            '20',
+        ));
+        $recorder = new SpyEloSnapshotRecorder();
+
+        $this->handler($repository, $apiClient, recorder: $recorder)->handle(new RefreshViewPresenter());
+
+        // Un enregistrement par compte, avec les rangs déjà récupérés...
+        $this->assertSame(['puuid-1', 'puuid-2'], $recorder->recordedPuuids());
+        $this->assertSame(RankedTier::GOLD, $recorder->calls[0]['queues']->solo->getTier());
+        $this->assertSame(RankedTier::SILVER, $recorder->calls[0]['queues']->flex->getTier());
+        // ... horodaté par l'horloge injectée, pas par une date interne.
+        $this->assertEquals(new \DateTimeImmutable(self::OBSERVED_AT), $recorder->calls[0]['observedAt']);
+        // ... et toujours un seul appel Riot par compte.
+        $this->assertSame(2, $apiClient->callCount());
+    }
+
+    public function testUneEcritureDePointDeCourseEnEchecNInterromptPasLeRefresh(): void
+    {
+        // ADR-0002 : l'écriture du point de course est un effet de bord du
+        // refresh, elle ne doit ni le faire échouer ni stopper la boucle.
+        $repository = new InMemoryRiotAccountRepository([
+            $this->unrankedAccount('Pseudo#EUW', 'puuid-1'),
+            $this->unrankedAccount('Autre#EUW', 'puuid-2'),
+        ]);
+        $apiClient = new FakeRiotApiClient(new RiotAccountRefreshData(
+            new RankedQueueEntity(RankedRank::II, RankedTier::GOLD, 50, 40, 20),
+            null,
+            150,
+            '20',
+        ));
+        $logger = new SpyLogger();
+
+        $this->handler($repository, $apiClient, $logger, new SpyEloSnapshotRecorder(throws: true))
+            ->handle(new RefreshViewPresenter());
+
+        // Les deux comptes sont bien rafraîchis malgré les deux échecs d'écriture.
+        $accounts = $repository->getListAccount();
+        $this->assertSame(RankedTier::GOLD, $accounts[0]->getRankedSolo()->getTier());
+        $this->assertSame(RankedTier::GOLD, $accounts[1]->getRankedSolo()->getTier());
+
+        $warnings = $logger->records('warning');
+        $this->assertCount(2, $warnings);
+        $this->assertSame('Point de course non enregistré', $warnings[0]['message']);
+        $this->assertSame('puuid-1', $warnings[0]['context']['puuid']);
+
+        // Le bilan reste « ok », l'échec d'écriture n'est pas un échec de compte.
+        $infos = $logger->records('info');
+        $this->assertSame(2, $infos[0]['context']['ok']);
+        $this->assertSame(0, $infos[0]['context']['failed']);
+    }
+
+    private function handler(
+        InMemoryRiotAccountRepository $repository,
+        FakeRiotApiClient $apiClient,
+        ?LoggerInterface $logger = null,
+        ?EloSnapshotRecorderInterface $recorder = null,
+    ): RefreshRiotAccountDataHandler {
+        return new RefreshRiotAccountDataHandler(
+            $repository,
+            $apiClient,
+            $recorder ?? new SpyEloSnapshotRecorder(),
+            new FixedClock(new \DateTimeImmutable(self::OBSERVED_AT)),
+            $logger ?? new NullLogger(),
+        );
     }
 
     private function unrankedAccount(string $riotId, string $puuid): RiotAccountEntity

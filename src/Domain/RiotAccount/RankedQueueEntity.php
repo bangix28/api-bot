@@ -85,6 +85,15 @@ readonly class RankedQueueEntity
         }
     }
 
+    /**
+     * Un compte non classé n'a pas de rang à photographier : ni snapshot
+     * quotidien, ni point de course. L'absence de ligne est une information.
+     */
+    public function isRanked(): bool
+    {
+        return $this->tier !== RankedTier::UNRANKED;
+    }
+
     public function getScore(): int
     {
         return $this->tier->getScore() + $this->division->getScore() + $this->leaguePoints;

@@ -99,6 +99,6 @@ final readonly class SnapshotDailyEloHandler
 
     private function isRanked(?RankedQueueEntity $ranked): bool
     {
-        return $ranked !== null && $ranked->getTier() !== RankedTier::UNRANKED;
+        return $ranked?->isRanked() ?? false;
     }
 }
