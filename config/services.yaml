@@ -8,7 +8,9 @@ parameters:
     # Fuseau des fenêtres de course, indépendant de celui du serveur : les bornes
     # sont civiles (lundi 00:00 à Paris). Sur un VPS en UTC, une game de dimanche
     # 23h30 basculerait sinon dans la semaine suivante.
-    app.timezone: 'Europe/Paris'
+    # La valeur vit dans App\Kernel : le Kernel la pose comme fuseau PHP avant
+    # que le conteneur n'existe, il ne peut donc pas la lire depuis ici.
+    app.timezone: !php/const App\Kernel::TIMEZONE
     # Suspension de la course Progression pendant la fenêtre de placements de début
     # de saison (les deltas y seraient absurdes). Passer à 1 dans .env.local, puis
     # cache:clear ; repasser à 0 une fois les inscrits majoritairement placés.

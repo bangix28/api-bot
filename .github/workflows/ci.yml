@@ -116,3 +116,13 @@ jobs:
 
       - name: Lint service container
         run: php bin/console lint:container
+
+      # lint:container compile en dev/debug uniquement. Cette étape compile la
+      # configuration de prod, qui diffère (handlers Monolog, cache, débogage) :
+      # elle attrape une conf prod cassée avant le déploiement.
+      #
+      # Elle N'attrape PAS les problèmes liés à un cache de la release
+      # précédente, la CI partant toujours d'un dépôt vierge — d'où la purge de
+      # var/cache/prod recommandée dans DEPLOY.md.
+      - name: Compiler le conteneur en conditions de production
+        run: php bin/console cache:warmup --env=prod --no-debug

@@ -120,12 +120,23 @@ git checkout master
 git pull --ff-only origin master
 ```
 
-### 4. Dépendances (sans dev, autoload optimisé)
+### 4. Purger le cache compilé de la release précédente
+```bash
+rm -rf var/cache/prod
+```
+> `composer install` déclenche un `cache:clear` qui **démarre d'abord le conteneur
+> déjà présent** — celui de la release précédente. En prod (`debug=false`) il n'est
+> pas revalidé : du code neuf s'exécute alors contre une configuration périmée.
+> C'est ce qui a fait échouer le déploiement du 2026-08-15 :
+> `You have requested a non-existent parameter "app.timezone"`.
+> Purger d'abord rend ce cas impossible, quel que soit l'écart entre les releases.
+
+### 5. Dépendances (sans dev, autoload optimisé)
 ```bash
 composer install --no-dev --optimize-autoloader --no-interaction
 ```
 
-### 5. Vérifier l'état des migrations AVANT exécution
+### 6. Vérifier l'état des migrations AVANT exécution
 ```bash
 php bin/console doctrine:migrations:status --env=prod
 php bin/console doctrine:migrations:list --env=prod
@@ -136,26 +147,26 @@ On doit voir **2 migrations à appliquer**, jouées dans cet ordre :
 
 > Un avertissement « previously executed migrations not registered » sur d'anciennes versions est **pré-existant** et sans danger.
 
-### 6. Vider et réchauffer le cache prod
+### 7. Vider et réchauffer le cache prod
 ```bash
 php bin/console cache:clear --env=prod
 php bin/console cache:warmup --env=prod
 ```
 > ⚠️ Le `warmup` **compile le conteneur** : s'il échoue sur `app.riot.api.token`, c'est que le paramètre manque en prod (cf. Pré-requis).
 
-### 7. Appliquer les migrations (normalisation puis DROP)
+### 8. Appliquer les migrations (normalisation puis DROP)
 ```bash
 php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 ```
 
-### 8. Recharger PHP-FPM (purge de l'OPcache)
+### 9. Recharger PHP-FPM (purge de l'OPcache)
 ```bash
 sudo systemctl reload <PHP_FPM>
 # si opcache.validate_timestamps=0 : préférer un restart
 # sudo systemctl restart <PHP_FPM>
 ```
 
-### 9. Désactiver la maintenance
+### 10. Désactiver la maintenance
 Rouvrir le trafic (annexe nginx).
 
 ---
