@@ -18,7 +18,7 @@ final readonly class InMemoryRaceSnapshotRepository implements RaceSnapshotRepos
     {
         return array_values(array_filter(
             $this->snapshots,
-            static fn(RaceSnapshot $snapshot) => $window->contains($snapshot->day),
+            static fn(RaceSnapshot $snapshot) => $window->contains($snapshot->capturedAt),
         ));
     }
 }
