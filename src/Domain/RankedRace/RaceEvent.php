@@ -20,13 +20,13 @@ final readonly class RaceEvent
     ) {
     }
 
-    /** Bornes incluses : l'événement est actif du premier au dernier jour. */
-    public function statusAt(\DateTimeImmutable $today): RaceEventStatus
+    /** L'événement est actif du premier au dernier jour, ce dernier inclus. */
+    public function statusAt(\DateTimeImmutable $at): RaceEventStatus
     {
         return match (true) {
-            $today < $this->window->start => RaceEventStatus::UPCOMING,
-            $today > $this->window->end => RaceEventStatus::FINISHED,
-            default => RaceEventStatus::ACTIVE,
+            $at < $this->window->startsAt => RaceEventStatus::UPCOMING,
+            $this->window->contains($at) => RaceEventStatus::ACTIVE,
+            default => RaceEventStatus::FINISHED,
         };
     }
 }

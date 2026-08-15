@@ -36,7 +36,8 @@ class DoctrineRaceEventRepository implements RaceEventRepositoryInterface
             (int) $row->getId(),
             (string) $row->getName(),
             $row->getQueueType(),
-            new RaceWindow(
+            // Dates saisies au jour en administration, dernier jour inclus.
+            RaceWindow::fromDays(
                 \DateTimeImmutable::createFromInterface($row->getStartDate()),
                 \DateTimeImmutable::createFromInterface($row->getEndDate()),
             ),

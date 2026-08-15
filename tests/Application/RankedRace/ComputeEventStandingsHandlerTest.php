@@ -115,7 +115,7 @@ class ComputeEventStandingsHandlerTest extends TestCase
             $id,
             'Sprint de test',
             RankedQueueType::SOLO,
-            new RaceWindow(new \DateTimeImmutable($start), new \DateTimeImmutable($end)),
+            RaceWindow::fromDays(new \DateTimeImmutable($start), new \DateTimeImmutable($end)),
             $minGames,
         );
     }

@@ -5,6 +5,10 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.riot.api.token: '%env(RIOT_API_TOKEN)%'
+    # Fuseau des fenêtres de course, indépendant de celui du serveur : les bornes
+    # sont civiles (lundi 00:00 à Paris). Sur un VPS en UTC, une game de dimanche
+    # 23h30 basculerait sinon dans la semaine suivante.
+    app.timezone: 'Europe/Paris'
     # Suspension de la course Progression pendant la fenêtre de placements de début
     # de saison (les deltas y seraient absurdes). Passer à 1 dans .env.local, puis
     # cache:clear ; repasser à 0 une fois les inscrits majoritairement placés.
@@ -30,6 +34,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    # Câblé explicitement plutôt que par un bind global : « $timezone » est un nom
+    # trop courant pour être capté à l'échelle du conteneur.
+    App\Infrastructure\Shared\SystemClock:
+        arguments:
+            $timezone: '%app.timezone%'
+
     App\Application\RankedRace\ComputeStandings\ComputeRankedRaceStandingsHandler:
         arguments:
             $progressionSuspended: '%env(bool:RANKED_RACE_PROGRESSION_SUSPENDED)%'

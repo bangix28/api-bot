@@ -79,15 +79,18 @@ class DoctrineEloSnapshotRepository implements EloSnapshotRepositoryInterface, R
             ->from(SummonerEloDaily::class, 'snapshot')
             ->join('snapshot.riotAccount', 'account')
             ->where('snapshot.queueType = :queue')
-            ->andWhere('snapshot.dateScore BETWEEN :start AND :end')
+            // Intervalle demi-ouvert : la borne de fin est l'instant qui suit la
+            // fenêtre (minuit du lendemain), elle ne doit donc pas être incluse.
+            ->andWhere('snapshot.dateScore >= :start')
+            ->andWhere('snapshot.dateScore < :end')
             // Lignes historiques (avant la Ranked Race) : score aplati sans détail
             // de rang ni wins/losses -> inexploitables pour la course.
             ->andWhere('snapshot.tier IS NOT NULL')
             ->orderBy('account.riotId', 'ASC')
             ->addOrderBy('snapshot.dateScore', 'ASC')
             ->setParameter('queue', $queue->value)
-            ->setParameter('start', $window->start, Types::DATE_IMMUTABLE)
-            ->setParameter('end', $window->end, Types::DATE_IMMUTABLE)
+            ->setParameter('start', $window->startsAt, Types::DATE_IMMUTABLE)
+            ->setParameter('end', $window->endsAt, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
 

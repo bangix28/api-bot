@@ -15,7 +15,7 @@ final readonly class InMemoryRaceEventRepository implements RaceEventRepositoryI
     public function findAll(): array
     {
         $sorted = $this->events;
-        usort($sorted, static fn(RaceEvent $a, RaceEvent $b) => $b->window->start <=> $a->window->start);
+        usort($sorted, static fn(RaceEvent $a, RaceEvent $b) => $b->window->startsAt <=> $a->window->startsAt);
 
         return $sorted;
     }

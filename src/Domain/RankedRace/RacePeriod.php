@@ -19,11 +19,11 @@ enum RacePeriod: string
     public function windowFor(\DateTimeImmutable $today): RaceWindow
     {
         return match ($this) {
-            self::WEEK => new RaceWindow(
+            self::WEEK => RaceWindow::fromDays(
                 $today->modify('monday this week'),
                 $today->modify('sunday this week'),
             ),
-            self::MONTH => new RaceWindow(
+            self::MONTH => RaceWindow::fromDays(
                 $today->modify('first day of this month'),
                 $today->modify('last day of this month'),
             ),

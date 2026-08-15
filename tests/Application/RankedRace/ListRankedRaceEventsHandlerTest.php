@@ -44,7 +44,7 @@ class ListRankedRaceEventsHandlerTest extends TestCase
             $id,
             $name,
             $queue,
-            new RaceWindow(new \DateTimeImmutable($start), new \DateTimeImmutable($end)),
+            RaceWindow::fromDays(new \DateTimeImmutable($start), new \DateTimeImmutable($end)),
             5,
         );
     }
