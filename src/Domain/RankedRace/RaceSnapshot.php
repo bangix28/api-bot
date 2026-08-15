@@ -4,12 +4,12 @@ namespace App\Domain\RankedRace;
 
 use App\Domain\RiotAccount\RankedQueueEntity;
 
-/** Snapshot quotidien relu pour la course (côté lecture du snapshot elo). */
+/** Photo du rang d'un joueur à un instant donné, relue pour la course. */
 readonly class RaceSnapshot
 {
     public function __construct(
         public RacePlayer $player,
-        public \DateTimeImmutable $day,
+        public \DateTimeImmutable $capturedAt,
         public RankedQueueEntity $ranked,
     ) {
     }
