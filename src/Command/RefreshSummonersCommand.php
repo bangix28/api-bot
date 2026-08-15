@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -19,6 +20,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class RefreshSummonersCommand extends Command
 {
+    use LockableTrait;
+
     public function __construct(
         private readonly RefreshRiotAccountDataHandler $refreshRankedHandler,
         private readonly RefreshAllMatchHistoryHandler $refreshAllMatchHistory,
@@ -30,6 +33,20 @@ class RefreshSummonersCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+
+        // Le cron passe toutes les 30 minutes, et RiotApiGateway peut dormir
+        // 125 s par appel rate-limité : un run peut donc déborder sur le suivant.
+        // Deux instances en parallèle écriraient deux fois le même point de
+        // course et se disputeraient le quota Riot.
+        if (!$this->lock()) {
+            $this->refreshLogger->warning('Commande refreshSummoners ignorée : un run est déjà en cours');
+            $io->warning('Un refresh est déjà en cours, run ignoré.');
+
+            // SUCCESS et non FAILURE : ce n'est pas une erreur, et le cron ne
+            // doit pas alerter pour un chevauchement légitime.
+            return Command::SUCCESS;
+        }
+
         $start = hrtime(true);
         $this->refreshLogger->info('Commande refreshSummoners démarrée');
 
@@ -49,6 +66,10 @@ class RefreshSummonersCommand extends Command
 
             // Exit code non nul : indispensable pour que cron/monitoring voie l'échec.
             return Command::FAILURE;
+        } finally {
+            // Libéré sur tous les chemins : sans ça, un run en échec bloquerait
+            // le suivant jusqu'à l'expiration du verrou.
+            $this->release();
         }
 
         $this->refreshLogger->info('Commande refreshSummoners terminée', [

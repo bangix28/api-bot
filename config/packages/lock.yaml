@@ -1,0 +1,6 @@
+framework:
+    # Verrou de fichier plutôt que le DSN par variable d'environnement de la
+    # recette : l'application tourne sur une seule machine (VPS ou conteneur
+    # api), un flock local suffit et n'ajoute aucune étape au déploiement.
+    # À revoir le jour où les crons tourneraient depuis plusieurs hôtes.
+    lock: 'flock'

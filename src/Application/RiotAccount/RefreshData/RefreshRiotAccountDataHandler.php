@@ -2,10 +2,14 @@
 
 namespace App\Application\RiotAccount\RefreshData;
 
+use App\Domain\EloSnapshot\EloSnapshotRecorderInterface;
+use App\Domain\EloSnapshot\RankedQueuesSnapshot;
 use App\Domain\RiotAccount\RiotAccountEntity;
 use App\Domain\RiotAccount\RiotAccountNotExistException;
+use App\Domain\RiotAccount\RiotAccountRefreshData;
 use App\Domain\RiotAccount\RiotAccountRepositoryInterface;
 use App\Domain\RiotAccount\RiotApiClientInterface;
+use App\Domain\Shared\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -14,6 +18,8 @@ class RefreshRiotAccountDataHandler
     public function __construct(
         private RiotAccountRepositoryInterface $repositoryService,
         private RiotApiClientInterface         $riotApiService,
+        private EloSnapshotRecorderInterface   $snapshotRecorder,
+        private ClockInterface                 $clock,
         private LoggerInterface                $refreshLogger = new NullLogger(),
     ) {}
 
@@ -77,6 +83,32 @@ class RefreshRiotAccountDataHandler
 
         $this->repositoryService->save($updateAccount);
 
+        $this->recordRacePoint($account->getPuuid(), $refreshData);
+
         return $updateAccount;
+    }
+
+    /**
+     * Point de course enregistré au passage : les rangs viennent d'être
+     * récupérés, l'écriture ne coûte donc aucun appel Riot supplémentaire.
+     *
+     * Rattrapé volontairement : un échec ici ne doit pas priver le compte de
+     * son refresh, ni interrompre la boucle (ADR-0002). L'appelant synchrone
+     * de handleOne() n'a pas non plus à échouer pour ça.
+     */
+    private function recordRacePoint(string $puuid, RiotAccountRefreshData $refreshData): void
+    {
+        try {
+            $this->snapshotRecorder->record(
+                $puuid,
+                new RankedQueuesSnapshot($refreshData->rankedSolo, $refreshData->rankedFlex),
+                $this->clock->now(),
+            );
+        } catch (\Throwable $e) {
+            $this->refreshLogger->warning('Point de course non enregistré', [
+                'puuid' => $puuid,
+                'exception' => $e,
+            ]);
+        }
     }
 }
