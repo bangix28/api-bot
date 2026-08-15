@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\MatchHistory;
 
+use App\Domain\EloSnapshot\RankedQueueType;
 use App\Domain\MatchHistory\CombatStats;
 use App\Domain\MatchHistory\MatchData;
 use App\Domain\MatchHistory\MatchPerformance;
@@ -10,6 +11,7 @@ use App\Domain\MatchHistory\PlayerBuild;
 use App\Domain\MatchHistory\RiotMatchApiClientInterface;
 use App\Domain\MatchHistory\Runes;
 use App\Domain\MatchHistory\ScoreLine;
+use App\Enum\RiotApiEnum;
 use App\Infrastructure\Riot\RiotApiGateway;
 use RiotAPI\Base\Exceptions\GeneralException;
 use RiotAPI\LeagueAPI\Objects\ParticipantDto;
@@ -33,9 +35,13 @@ class LeagueApiRiotMatchClient implements RiotMatchApiClientInterface
      * @throws RequestException
      * @throws GeneralException
      */
-    public function getMatchIds(string $puuid, ?int $since): array
+    public function getMatchIds(string $puuid, RankedQueueType $queue, ?int $since): array
     {
-        return $this->riotApiGateway->getListIdMatchHistoryLol($puuid, $since);
+        return $this->riotApiGateway->getListIdMatchHistoryLol(
+            $puuid,
+            RiotApiEnum::matchQueueIdFor($queue),
+            $since,
+        );
     }
 
     /**

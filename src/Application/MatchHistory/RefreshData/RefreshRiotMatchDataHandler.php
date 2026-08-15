@@ -2,6 +2,7 @@
 
 namespace App\Application\MatchHistory\RefreshData;
 
+use App\Domain\EloSnapshot\RankedQueueType;
 use App\Domain\MatchHistory\GameHistoryFactory;
 use App\Domain\MatchHistory\MatchHistoryRepositoryInterface;
 use App\Domain\MatchHistory\RiotMatchApiClientInterface;
@@ -23,12 +24,22 @@ class RefreshRiotMatchDataHandler
      */
     public function handle(RefreshMatchHistoryCommand $refreshMatchHistoryCommand): void
     {
-        $matchIds = $this->apiClient->getMatchIds($refreshMatchHistoryCommand->puuid, $refreshMatchHistoryCommand->since);
+        // Une passe par file classée : Riot n'expose pas les deux en un appel.
+        // La boucle est ici et non dans l'adaptateur, pour que « la course suit
+        // les deux files » reste une décision lisible côté application.
+        foreach (RankedQueueType::cases() as $queue) {
+            $this->refreshQueue($refreshMatchHistoryCommand, $queue);
+        }
+    }
+
+    private function refreshQueue(RefreshMatchHistoryCommand $command, RankedQueueType $queue): void
+    {
+        $matchIds = $this->apiClient->getMatchIds($command->puuid, $queue, $command->since);
 
         foreach ($matchIds as $matchId) {
             try {
                 // Match déjà en base : pas d'appel Riot, pas d'insertion (idempotence).
-                if ($this->repository->exists($matchId, $refreshMatchHistoryCommand->puuid)) {
+                if ($this->repository->exists($matchId, $command->puuid)) {
                     continue;
                 }
 
@@ -38,19 +49,18 @@ class RefreshRiotMatchDataHandler
                     continue;
                 }
 
-                $gameHistory = GameHistoryFactory::fromMatchInfo($matchData, $refreshMatchHistoryCommand->puuid);
+                $gameHistory = GameHistoryFactory::fromMatchInfo($matchData, $command->puuid);
                 $this->repository->save($gameHistory);
             } catch (\Exception $e) {
                 // Un match corrompu (joueur absent, compte introuvable...) ne doit pas
                 // interrompre le refresh des autres matchs du compte.
                 $this->refreshLogger->warning('Refresh du match ignoré', [
                     'matchId' => $matchId,
-                    'puuid' => $refreshMatchHistoryCommand->puuid,
+                    'queue' => $queue->value,
+                    'puuid' => $command->puuid,
                     'exception' => $e,
                 ]);
             }
         }
-
     }
-
 }

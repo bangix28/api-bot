@@ -58,4 +58,53 @@ class RefreshRiotMatchDataHandlerTest extends TestCase
         $this->assertSame(1, $apiClient->getMatchCallCount);
     }
 
+    public function testLesDeuxFilesClasseesSontInterrogees()
+    {
+        // La collecte ne connaissait que la solo : aucun match flex n'entrait en
+        // base, ce qui rendait toute règle fondée sur les matchs aveugle à la flex.
+        $apiClient = new FakeRiotMatchApiClient(
+            MatchDataBuilder::aMatch()
+                ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
+                ->build()
+        );
+
+        (new RefreshRiotMatchDataHandler($apiClient, new InMemoryMatchHistoryRepository()))
+            ->handle(new RefreshMatchHistoryCommand('puuid-1', 170000));
+
+        $this->assertSame(['RANKED_SOLO_5x5', 'RANKED_FLEX_SR'], $apiClient->queriedQueues);
+    }
+
+    public function testLesMatchsDesDeuxFilesSontEnregistres()
+    {
+        $repository = new InMemoryMatchHistoryRepository();
+        $apiClient = new FakeRiotMatchApiClient(
+            MatchDataBuilder::aMatch()
+                ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
+                ->build(),
+            ['RANKED_SOLO_5x5' => ['solo-1'], 'RANKED_FLEX_SR' => ['flex-1']],
+        );
+
+        (new RefreshRiotMatchDataHandler($apiClient, $repository))
+            ->handle(new RefreshMatchHistoryCommand('puuid-1', 170000));
+
+        $this->assertCount(2, $repository->getListMatches());
+    }
+
+    public function testUneFileEnEchecNInterromptPasLAutre()
+    {
+        // ADR-0002 : le best effort vaut aussi entre les files.
+        $repository = new InMemoryMatchHistoryRepository();
+        $apiClient = new FakeRiotMatchApiClient(
+            MatchDataBuilder::aMatch()
+                ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
+                ->build(),
+            ['RANKED_SOLO_5x5' => ['match-corrompu', 'solo-1'], 'RANKED_FLEX_SR' => ['flex-1']],
+            failingMatchId: 'match-corrompu',
+        );
+
+        (new RefreshRiotMatchDataHandler($apiClient, $repository))
+            ->handle(new RefreshMatchHistoryCommand('puuid-1', 170000));
+
+        $this->assertCount(2, $repository->getListMatches());
+    }
 }

@@ -42,7 +42,7 @@ final readonly class ComputeRankedRaceStandingsHandler
             $window->startDate(),
             $window->endDate(),
             $this->progressionSuspended,
-            $this->progressionSuspended ? [] : $this->assembler->progression($series),
+            $this->progressionSuspended ? [] : $this->assembler->progression($series, $queue, $window),
             $this->assembler->winrate($series, $period->minGamesToQualify()),
             // Le statut ne dépend pas de la suspension : une course peut être
             // « running » avec la Progression masquée pendant les placements.
