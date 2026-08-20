@@ -162,11 +162,14 @@ collecté fait simplement retomber sur l'instant d'observation.
 - **`rang de départ + progression ≠ rang d'arrivée`** dès qu'un decay tombe entre deux
   segments. C'est le prix d'un classement qui récompense le jeu ; `offRaceDelta` le
   rend lisible, mais le front doit être écrit en conséquence.
-- **Biais du yo-yo à la frontière de tier** : une montée Gold→Platinum est payée au
+- ~~**Biais du yo-yo à la frontière de tier** : une montée Gold→Platinum est payée au
   tarif Gold (1.25), la redescente au tarif Platinum (1.4). Un aller-retour coûte donc
   plus qu'il ne rapporte. Le corriger imposerait de découper un delta à la frontière,
   ce que `TierCoefficient` refuse explicitement. Un test fige la valeur attendue pour
-  que le biais ne dérive pas en silence.
+  que le biais ne dérive pas en silence.~~
+  **Remplacé par l'[ADR-0004](0004-echelle-de-course-continue-et-ponderation-par-palier.md)
+  (2026-08-20)** : la pondération est devenue une conversion de position, le découpage à
+  la frontière en découle, et un aller-retour vaut exactement zéro.
 - **Fuite de fin de période** : une partie terminée à 23h50 le dimanche est observée
   par le relevé de 00h00 lundi et attribuée à la semaine suivante. Bornée à la cadence
   du cron.
