@@ -46,16 +46,16 @@ class RaceSegmentTest extends TestCase
 
     public function testLeDeltaEstPayeAuTarifDuTierDeDepart(): void
     {
-        // Gold I 80 (4480) -> Platinum IV 10 (5110) : 630 payés en Gold (x1.25),
-        // pas en Platinum (x1.4). Pas de découpage à la frontière.
+        // Gold I 80 (1580) -> Platinum IV 10 (1610) : 30 LP réels payés en Gold
+        // (x1.25), pas en Platinum (x1.4). Pas de découpage à la frontière.
         $from = $this->snapshot('2026-08-03 10:00', RankedTier::GOLD, 80, wins: 10, losses: 10, division: RankedRank::I);
         $to = $this->snapshot('2026-08-03 10:30', RankedTier::PLATINUM, 10, wins: 11, losses: 10, division: RankedRank::IV);
 
         $segment = RaceSegment::between($from, $to);
 
         $this->assertNotNull($segment);
-        $this->assertSame(630, $segment->scoreDelta());
-        $this->assertSame(787.5, $segment->weightedDelta());
+        $this->assertSame(30, $segment->scoreDelta());
+        $this->assertSame(37.5, $segment->weightedDelta());
     }
 
     public function testUneDefaiteProduitUnSegmentNegatif(): void
