@@ -40,8 +40,16 @@ final class PlayerRaceSeries
         return $this->player;
     }
 
-    /** @return RaceSegment[] */
-    private function segments(): array
+    /**
+     * Les segments de la série, dans l'ordre chronologique.
+     *
+     * Public parce qu'un segment est la seule unité qui explique un score : sans
+     * lui, un total de course n'est ni vérifiable ni contestable. C'est ce que
+     * lit la commande d'audit.
+     *
+     * @return RaceSegment[]
+     */
+    public function segments(): array
     {
         if ($this->segments !== null) {
             return $this->segments;
