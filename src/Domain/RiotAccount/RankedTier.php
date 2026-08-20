@@ -34,10 +34,31 @@ enum RankedTier: string
     }
 
     /**
+     * Rang du palier dans l'échelle, à partir d'Iron = 0. Les trois libellés
+     * apex partagent l'indice 7, ce qui fait de leur plancher la suite
+     * immédiate de Diamond I.
+     */
+    public function index(): int
+    {
+        return match($this) {
+            self::IRON => 0,
+            self::BRONZE => 1,
+            self::SILVER => 2,
+            self::GOLD => 3,
+            self::PLATINUM => 4,
+            self::EMERALD => 5,
+            self::DIAMOND => 6,
+            self::MASTER, self::GRANDMASTER, self::CHALLENGER => 7,
+            self::UNRANKED => throw new \InvalidArgumentException(
+                'Pas d\'indice pour UNRANKED : un compte non classé n\'a pas de place dans l\'échelle'
+            ),
+        };
+    }
+
+    /**
      * Master, Grandmaster et Challenger ne sont pas des paliers empilés : ce sont
      * trois libellés posés sur une seule et même échelle de LP, sans divisions et
-     * sans plafond. D'où l'absence de contrainte sur les LP, et le plancher
-     * unique du score de course.
+     * sans plafond. D'où l'absence de contrainte sur les LP.
      */
     public function isApex(): bool
     {

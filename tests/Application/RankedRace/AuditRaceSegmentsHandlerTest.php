@@ -19,14 +19,15 @@ class AuditRaceSegmentsHandlerTest extends TestCase
     // Vendredi -> fenêtre hebdo du lundi 17 au dimanche 23 août.
     private const string TODAY = '2026-08-21';
 
-    public function testLAuditExhibeLeSegmentDePromotionDuCasDeProd(): void
+    public function testLeCasDeProdNAffichePlusQueLesLpReellementGagnes(): void
     {
-        // Le cas signalé en prod le 2026-08-20 : 276 LP réellement gagnés
-        // (39 en Emerald + 1 pour franchir + 236 en Diamond) affichés à 1 448,8.
-        //   Emerald I 60 = 6460, Emerald I 99 = 6499        -> +39  x1.6 =   62,4
-        //   Emerald I 99 = 6499, Diamond IV 0 = 7100        -> +601 x1.6 =  961,6
-        //   Diamond IV 0 = 7100, Diamond II 36 = 7336       -> +236 x1.8 =  424,8
-        //                                            brut 876       pondéré 1 448,8
+        // Non-régression du cas signalé en prod le 2026-08-20. Le joueur a gagné
+        // 276 LP (39 en Emerald, 1 pour franchir, 236 en Diamond) et affichait
+        // 876 bruts / 1 448,8 pondérés, l'échelle sautant de 600 à la promotion.
+        //   Emerald I 60 (2360) -> Emerald I 99 (2399)    -> +39  x1.6 =  62,4
+        //   Emerald I 99 (2399) -> Diamond IV 0 (2400)    ->  +1  x1.6 =   1,6
+        //   Diamond IV 0 (2400) -> Diamond II 36 (2636)   -> +236 x1.8 = 424,8
+        //                                          brut 276      pondéré 488,8
         $audits = $this->handler($this->prodCase())->handle(new AuditRaceSegmentsCommand('solo', 'week'));
 
         $this->assertCount(1, $audits);
@@ -34,17 +35,18 @@ class AuditRaceSegmentsHandlerTest extends TestCase
 
         $this->assertSame('EMERALD I 60 LP', $audit->baselineRank);
         $this->assertSame('DIAMOND II 36 LP', $audit->finishRank);
-        $this->assertSame(876, $audit->rawProgression);
-        $this->assertSame(1448.8, $audit->weightedProgression);
+        $this->assertSame(276, $audit->rawProgression);
+        $this->assertSame(488.8, $audit->weightedProgression);
         $this->assertSame(15, $audit->gamesPlayed);
         $this->assertSame(0, $audit->offRaceDelta);
         $this->assertCount(3, $audit->segments);
     }
 
-    public function testLeSegmentDePromotionPeseUnePartiePourSixCentsUnPoints(): void
+    public function testLeSegmentDePromotionNeVautPlusQuUnSeulLp(): void
     {
-        // Le cœur du diagnostic : une seule partie, +601 bruts, 961,6 pondérés,
-        // soit 66 % du score de la semaine. L'échelle saute de 600 à la frontière.
+        // Ce segment pesait 601 bruts et 961,6 pondérés — 66 % du score de la
+        // semaine — pour une seule partie. Franchir un palier ne rapporte plus
+        // que le LP réellement gagné.
         $audits = $this->handler($this->prodCase())->handle(new AuditRaceSegmentsCommand('solo', 'week'));
 
         $promotion = $audits[0]->segments[1];
@@ -52,19 +54,20 @@ class AuditRaceSegmentsHandlerTest extends TestCase
         $this->assertSame('EMERALD I 99 LP', $promotion->fromRank);
         $this->assertSame('DIAMOND IV 0 LP', $promotion->toRank);
         $this->assertSame(1, $promotion->games);
-        $this->assertSame(601, $promotion->scoreDelta);
-        $this->assertSame(961.6, $promotion->weightedDelta);
+        $this->assertSame(1, $promotion->scoreDelta);
+        $this->assertSame(1.6, $promotion->weightedDelta);
         $this->assertSame('EMERALD → DIAMOND', $promotion->tierCrossing);
     }
 
-    public function testLeRapportPondereSurBrutResteDansLaPlageDesCoefficients(): void
+    public function testLeRapportPondereSurBrutMesureEnfinLesLpReels(): void
     {
-        // 1 448,8 / 876 = 1,654 : DANS la plage [1.0 ; 2.2]. C'est ce qui prouve
-        // que la pondération n'est pas la cause — elle amplifie une échelle fausse.
-        // Le x5,25 constaté vient de la comparaison au LP RÉEL (276), pas au brut.
+        // 488,8 / 276 = 1,771 : le rapport est celui d'un joueur Emerald->Diamond,
+        // et son dénominateur est un vrai nombre de LP. Sur l'ancienne échelle il
+        // valait 1,654 — dans la plage, donc muet, alors que le score était faux
+        // de 960 points. Le x5,25 constaté venait de la comparaison au LP réel.
         $audits = $this->handler($this->prodCase())->handle(new AuditRaceSegmentsCommand('solo', 'week'));
 
-        $this->assertSame(1.654, $audits[0]->effectiveCoefficient);
+        $this->assertSame(1.771, $audits[0]->effectiveCoefficient);
         $this->assertSame(1, $audits[0]->tierCrossings);
     }
 

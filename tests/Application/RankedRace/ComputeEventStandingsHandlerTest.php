@@ -50,7 +50,7 @@ class ComputeEventStandingsHandlerTest extends TestCase
         // Standings : fenêtre respectée, seuil custom appliqué (3 parties -> qualifié,
         // alors que la règle hebdo à 5 l'aurait grisé).
         $this->assertCount(1, $view->progression);
-        $this->assertSame(630, $view->progression[0]->rawDelta);
+        $this->assertSame(30, $view->progression[0]->rawDelta);
         $this->assertSame(3, $view->winrate->gamesRequired);
         $this->assertCount(1, $view->winrate->qualified);
     }
