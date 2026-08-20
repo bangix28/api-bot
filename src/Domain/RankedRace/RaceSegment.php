@@ -51,11 +51,15 @@ final readonly class RaceSegment
     }
 
     /**
-     * Delta payé au tarif du tier de DÉPART : une montée Gold -> Platinum dans
-     * le segment est comptée au coefficient Gold, sans découpage à la frontière.
+     * Chaque LP payé au tarif du palier où il a été gagné : une montée
+     * Gold -> Platinum dans le segment est découpée à la frontière, la part Gold
+     * au tarif Gold et la part Platinum au tarif Platinum.
      */
     public function weightedDelta(): float
     {
-        return $this->scoreDelta() * TierCoefficient::for($this->from->ranked->getTier());
+        return WeightedProgressionScale::deltaBetween(
+            $this->from->raceScore(),
+            $this->to->raceScore(),
+        );
     }
 }

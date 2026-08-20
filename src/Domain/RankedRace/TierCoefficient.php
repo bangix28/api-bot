@@ -7,8 +7,10 @@ use App\Domain\RiotAccount\RankedTier;
 /**
  * Pondération de la progression : un LP gagné en haut de l'échelle vaut plus
  * qu'un LP gagné en bas, pour que tout le monde puisse gagner la course.
- * Le coefficient appliqué à un delta quotidien est celui du tier de DÉPART
- * du jour — gère les traversées de tier sans découpage.
+ *
+ * C'est le tarif du palier, appliqué aux LP gagnés DANS ce palier :
+ * WeightedProgressionScale s'en sert comme pente sur la bande correspondante,
+ * et découpe donc un segment qui traverse une frontière.
  */
 final class TierCoefficient
 {
