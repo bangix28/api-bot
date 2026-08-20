@@ -5,25 +5,40 @@ namespace App\Domain\RankedRace;
 use App\Domain\RiotAccount\RankedTier;
 
 /**
- * Pondération de la progression : un LP gagné en haut de l'échelle vaut plus
- * qu'un LP gagné en bas, pour que tout le monde puisse gagner la course.
- *
- * C'est le tarif du palier, appliqué aux LP gagnés DANS ce palier :
+ * Tarif d'un palier, appliqué aux LP gagnés DANS ce palier :
  * WeightedProgressionScale s'en sert comme pente sur la bande correspondante,
  * et découpe donc un segment qui traverse une frontière.
+ *
+ * Le tarif compense une difficulté réelle, pas la difficulté supposée du palier.
+ * Sous Master, le montant de LP par partie ne dépend pas du palier mais de
+ * l'écart entre le MMR et le rang affiché : un joueur à son niveau d'équilibre
+ * gagne autant en Bronze qu'en Diamond, et nette zéro sur la semaine. Ce qui
+ * produit du LP, c'est d'être sous-classé — et le convertir est plus facile en
+ * bas, où les gains gonflés et les winrates à 70 % sont accessibles.
+ *
+ * D'où un tarif plat jusqu'à Platine, puis une correction modeste et tardive
+ * pour les frictions propres au haut de l'échelle : décompression des gains,
+ * retour rapide à 50 % de winrate, decay apex qui taxe l'activité, files
+ * longues aux heures creuses, et impossibilité d'être sous-classé au sommet.
+ *
+ * La grille précédente allait de 1.0 à 2.2 en démarrant dès Silver : un joueur
+ * Diamond assidu y devenait structurellement imbattable par un Silver faisant
+ * la performance objectivement plus impressionnante, ce qui figeait le podium
+ * et tuait l'intérêt de la course.
  */
 final class TierCoefficient
 {
     public static function for(RankedTier $tier): float
     {
         return match ($tier) {
-            RankedTier::IRON, RankedTier::BRONZE => 1.0,
-            RankedTier::SILVER => 1.1,
-            RankedTier::GOLD => 1.25,
-            RankedTier::PLATINUM => 1.4,
-            RankedTier::EMERALD => 1.6,
-            RankedTier::DIAMOND => 1.8,
-            RankedTier::MASTER, RankedTier::GRANDMASTER, RankedTier::CHALLENGER => 2.2,
+            RankedTier::IRON,
+            RankedTier::BRONZE,
+            RankedTier::SILVER,
+            RankedTier::GOLD,
+            RankedTier::PLATINUM => 1.0,
+            RankedTier::EMERALD => 1.05,
+            RankedTier::DIAMOND => 1.15,
+            RankedTier::MASTER, RankedTier::GRANDMASTER, RankedTier::CHALLENGER => 1.35,
             // Un snapshot n'est jamais créé pour un compte non classé.
             RankedTier::UNRANKED => throw new \InvalidArgumentException(
                 'Pas de coefficient pour UNRANKED : un snapshot non classé ne devrait pas exister'

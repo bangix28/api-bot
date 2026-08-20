@@ -12,28 +12,34 @@ use PHPUnit\Framework\TestCase;
 
 class WeightedProgressionScaleTest extends TestCase
 {
-    public function testLesPlanchersDePalierSontFigesParLaTableDesTarifs(): void
+    public function testLaConversionEstLIdentiteJusquAPlatine(): void
     {
-        // Chaque plancher = le précédent + 400 LP au tarif du palier traversé.
-        //   Iron 0       Bronze 400 (+400 x1.0)   Silver 800 (+400 x1.0)
-        //   Gold 1240 (+400 x1.1)                 Platinum 1740 (+400 x1.25)
-        //   Emerald 2300 (+400 x1.4)              Diamond 2940 (+400 x1.6)
-        //   Master 3660 (+400 x1.8), puis x2.2 sans plafond
+        // Tarif plat à 1.0 d'Iron à Platine : sous Emerald, un LP vaut un point,
+        // et les deux classements affichent le même chiffre. C'est voulu — la
+        // pondération ne corrige que les frictions du haut de l'échelle.
         $this->assertSame(0.0, WeightedProgressionScale::at(0));
         $this->assertSame(400.0, WeightedProgressionScale::at(400));
         $this->assertSame(800.0, WeightedProgressionScale::at(800));
-        $this->assertSame(1240.0, WeightedProgressionScale::at(1200));
-        $this->assertSame(1740.0, WeightedProgressionScale::at(1600));
-        $this->assertSame(2300.0, WeightedProgressionScale::at(2000));
-        $this->assertSame(2940.0, WeightedProgressionScale::at(2400));
-        $this->assertSame(3660.0, WeightedProgressionScale::at(2800));
+        $this->assertSame(1200.0, WeightedProgressionScale::at(1200));
+        $this->assertSame(1600.0, WeightedProgressionScale::at(1600));
+        $this->assertSame(2000.0, WeightedProgressionScale::at(2000));
+    }
+
+    public function testLesPlanchersDuHautDeLEchelleSontFigesParLaTableDesTarifs(): void
+    {
+        // Emerald 2000 (fin de l'identité), puis :
+        //   Diamond 2420 (+400 x1.05)   Master 2880 (+400 x1.15)
+        //   au-delà : x1.35 sans plafond
+        $this->assertSame(2000.0, WeightedProgressionScale::at(2000));
+        $this->assertSame(2420.0, WeightedProgressionScale::at(2400));
+        $this->assertSame(2880.0, WeightedProgressionScale::at(2800));
     }
 
     public function testLaBandeApexNAPasDePlafond(): void
     {
         // Un joueur Challenger à 1 200 LP reste sur la pente Master :
-        // 3 660 + 1 200 x 2.2 = 6 300.
-        $this->assertSame(6300.0, WeightedProgressionScale::at(2800 + 1200));
+        // 2 880 + 1 200 x 1.35 = 4 500.
+        $this->assertSame(4500.0, WeightedProgressionScale::at(2800 + 1200));
     }
 
     public function testUnAllerRetourALaFrontiereEstExactementNeutre(): void
@@ -52,23 +58,23 @@ class WeightedProgressionScaleTest extends TestCase
 
     public function testUnDeltaTraversantUneFrontiereEstDecoupeAuProRata(): void
     {
-        // Gold I 80 (1580) -> Platinum IV 10 (1610) : 20 LP en Gold à 1.25 (25)
-        // puis 10 LP en Platinum à 1.4 (14), soit 39. Au tarif du seul palier de
-        // départ, ces 30 LP valaient 37,5.
-        $from = $this->score(RankedTier::GOLD, RankedRank::I, 80);
-        $to = $this->score(RankedTier::PLATINUM, RankedRank::IV, 10);
+        // Emerald I 80 (2380) -> Diamond IV 10 (2410) : 20 LP en Emerald à 1.05
+        // (21) puis 10 LP en Diamond à 1.15 (11,5), soit 32,5. Au tarif du seul
+        // palier de départ, ces 30 LP vaudraient 31,5.
+        $from = $this->score(RankedTier::EMERALD, RankedRank::I, 80);
+        $to = $this->score(RankedTier::DIAMOND, RankedRank::IV, 10);
 
-        $this->assertSame(39.0, WeightedProgressionScale::deltaBetween($from, $to));
+        $this->assertSame(32.5, WeightedProgressionScale::deltaBetween($from, $to));
     }
 
     public function testLaFrontiereApexEstTraverseeSansDiscontinuite(): void
     {
-        // Diamond I 90 (2790) -> Master 30 (2830) : 10 LP en Diamond à 1.8 (18)
-        // puis 30 LP en apex à 2.2 (66), soit 84.
+        // Diamond I 90 (2790) -> Master 30 (2830) : 10 LP en Diamond à 1.15
+        // (11,5) puis 30 LP en apex à 1.35 (40,5), soit 52.
         $from = $this->score(RankedTier::DIAMOND, RankedRank::I, 90);
         $to = $this->score(RankedTier::MASTER, RankedRank::UNRANKED, 30);
 
-        $this->assertSame(84.0, WeightedProgressionScale::deltaBetween($from, $to));
+        $this->assertSame(52.0, WeightedProgressionScale::deltaBetween($from, $to));
     }
 
     public function testChaqueLpVautExactementLeTarifDeSonPalier(): void
@@ -90,8 +96,8 @@ class WeightedProgressionScaleTest extends TestCase
             }
         }
 
-        // Master 400 LP : 3 660 + 400 x 2.2 = 4 540.
-        $this->assertSame(4540.0, WeightedProgressionScale::at(3200));
+        // Master 400 LP : 2 880 + 400 x 1.35 = 3 420.
+        $this->assertSame(3420.0, WeightedProgressionScale::at(3200));
     }
 
     public function testLaPonderationNeDependQueDesDeuxPositions(): void
@@ -118,17 +124,18 @@ class WeightedProgressionScaleTest extends TestCase
 
     public function testLaConversionEstExacteAuCentiemeSansDeriveFlottante(): void
     {
-        // Le calcul passe par des centièmes entiers : le tarif 1.25 produit des
-        // quarts de point qui doivent tomber juste, et un aller-retour apex —
-        // là où les valeurs sont les plus grandes — doit rendre zéro strict.
-        $this->assertSame(1.25, WeightedProgressionScale::deltaBetween(1200, 1201));
-        $this->assertSame(6.25, WeightedProgressionScale::deltaBetween(1200, 1205));
-        $this->assertSame(12.5, WeightedProgressionScale::deltaBetween(1200, 1210));
+        // Le calcul passe par des centièmes entiers : les tarifs 1.05 et 1.15
+        // produisent des centièmes qui doivent tomber juste, et un aller-retour
+        // apex — là où les valeurs sont les plus grandes — doit rendre zéro strict.
+        $this->assertSame(1.05, WeightedProgressionScale::deltaBetween(2000, 2001));
+        $this->assertSame(10.5, WeightedProgressionScale::deltaBetween(2000, 2010));
+        $this->assertSame(1.15, WeightedProgressionScale::deltaBetween(2400, 2401));
+        $this->assertSame(8.05, WeightedProgressionScale::deltaBetween(2400, 2407));
 
         $apexBas = $this->score(RankedTier::MASTER, RankedRank::UNRANKED, 150);
         $apexHaut = $this->score(RankedTier::MASTER, RankedRank::UNRANKED, 900);
 
-        $this->assertSame(1650.0, WeightedProgressionScale::deltaBetween($apexBas, $apexHaut));
+        $this->assertSame(1012.5, WeightedProgressionScale::deltaBetween($apexBas, $apexHaut));
         $this->assertSame(
             0.0,
             WeightedProgressionScale::deltaBetween($apexBas, $apexHaut)

@@ -14,31 +14,31 @@ class PlayerRaceSeriesTest extends TestCase
 {
     public function testProgressionBruteEtPondereeAvecFranchissementDeTier(): void
     {
-        // Gold I 80 LP (1580) -> Platinum IV 10 LP (1610) : 30 LP réels, découpés
-        // à la frontière — 20 en Gold à 1.25, 10 en Platinum à 1.4, soit 39.
+        // Emerald I 80 LP (2380) -> Diamond IV 10 LP (2410) : 30 LP réels, découpés
+        // à la frontière — 20 en Emerald à 1.05, 10 en Diamond à 1.15, soit 32,5.
         // La promotion ne rapporte rien en elle-même.
         $series = new PlayerRaceSeries($this->player(), [
-            $this->snapshot('2026-08-03 03:00', RankedTier::GOLD, RankedRank::I, 80, wins: 10, losses: 10),
-            $this->snapshot('2026-08-04 03:00', RankedTier::PLATINUM, RankedRank::IV, 10, wins: 18, losses: 14),
+            $this->snapshot('2026-08-03 03:00', RankedTier::EMERALD, RankedRank::I, 80, wins: 10, losses: 10),
+            $this->snapshot('2026-08-04 03:00', RankedTier::DIAMOND, RankedRank::IV, 10, wins: 18, losses: 14),
         ]);
 
         $this->assertSame(30, $series->rawProgression());
-        $this->assertSame(39.0, $series->weightedProgression());
+        $this->assertSame(32.5, $series->weightedProgression());
         $this->assertSame(12, $series->gamesPlayed());
     }
 
     public function testLesTrousDansLaSerieSontCalculesEntreSnapshotsConnus(): void
     {
         // Pas de snapshot le 4 (cron en panne, compte non classé ce jour-là...) :
-        // un seul segment entre le 3 et le 5, pondéré par le tier de départ.
+        // un seul segment entre le 3 et le 5.
         $series = new PlayerRaceSeries($this->player(), [
             $this->snapshot('2026-08-03 03:00', RankedTier::SILVER, RankedRank::II, 50, wins: 5, losses: 5),
             $this->snapshot('2026-08-05 03:00', RankedTier::SILVER, RankedRank::I, 20, wins: 8, losses: 9),
         ]);
 
-        // 1050 -> 1120 : delta 70 x 1.1 (Silver)
+        // 1050 -> 1120 : delta 70 x 1.0 (Silver)
         $this->assertSame(70, $series->rawProgression());
-        $this->assertSame(77.0, $series->weightedProgression());
+        $this->assertSame(70.0, $series->weightedProgression());
     }
 
     public function testQuaranteHuitReleveDontUnSeulAvecUnePartie(): void
@@ -67,7 +67,7 @@ class PlayerRaceSeriesTest extends TestCase
 
         $this->assertSame(1, $series->gamesPlayed());
         $this->assertSame(18, $series->rawProgression());
-        $this->assertSame(22.5, $series->weightedProgression()); // 18 x 1.25
+        $this->assertSame(18.0, $series->weightedProgression()); // 18 x 1.0
         $this->assertSame(100.0, $series->winrate());
         // Départ pris juste avant la partie (le relevé de 14h30), pas à minuit.
         $this->assertSame('2026-08-03 14:30', $series->baseline()->capturedAt->format('Y-m-d H:i'));
@@ -86,7 +86,7 @@ class PlayerRaceSeriesTest extends TestCase
         ]);
 
         $this->assertSame(40, $series->rawProgression());
-        $this->assertSame(88.0, $series->weightedProgression()); // 40 x 2.2 (Master)
+        $this->assertSame(54.0, $series->weightedProgression()); // 40 x 1.35 (Master)
         $this->assertSame(2, $series->gamesPlayed());
         // Le decay est antérieur à la première partie : il tombe hors de la
         // fenêtre de mesure du joueur, il n'a donc rien à « expliquer ».
@@ -107,7 +107,7 @@ class PlayerRaceSeriesTest extends TestCase
         ]);
 
         $this->assertSame(60, $series->rawProgression());
-        $this->assertSame(132.0, $series->weightedProgression()); // (40 + 20) x 2.2
+        $this->assertSame(81.0, $series->weightedProgression()); // (40 + 20) x 1.35
         $this->assertSame(-75, $series->offRaceDelta());
         // Départ 2845, progression +60, arrivée 2830 : les trois ne s'additionnent
         // pas, et c'est exactement ce que offRaceDelta rend lisible.
@@ -207,9 +207,9 @@ class PlayerRaceSeriesTest extends TestCase
 
         // 1590 -> 1620 -> 1575 : le brut est exactement les LP réels.
         $this->assertSame(-15, $series->rawProgression());
-        // Le détour à Platinum s'annule ; ne reste que la perte de 15 LP au tarif
-        // Gold, soit -18,75, arrondi à une décimale par le contrat.
-        $this->assertSame(-18.8, $series->weightedProgression());
+        // Le détour à Platinum s'annule ; ne reste que la perte de 15 LP, au tarif
+        // plat de 1.0 qui court d'Iron à Platine.
+        $this->assertSame(-15.0, $series->weightedProgression());
     }
 
     public function testUnAllerRetourRevenuAuMemeRangEstExactementNeutre(): void
