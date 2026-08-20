@@ -28,4 +28,36 @@ final class TierCoefficient
             ),
         };
     }
+
+    /**
+     * Plage des coefficients existants. Un segment n'ayant qu'un seul tier de
+     * départ, son rapport pondéré/brut ne peut pas en sortir : c'est l'invariant
+     * qui aurait attrapé le +1 448,8 pour 276 LP.
+     *
+     * Dérivée de la table plutôt que recopiée, pour qu'une recalibration ne
+     * laisse pas un garde-fou périmé derrière elle.
+     */
+    public static function lowest(): float
+    {
+        return min(self::all());
+    }
+
+    public static function highest(): float
+    {
+        return max(self::all());
+    }
+
+    /** @return float[] */
+    private static function all(): array
+    {
+        $coefficients = [];
+
+        foreach (RankedTier::cases() as $tier) {
+            if ($tier !== RankedTier::UNRANKED) {
+                $coefficients[] = self::for($tier);
+            }
+        }
+
+        return $coefficients;
+    }
 }

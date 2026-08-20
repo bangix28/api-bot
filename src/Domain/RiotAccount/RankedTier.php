@@ -33,6 +33,20 @@ enum RankedTier: string
         };
     }
 
+    /**
+     * Master, Grandmaster et Challenger ne sont pas des paliers empilés : ce sont
+     * trois libellés posés sur une seule et même échelle de LP, sans divisions et
+     * sans plafond. D'où l'absence de contrainte sur les LP, et le plancher
+     * unique du score de course.
+     */
+    public function isApex(): bool
+    {
+        return match ($this) {
+            self::MASTER, self::GRANDMASTER, self::CHALLENGER => true,
+            default => false,
+        };
+    }
+
     public static function fromString(string $value): self
     {
         if ($value === '') {
