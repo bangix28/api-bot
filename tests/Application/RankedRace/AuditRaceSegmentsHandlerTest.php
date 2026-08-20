@@ -24,10 +24,10 @@ class AuditRaceSegmentsHandlerTest extends TestCase
         // Non-régression du cas signalé en prod le 2026-08-20. Le joueur a gagné
         // 276 LP (39 en Emerald, 1 pour franchir, 236 en Diamond) et affichait
         // 876 bruts / 1 448,8 pondérés, l'échelle sautant de 600 à la promotion.
-        //   Emerald I 60 (2360) -> Emerald I 99 (2399)    -> +39  x1.6 =  62,4
-        //   Emerald I 99 (2399) -> Diamond IV 0 (2400)    ->  +1  x1.6 =   1,6
-        //   Diamond IV 0 (2400) -> Diamond II 36 (2636)   -> +236 x1.8 = 424,8
-        //                                          brut 276      pondéré 488,8
+        //   Emerald I 60 (2360) -> Emerald I 99 (2399)    -> +39  x1.05 =  40,95
+        //   Emerald I 99 (2399) -> Diamond IV 0 (2400)    ->  +1  x1.05 =   1,05
+        //   Diamond IV 0 (2400) -> Diamond II 36 (2636)   -> +236 x1.15 = 271,40
+        //                                          brut 276      pondéré 313,4
         $audits = $this->handler($this->prodCase())->handle(new AuditRaceSegmentsCommand('solo', 'week'));
 
         $this->assertCount(1, $audits);
@@ -36,7 +36,7 @@ class AuditRaceSegmentsHandlerTest extends TestCase
         $this->assertSame('EMERALD I 60 LP', $audit->baselineRank);
         $this->assertSame('DIAMOND II 36 LP', $audit->finishRank);
         $this->assertSame(276, $audit->rawProgression);
-        $this->assertSame(488.8, $audit->weightedProgression);
+        $this->assertSame(313.4, $audit->weightedProgression);
         $this->assertSame(15, $audit->gamesPlayed);
         $this->assertSame(0, $audit->offRaceDelta);
         $this->assertCount(3, $audit->segments);
@@ -55,19 +55,20 @@ class AuditRaceSegmentsHandlerTest extends TestCase
         $this->assertSame('DIAMOND IV 0 LP', $promotion->toRank);
         $this->assertSame(1, $promotion->games);
         $this->assertSame(1, $promotion->scoreDelta);
-        $this->assertSame(1.6, $promotion->weightedDelta);
+        $this->assertSame(1.05, $promotion->weightedDelta);
         $this->assertSame('EMERALD → DIAMOND', $promotion->tierCrossing);
     }
 
     public function testLeRapportPondereSurBrutMesureEnfinLesLpReels(): void
     {
-        // 488,8 / 276 = 1,771 : le rapport est celui d'un joueur Emerald->Diamond,
-        // et son dénominateur est un vrai nombre de LP. Sur l'ancienne échelle il
-        // valait 1,654 — dans la plage, donc muet, alors que le score était faux
-        // de 960 points. Le x5,25 constaté venait de la comparaison au LP réel.
+        // 313,4 / 276 = 1,136 : le rapport est celui d'un joueur Emerald->Diamond
+        // aux nouveaux tarifs, et son dénominateur est un vrai nombre de LP. Sur
+        // l'ancienne échelle il valait 1,654 — dans la plage, donc muet, alors que
+        // le score était faux de 960 points. Le x5,25 signalé en prod venait de la
+        // comparaison au LP réel, pas du rapport.
         $audits = $this->handler($this->prodCase())->handle(new AuditRaceSegmentsCommand('solo', 'week'));
 
-        $this->assertSame(1.771, $audits[0]->effectiveCoefficient);
+        $this->assertSame(1.136, $audits[0]->effectiveCoefficient);
         $this->assertSame(1, $audits[0]->tierCrossings);
     }
 
@@ -102,7 +103,7 @@ class AuditRaceSegmentsHandlerTest extends TestCase
         $this->assertSame('GRANDMASTER 300 LP', $audits[0]->finishRank);
         $this->assertSame(0, $audits[0]->tierCrossings);
         $this->assertSame(50, $audits[0]->rawProgression);
-        $this->assertSame(110.0, $audits[0]->segments[0]->weightedDelta);
+        $this->assertSame(67.5, $audits[0]->segments[0]->weightedDelta);
     }
 
     public function testUnJoueurSansPartieNAAucunSegmentEtAucunRapport(): void

@@ -13,17 +13,17 @@ use PHPUnit\Framework\TestCase;
 
 class RaceStandingsCalculatorTest extends TestCase
 {
-    public function testLesRangsBrutEtPondereDifferentSelonLeTier(): void
+    public function testLaPonderationInverseLOrdreQuandLesProgressionsSontProches(): void
     {
-        // Iron : +300 LP bruts (x1.0 = 300 pondérés).
+        // Iron : +100 LP bruts, x1.0 = 100 pondérés.
         $ironPlayer = $this->series('Iron#EUW', [
             ['2026-08-03', RankedTier::IRON, RankedRank::IV, 0, 10, 10],
-            ['2026-08-09', RankedTier::IRON, RankedRank::I, 0, 20, 15],
+            ['2026-08-09', RankedTier::IRON, RankedRank::III, 0, 16, 14],
         ]);
-        // Diamond : +200 LP bruts mais x1.8 = 360 pondérés.
+        // Diamond : +90 LP bruts seulement, mais x1.15 = 103,5 pondérés.
         $diamondPlayer = $this->series('Dia#EUW', [
             ['2026-08-03', RankedTier::DIAMOND, RankedRank::IV, 0, 10, 10],
-            ['2026-08-09', RankedTier::DIAMOND, RankedRank::II, 0, 20, 15],
+            ['2026-08-09', RankedTier::DIAMOND, RankedRank::IV, 90, 16, 14],
         ]);
 
         $standings = (new RaceStandingsCalculator())->progressionStandings([$ironPlayer, $diamondPlayer]);
@@ -36,6 +36,29 @@ class RaceStandingsCalculatorTest extends TestCase
         $this->assertSame('Iron#EUW', $standings[1]->series->player()->riotId);
         $this->assertSame(2, $standings[1]->rankWeighted);
         $this->assertSame(1, $standings[1]->rankRaw);
+    }
+
+    public function testLaPonderationNInversePlusUnEcartImportant(): void
+    {
+        // Le sens de la recalibration : un Diamond assidu ne bat plus un Iron qui
+        // a objectivement fait mieux. Avec les tarifs précédents, ces +200 LP en
+        // Diamond valaient 360 points et passaient devant les +300 de l'Iron ;
+        // le podium était structurellement fermé au bas de l'échelle.
+        $ironPlayer = $this->series('Iron#EUW', [
+            ['2026-08-03', RankedTier::IRON, RankedRank::IV, 0, 10, 10],
+            ['2026-08-09', RankedTier::IRON, RankedRank::I, 0, 20, 15],
+        ]);
+        $diamondPlayer = $this->series('Dia#EUW', [
+            ['2026-08-03', RankedTier::DIAMOND, RankedRank::IV, 0, 10, 10],
+            ['2026-08-09', RankedTier::DIAMOND, RankedRank::II, 0, 20, 15],
+        ]);
+
+        $standings = (new RaceStandingsCalculator())->progressionStandings([$ironPlayer, $diamondPlayer]);
+
+        // 300 pondérés contre 200 x 1.15 = 230 : l'Iron tient les deux classements.
+        $this->assertSame('Iron#EUW', $standings[0]->series->player()->riotId);
+        $this->assertSame(1, $standings[0]->rankWeighted);
+        $this->assertSame(1, $standings[0]->rankRaw);
     }
 
     public function testEgaliteDeProgressionDepartageeParMoinsDePartiesPuisWinrate(): void

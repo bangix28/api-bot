@@ -46,17 +46,17 @@ class RaceSegmentTest extends TestCase
 
     public function testLeDeltaEstDecoupeALaFrontiereDeTier(): void
     {
-        // Gold I 80 (1580) -> Platinum IV 10 (1610) : 20 LP gagnés en Gold à 1.25
-        // (25) puis 10 LP en Platinum à 1.4 (14), soit 39. Chaque LP est payé au
-        // tarif du palier où il a été gagné, pas à celui du palier de départ.
-        $from = $this->snapshot('2026-08-03 10:00', RankedTier::GOLD, 80, wins: 10, losses: 10, division: RankedRank::I);
-        $to = $this->snapshot('2026-08-03 10:30', RankedTier::PLATINUM, 10, wins: 11, losses: 10, division: RankedRank::IV);
+        // Emerald I 80 (2380) -> Diamond IV 10 (2410) : 20 LP gagnés en Emerald à
+        // 1.05 (21) puis 10 LP en Diamond à 1.15 (11,5), soit 32,5. Chaque LP est
+        // payé au tarif du palier où il a été gagné, pas à celui du départ.
+        $from = $this->snapshot('2026-08-03 10:00', RankedTier::EMERALD, 80, wins: 10, losses: 10, division: RankedRank::I);
+        $to = $this->snapshot('2026-08-03 10:30', RankedTier::DIAMOND, 10, wins: 11, losses: 10, division: RankedRank::IV);
 
         $segment = RaceSegment::between($from, $to);
 
         $this->assertNotNull($segment);
         $this->assertSame(30, $segment->scoreDelta());
-        $this->assertSame(39.0, $segment->weightedDelta());
+        $this->assertSame(32.5, $segment->weightedDelta());
     }
 
     public function testUneDefaiteProduitUnSegmentNegatif(): void
@@ -72,7 +72,7 @@ class RaceSegmentTest extends TestCase
         $this->assertSame(1, $segment->games());
         $this->assertSame(0, $segment->wins());
         $this->assertSame(-20, $segment->scoreDelta());
-        $this->assertSame(-22.0, $segment->weightedDelta()); // x1.1 Silver
+        $this->assertSame(-20.0, $segment->weightedDelta()); // x1.0 Silver
     }
 
     private function snapshot(
