@@ -14,14 +14,15 @@ class PlayerRaceSeriesTest extends TestCase
 {
     public function testProgressionBruteEtPondereeAvecFranchissementDeTier(): void
     {
-        // Gold I 80 LP (4480) -> Platinum IV 10 LP (5110) : delta 630, payé au tarif Gold (x1.25).
+        // Gold I 80 LP (1580) -> Platinum IV 10 LP (1610) : 30 LP réels, payés au
+        // tarif Gold (x1.25). La promotion ne rapporte rien en elle-même.
         $series = new PlayerRaceSeries($this->player(), [
             $this->snapshot('2026-08-03 03:00', RankedTier::GOLD, RankedRank::I, 80, wins: 10, losses: 10),
             $this->snapshot('2026-08-04 03:00', RankedTier::PLATINUM, RankedRank::IV, 10, wins: 18, losses: 14),
         ]);
 
-        $this->assertSame(630, $series->rawProgression());
-        $this->assertSame(787.5, $series->weightedProgression());
+        $this->assertSame(30, $series->rawProgression());
+        $this->assertSame(37.5, $series->weightedProgression());
         $this->assertSame(12, $series->gamesPlayed());
     }
 
@@ -34,7 +35,7 @@ class PlayerRaceSeriesTest extends TestCase
             $this->snapshot('2026-08-05 03:00', RankedTier::SILVER, RankedRank::I, 20, wins: 8, losses: 9),
         ]);
 
-        // 3350 -> 3420 : delta 70 x 1.1 (Silver)
+        // 1050 -> 1120 : delta 70 x 1.1 (Silver)
         $this->assertSame(70, $series->rawProgression());
         $this->assertSame(77.0, $series->weightedProgression());
     }
@@ -89,7 +90,7 @@ class PlayerRaceSeriesTest extends TestCase
         // Le decay est antérieur à la première partie : il tombe hors de la
         // fenêtre de mesure du joueur, il n'a donc rien à « expliquer ».
         $this->assertSame(0, $series->offRaceDelta());
-        $this->assertSame(8045, $series->baseline()->raceScore()); // Master 45, après decay
+        $this->assertSame(2845, $series->baseline()->raceScore()); // Master 45, après decay
     }
 
     public function testLeDecayEntreDeuxSegmentsEstIsoleDansOffRaceDelta(): void
@@ -107,10 +108,10 @@ class PlayerRaceSeriesTest extends TestCase
         $this->assertSame(60, $series->rawProgression());
         $this->assertSame(132.0, $series->weightedProgression()); // (40 + 20) x 2.2
         $this->assertSame(-75, $series->offRaceDelta());
-        // Départ 8045, progression +60, arrivée 8030 : les trois ne s'additionnent
+        // Départ 2845, progression +60, arrivée 2830 : les trois ne s'additionnent
         // pas, et c'est exactement ce que offRaceDelta rend lisible.
-        $this->assertSame(8045, $series->baseline()->raceScore());
-        $this->assertSame(8030, $series->finish()->raceScore());
+        $this->assertSame(2845, $series->baseline()->raceScore());
+        $this->assertSame(2830, $series->finish()->raceScore());
     }
 
     public function testUnReleveAberrantSansPartieEstIgnore(): void
@@ -191,23 +192,24 @@ class PlayerRaceSeriesTest extends TestCase
         $this->assertFalse($series->isQualified(15)); // seuil mensuel
     }
 
-    public function testLeYoYoALaFrontiereDeTierEstPenalisant(): void
+    public function testLeYoYoALaFrontiereDeTierResteLegerementPenalisant(): void
     {
-        // Biais ASSUMÉ, figé ici en dur pour qu'il ne dérive pas en silence :
+        // Biais résiduel, figé ici en dur pour qu'il ne dérive pas en silence :
         // la montée est payée au tarif Gold (1.25), la redescente au tarif
-        // Platinum (1.4). Un aller-retour coûte donc plus qu'il ne rapporte.
-        // Le corriger imposerait de découper un delta à la frontière, ce que
-        // TierCoefficient refuse explicitement.
+        // Platinum (1.4). Un aller-retour coûte donc encore un peu plus qu'il ne
+        // rapporte, mais l'écart n'est plus celui d'une échelle discontinue :
+        // il vient du seul choix du tarif, et vaut 6,75 au lieu de 100,5.
         $series = new PlayerRaceSeries($this->player(), [
             $this->snapshot('2026-08-03 18:00', RankedTier::GOLD, RankedRank::I, 90, wins: 10, losses: 10),
             $this->snapshot('2026-08-03 19:00', RankedTier::PLATINUM, RankedRank::IV, 20, wins: 11, losses: 10),
             $this->snapshot('2026-08-03 20:00', RankedTier::GOLD, RankedRank::I, 75, wins: 11, losses: 11),
         ]);
 
-        // En LP réels : 4490 -> 4475, soit -15.
+        // 1590 -> 1620 -> 1575 : le brut est exactement les LP réels.
         $this->assertSame(-15, $series->rawProgression());
-        // Pondéré : +630 x 1.25 puis -645 x 1.4 = 787.5 - 903.0
-        $this->assertSame(-115.5, $series->weightedProgression());
+        // Pondéré : +30 x 1.25 puis -45 x 1.4 = 37.5 - 63.0
+        // Payés au même tarif, les deux tronçons donneraient -18.75.
+        $this->assertSame(-25.5, $series->weightedProgression());
     }
 
     public function testLesSnapshotsSontReordonnesParInstant(): void

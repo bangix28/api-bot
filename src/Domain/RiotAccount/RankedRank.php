@@ -20,6 +20,22 @@ enum RankedRank: string
         };
     }
 
+    /**
+     * Rang de la division dans son palier, de IV = 0 à I = 3.
+     *
+     * UNRANKED vaut 0 : c'est la division des comptes apex, qui n'en ont pas.
+     */
+    public function index(): int
+    {
+        return match($this) {
+            self::IV => 0,
+            self::III => 1,
+            self::II => 2,
+            self::I => 3,
+            self::UNRANKED => 0,
+        };
+    }
+
     public static function fromString(string $value): self
     {
         if ($value === '') {

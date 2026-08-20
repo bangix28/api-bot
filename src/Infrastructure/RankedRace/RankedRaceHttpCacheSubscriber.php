@@ -31,7 +31,7 @@ final readonly class RankedRaceHttpCacheSubscriber implements EventSubscriberInt
      * déploiement laisserait les clients sur d'anciennes valeurs, l'instant du
      * dernier relevé n'ayant pas bougé.
      */
-    private const string ALGO_VERSION = 'v1';
+    private const string ALGO_VERSION = 'v2';
 
     private const int MAX_AGE_SECONDS = 60;
 
