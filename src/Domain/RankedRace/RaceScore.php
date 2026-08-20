@@ -25,7 +25,8 @@ final class RaceScore
 {
     private const int LP_PER_DIVISION = 100;
 
-    private const int LP_PER_TIER = 400;
+    /** Quatre divisions de 100 LP : la largeur d'un palier sur l'échelle. */
+    public const int LP_PER_TIER = 400;
 
     public static function of(RankedQueueEntity $ranked): int
     {

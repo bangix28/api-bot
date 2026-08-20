@@ -43,11 +43,12 @@ class ComputeRankedRaceStandingsHandlerTest extends TestCase
         $this->assertSame('2026-08-09', $view->windowEnd);
         $this->assertFalse($view->progressionSuspended);
 
-        // Progression : Toto devant (30 bruts x1.25 = 37.5), Tata ensuite (15 x1.1 = 16.5)
+        // Progression : Toto devant (30 bruts découpés à la frontière Gold/Platinum,
+        // 20 x1.25 + 10 x1.4 = 39), Tata ensuite (15 x1.1 = 16.5)
         $this->assertCount(2, $view->progression);
         $this->assertSame('Toto#EUW', $view->progression[0]->riotId);
         $this->assertSame(30, $view->progression[0]->rawDelta);
-        $this->assertSame(37.5, $view->progression[0]->weightedDelta);
+        $this->assertSame(39.0, $view->progression[0]->weightedDelta);
         $this->assertSame(1, $view->progression[0]->rankRaw);
         $this->assertSame(1, $view->progression[0]->rankWeighted);
         $this->assertSame('GOLD', $view->progression[0]->start->tier);

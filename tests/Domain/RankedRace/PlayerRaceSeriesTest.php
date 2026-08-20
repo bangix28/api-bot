@@ -14,15 +14,16 @@ class PlayerRaceSeriesTest extends TestCase
 {
     public function testProgressionBruteEtPondereeAvecFranchissementDeTier(): void
     {
-        // Gold I 80 LP (1580) -> Platinum IV 10 LP (1610) : 30 LP réels, payés au
-        // tarif Gold (x1.25). La promotion ne rapporte rien en elle-même.
+        // Gold I 80 LP (1580) -> Platinum IV 10 LP (1610) : 30 LP réels, découpés
+        // à la frontière — 20 en Gold à 1.25, 10 en Platinum à 1.4, soit 39.
+        // La promotion ne rapporte rien en elle-même.
         $series = new PlayerRaceSeries($this->player(), [
             $this->snapshot('2026-08-03 03:00', RankedTier::GOLD, RankedRank::I, 80, wins: 10, losses: 10),
             $this->snapshot('2026-08-04 03:00', RankedTier::PLATINUM, RankedRank::IV, 10, wins: 18, losses: 14),
         ]);
 
         $this->assertSame(30, $series->rawProgression());
-        $this->assertSame(37.5, $series->weightedProgression());
+        $this->assertSame(39.0, $series->weightedProgression());
         $this->assertSame(12, $series->gamesPlayed());
     }
 
@@ -192,13 +193,12 @@ class PlayerRaceSeriesTest extends TestCase
         $this->assertFalse($series->isQualified(15)); // seuil mensuel
     }
 
-    public function testLeYoYoALaFrontiereDeTierResteLegerementPenalisant(): void
+    public function testLeYoYoALaFrontiereNeCoutePlusQueLesLpPerdus(): void
     {
-        // Biais résiduel, figé ici en dur pour qu'il ne dérive pas en silence :
-        // la montée est payée au tarif Gold (1.25), la redescente au tarif
-        // Platinum (1.4). Un aller-retour coûte donc encore un peu plus qu'il ne
-        // rapporte, mais l'écart n'est plus celui d'une échelle discontinue :
-        // il vient du seul choix du tarif, et vaut 6,75 au lieu de 100,5.
+        // Le biais assumé jusqu'ici : la montée était payée au tarif Gold (1.25)
+        // et la redescente au tarif Platinum (1.4), si bien qu'un aller-retour
+        // coûtait 100 points de plus qu'il ne rapportait. Le classement disait
+        // au joueur que tenter la montée en fin de semaine était une erreur.
         $series = new PlayerRaceSeries($this->player(), [
             $this->snapshot('2026-08-03 18:00', RankedTier::GOLD, RankedRank::I, 90, wins: 10, losses: 10),
             $this->snapshot('2026-08-03 19:00', RankedTier::PLATINUM, RankedRank::IV, 20, wins: 11, losses: 10),
@@ -207,9 +207,24 @@ class PlayerRaceSeriesTest extends TestCase
 
         // 1590 -> 1620 -> 1575 : le brut est exactement les LP réels.
         $this->assertSame(-15, $series->rawProgression());
-        // Pondéré : +30 x 1.25 puis -45 x 1.4 = 37.5 - 63.0
-        // Payés au même tarif, les deux tronçons donneraient -18.75.
-        $this->assertSame(-25.5, $series->weightedProgression());
+        // Le détour à Platinum s'annule ; ne reste que la perte de 15 LP au tarif
+        // Gold, soit -18,75, arrondi à une décimale par le contrat.
+        $this->assertSame(-18.8, $series->weightedProgression());
+    }
+
+    public function testUnAllerRetourRevenuAuMemeRangEstExactementNeutre(): void
+    {
+        // Le joueur franchit la frontière, redescend, et se retrouve au LP exact
+        // d'où il est parti : sa progression pondérée est nulle, pas négative.
+        $series = new PlayerRaceSeries($this->player(), [
+            $this->snapshot('2026-08-03 18:00', RankedTier::GOLD, RankedRank::I, 90, wins: 10, losses: 10),
+            $this->snapshot('2026-08-03 19:00', RankedTier::PLATINUM, RankedRank::IV, 20, wins: 11, losses: 10),
+            $this->snapshot('2026-08-03 20:00', RankedTier::GOLD, RankedRank::I, 90, wins: 11, losses: 11),
+        ]);
+
+        $this->assertSame(0, $series->rawProgression());
+        $this->assertSame(0.0, $series->weightedProgression());
+        $this->assertSame(2, $series->gamesPlayed());
     }
 
     public function testLesSnapshotsSontReordonnesParInstant(): void
