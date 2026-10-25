@@ -4,8 +4,10 @@
 
 Accepté (2026-10-25)
 
-Deux points restent à vérifier sur une vraie partie (cf. « Points ouverts ») ;
-ils peuvent réduire le catalogue de cartes, pas changer l'architecture.
+Complété le même jour après une capture de la Live Client Data API sur une vraie
+partie d'ARAM du chaos (cf. « Vérifié sur une vraie partie ») : le résultat et le
+premier sang sont disponibles, pas les augments. Reste ouvert : la visibilité de
+la file 2400 dans Spectator-V5.
 
 ## Contexte
 
@@ -42,6 +44,33 @@ Les autres sources possibles ont été vérifiées :
 - **API du client LoL (LCU)** : statistiques de fin de partie complètes, mais
   non documentée par Riot.
 
+### Vérifié sur une vraie partie
+
+Capture du 2026-10-25 : partie d'ARAM du chaos de 16 min 20 s, `allgamedata`
+relevé chaque minute et `eventdata` jusqu'à la fin, depuis le poste d'un
+joueur. La capture a démarré à 1 min de jeu sans rien perdre : le journal
+d'événements est cumulatif depuis `GameStart`.
+
+- **Mode** : `gameMode` vaut `"KIWI"`, sur `Map12` (Abîme hurlant). Le nom
+  « ARAM du chaos » n'apparaît nulle part.
+- **Résultat** : un événement `GameEnd` porte `"Result": "Win"`, **du point de
+  vue du joueur du poste**. Le résultat des autres se déduit de leur équipe
+  (`team` : `ORDER` / `CHAOS`). Seule la victoire a été observée : la valeur
+  exacte en cas de défaite reste à confirmer.
+- **Premier sang** : événement `FirstBlood`, avec le joueur dans `Recipient`.
+- **Kills** : un `ChampionKill` par kill (`KillerName`, `VictimName`,
+  `Assisters`). Recompter les kills dans le journal donne exactement les
+  `scores.kills` des 10 joueurs. Un solo kill est un `ChampionKill` dont
+  `Assisters` est vide.
+- **Multi-kills et Aces** : `Multikill` (`KillStreak` de 2 à 5) et `Ace`
+  (`Acer`, `AcingTeam`).
+- **Identité** : `allPlayers` donne le Riot ID complet (`riotId`,
+  `riotIdGameName`, `riotIdTagLine`), mais **les événements ne nomment les
+  joueurs que par leur pseudo, sans le tag**. Les pseudos sont uniques dans la
+  partie : la correspondance pseudo → Riot ID se fait par `allPlayers`.
+- **Augments** : **absents**, ni en clé ni en valeur, dans aucun des 15 relevés.
+- **Dégâts, soins, CC** : absents, comme le disait la documentation.
+
 ## Décision
 
 ### 1. Aucune validation déclarative
@@ -64,6 +93,17 @@ et transmet ses relevés à api-bot, authentifié par le compte du joueur.
 La LCU n'est utilisée que si une carte indispensable en dépend, et seulement
 après vérification sur une vraie partie.
 
+- **L'agent est un projet séparé** : autre langage, livré aux joueurs sous forme
+  d'exécutable Windows, sans rien de commun avec api-bot qu'un contrat d'API.
+- **Il envoie les données brutes** (`allPlayers`, `events`, `gameData`), et le
+  **serveur fait les calculs** (série la plus longue, solo kills, kills
+  d'équipe, vainqueur). Un calcul faux se corrige sans réinstaller l'agent sur
+  chaque poste, et le serveur garde la preuve de ce qu'il a reçu.
+- **Les joueurs sont identifiés par leur Riot ID**, celui que donne
+  `allPlayers`, rapproché du `riotId` des comptes suivis. Les pseudos des
+  événements sont d'abord résolus en Riot ID complet dans la partie (cf.
+  « Vérifié sur une vraie partie »).
+
 ### 4. Un relevé n'est cru que s'il est recoupé
 
 - Il doit porter sur une partie que le serveur a **vue démarrer** (décision 2),
@@ -75,9 +115,13 @@ après vérification sur une vraie partie.
 ### 5. Une carte n'existe que si sa condition est mesurable
 
 Le catalogue est filtré par les données réellement disponibles : multi-kills,
-morts, KDA, participation aux kills, premier sang, solo kills et Ace sont
-calculables depuis la Live Client Data API. Les cartes de dégâts, soins,
-boucliers et CC sont retirées tant qu'aucune source fiable ne les fournit.
+morts, KDA, participation aux kills, premier sang, solo kills, Ace, victoire et
+durée de partie sont calculables depuis la Live Client Data API (vérifié sur
+une vraie partie). Les cartes de dégâts, soins, boucliers, CC et augments sont
+retirées tant qu'aucune source fiable ne les fournit.
+
+Le verdict « inconnu » reste nécessaire : un agent coupé avant `GameEnd` ne
+rapporte pas le résultat.
 
 ## Alternatives écartées
 
@@ -107,18 +151,20 @@ boucliers et CC sont retirées tant qu'aucune source fiable ne les fournit.
   Live Client qui rejoue les exemples officiels de Riot.
 - Un joueur seul dans sa partie n'a personne pour recouper son relevé : seule la
   cohérence avec Spectator le protège.
-- Catalogue réduit tant que dégâts, soins et CC ne sont pas disponibles.
+- Catalogue réduit tant que dégâts, soins, CC et augments ne sont pas disponibles.
+- Le résultat n'est connu que par les agents présents jusqu'à `GameEnd`.
 
 ### Points ouverts
 
-- La Live Client Data API expose-t-elle, en ARAM du chaos, le résultat de la
-  partie (`GameEnd`), le premier sang et les augments ? Les exemples officiels
-  sont anciens et ne les montrent pas.
 - Spectator-V5 voit-il les parties de la file 2400 ?
+- La Live Client Data API ne donne pas d'identifiant de partie : le relevé est
+  rattaché à la partie que Spectator a vue démarrer pour ce joueur. Si Spectator
+  ne voit pas la file 2400, il faudra un autre moyen de grouper les relevés
+  (mêmes 10 Riot ID, même mode, horaires cohérents).
 
 ### Déclencheurs de révision
 
 - Riot ouvre la file 2400 dans Match-V5 : la validation peut repasser côté
   serveur, sans agent.
-- La Live Client Data API ne fournit pas le résultat de la partie : les cartes
-  « gagner… » dépendront de la LCU.
+- La Live Client Data API se met à exposer dégâts, soins ou augments : le
+  catalogue peut s'élargir sans changer l'architecture.
