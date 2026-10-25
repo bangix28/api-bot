@@ -232,6 +232,49 @@ class HistoryAccountLol
     #[Groups(['historyAccount:read:get'])]
     private ?int $gameDuration = null;
 
+    // Statistiques ajoutées pour les défis de LAN (ARAM : Chaos) : null sur les
+    // matchs collectés avant leur ajout.
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $healsOnTeammates = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $damageShieldedOnTeammates = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $timeCcingOthers = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?float $teamDamagePercentage = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?float $damageTakenOnTeamPercentage = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $snowballsHit = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $skillshotsDodged = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $soloKills = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?int $outnumberedKills = null;
+
+    /** @var int[]|null augments dans l'ordre de choix ; [] hors ARAM : Chaos / Arena */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['historyAccount:read:detail'])]
+    private ?array $augments = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -773,6 +816,128 @@ class HistoryAccountLol
     public function setGameDuration(?int $gameDuration): static
     {
         $this->gameDuration = $gameDuration;
+
+        return $this;
+    }
+
+    public function getHealsOnTeammates(): ?int
+    {
+        return $this->healsOnTeammates;
+    }
+
+    public function setHealsOnTeammates(?int $healsOnTeammates): static
+    {
+        $this->healsOnTeammates = $healsOnTeammates;
+
+        return $this;
+    }
+
+    public function getDamageShieldedOnTeammates(): ?int
+    {
+        return $this->damageShieldedOnTeammates;
+    }
+
+    public function setDamageShieldedOnTeammates(?int $damageShieldedOnTeammates): static
+    {
+        $this->damageShieldedOnTeammates = $damageShieldedOnTeammates;
+
+        return $this;
+    }
+
+    public function getTimeCcingOthers(): ?int
+    {
+        return $this->timeCcingOthers;
+    }
+
+    public function setTimeCcingOthers(?int $timeCcingOthers): static
+    {
+        $this->timeCcingOthers = $timeCcingOthers;
+
+        return $this;
+    }
+
+    public function getTeamDamagePercentage(): ?float
+    {
+        return $this->teamDamagePercentage;
+    }
+
+    public function setTeamDamagePercentage(?float $teamDamagePercentage): static
+    {
+        $this->teamDamagePercentage = $teamDamagePercentage;
+
+        return $this;
+    }
+
+    public function getDamageTakenOnTeamPercentage(): ?float
+    {
+        return $this->damageTakenOnTeamPercentage;
+    }
+
+    public function setDamageTakenOnTeamPercentage(?float $damageTakenOnTeamPercentage): static
+    {
+        $this->damageTakenOnTeamPercentage = $damageTakenOnTeamPercentage;
+
+        return $this;
+    }
+
+    public function getSnowballsHit(): ?int
+    {
+        return $this->snowballsHit;
+    }
+
+    public function setSnowballsHit(?int $snowballsHit): static
+    {
+        $this->snowballsHit = $snowballsHit;
+
+        return $this;
+    }
+
+    public function getSkillshotsDodged(): ?int
+    {
+        return $this->skillshotsDodged;
+    }
+
+    public function setSkillshotsDodged(?int $skillshotsDodged): static
+    {
+        $this->skillshotsDodged = $skillshotsDodged;
+
+        return $this;
+    }
+
+    public function getSoloKills(): ?int
+    {
+        return $this->soloKills;
+    }
+
+    public function setSoloKills(?int $soloKills): static
+    {
+        $this->soloKills = $soloKills;
+
+        return $this;
+    }
+
+    public function getOutnumberedKills(): ?int
+    {
+        return $this->outnumberedKills;
+    }
+
+    public function setOutnumberedKills(?int $outnumberedKills): static
+    {
+        $this->outnumberedKills = $outnumberedKills;
+
+        return $this;
+    }
+
+    /** @return int[]|null */
+    public function getAugments(): ?array
+    {
+        return $this->augments;
+    }
+
+    /** @param int[]|null $augments */
+    public function setAugments(?array $augments): static
+    {
+        $this->augments = $augments;
 
         return $this;
     }

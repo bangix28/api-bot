@@ -60,6 +60,18 @@ services:
     App\Domain\User\UserRepositoryInterface:
         alias: App\Infrastructure\User\DoctrineUserRepository
 
+    # Deux fournisseurs de cibles de collecte : tous les comptes sur les files
+    # classées (défaut, refreshSummoners) et les participants des LAN en cours
+    # sur l'ARAM : Chaos. Sans l'alias, l'autowiring du défaut serait ambigu.
+    App\Domain\MatchHistory\MatchHistoryRefreshTargetsProviderInterface:
+        alias: App\Infrastructure\MatchHistory\DoctrineMatchHistoryRefreshTargetsProvider
+
+    # Même orchestrateur, branché sur les cibles de LAN : injecté dans lan:refresh.
+    app.lan.refresh_match_history:
+        class: App\Application\MatchHistory\RefreshData\RefreshAllMatchHistoryHandler
+        arguments:
+            $targetsProvider: '@App\Application\Lan\RefreshMatches\LanRefreshTargetsProvider'
+
 
     # Hasher concret de Symfony, injecté dans l'adaptateur SymfonyPasswordHasher
     Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher: ~

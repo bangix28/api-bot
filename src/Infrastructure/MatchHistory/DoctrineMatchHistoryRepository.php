@@ -74,6 +74,16 @@ readonly class DoctrineMatchHistoryRepository implements MatchHistoryRepositoryI
             ->setVisionScorePerMinute($gameHistoryEntity->performance->visionScorePerMinute)
             ->setDateGameEnd($gameHistoryEntity->gameEnd)
             ->setGameDuration($gameHistoryEntity->gameDuration)
+            ->setHealsOnTeammates($gameHistoryEntity->combat->healsOnTeammates)
+            ->setDamageShieldedOnTeammates($gameHistoryEntity->combat->damageShieldedOnTeammates)
+            ->setTimeCcingOthers($gameHistoryEntity->combat->timeCCingOthers)
+            ->setTeamDamagePercentage($gameHistoryEntity->performance->teamDamagePercentage)
+            ->setDamageTakenOnTeamPercentage($gameHistoryEntity->performance->damageTakenOnTeamPercentage)
+            ->setSnowballsHit($gameHistoryEntity->performance->snowballsHit)
+            ->setSkillshotsDodged($gameHistoryEntity->performance->skillshotsDodged)
+            ->setSoloKills($gameHistoryEntity->performance->soloKills)
+            ->setOutnumberedKills($gameHistoryEntity->performance->outnumberedKills)
+            ->setAugments($gameHistoryEntity->build->augments)
             ->setUpdatedAt(new \DateTimeImmutable());
 
         $this->entityManager->persist($history);   // entité NOUVELLE → persist (comme pour User)

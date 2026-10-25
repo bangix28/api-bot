@@ -12,6 +12,30 @@ Adapte les valeurs entre `< >` à ta prod :
 
 ---
 
+## ⚠️ Spécificités de la release « LAN : collecte ARAM : Chaos »
+
+1. **Aucune nouvelle variable d'environnement.**
+2. **Migration additive** : tables `lan_event` et `lan_event_participant`, et dix
+   colonnes nullables sur `history_account_lol` (soins, boucliers, CC, augments…).
+   Les matchs déjà collectés gardent ces colonnes à `NULL` ; rien n'est réécrit.
+3. **Nouveau cron `lan:refresh` toutes les 2 minutes** (cf. `deploy/crontab.example`).
+   Hors LAN en cours, il ne fait **aucun** appel Riot. Il a son propre verrou :
+   il peut tourner en même temps que `refreshSummoners`.
+4. `refreshSummoners` est inchangé : il ne collecte toujours que la solo et la flex.
+
+### Contrôles spécifiques après déploiement
+
+```bash
+# Hors LAN : la commande sort en succès sans rien appeler
+php bin/console lan:refresh --env=prod
+
+# Pendant une LAN : des parties de la file 2400 (ARAM : Chaos) arrivent
+mysql -u <DB_USER> -p <DB_NAME> -e "
+  SELECT COUNT(*) FROM history_account_lol WHERE queue_id = 2400 AND date_game_end >= CURDATE();"
+```
+
+---
+
 ## ⚠️ Spécificités de la release « Ranked Race live » (30 min + départ à la partie)
 
 Décisions et justifications complètes : **`docs/adr/0003-course-a-la-partie-snapshots-30-min.md`**.
