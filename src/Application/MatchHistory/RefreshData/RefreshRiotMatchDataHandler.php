@@ -2,9 +2,9 @@
 
 namespace App\Application\MatchHistory\RefreshData;
 
+use App\Domain\EloSnapshot\RankedQueueType;
 use App\Domain\MatchHistory\GameHistoryFactory;
 use App\Domain\MatchHistory\MatchHistoryRepositoryInterface;
-use App\Domain\MatchHistory\MatchQueue;
 use App\Domain\MatchHistory\RiotMatchApiClientInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -24,16 +24,15 @@ class RefreshRiotMatchDataHandler
      */
     public function handle(RefreshMatchHistoryCommand $refreshMatchHistoryCommand): void
     {
-        // Une passe par file : Riot n'expose pas plusieurs files en un appel.
-        // Les files viennent de la commande et non de l'adaptateur, pour que
-        // « la course suit les deux files classées » et « une LAN suit l'ARAM :
-        // Chaos » restent des décisions lisibles côté application.
-        foreach ($refreshMatchHistoryCommand->queues as $queue) {
+        // Une passe par file classée : Riot n'expose pas les deux en un appel.
+        // La boucle est ici et non dans l'adaptateur, pour que « la course suit
+        // les deux files » reste une décision lisible côté application.
+        foreach (RankedQueueType::cases() as $queue) {
             $this->refreshQueue($refreshMatchHistoryCommand, $queue);
         }
     }
 
-    private function refreshQueue(RefreshMatchHistoryCommand $command, MatchQueue $queue): void
+    private function refreshQueue(RefreshMatchHistoryCommand $command, RankedQueueType $queue): void
     {
         $matchIds = $this->apiClient->getMatchIds($command->puuid, $queue, $command->since);
 
@@ -57,7 +56,7 @@ class RefreshRiotMatchDataHandler
                 // interrompre le refresh des autres matchs du compte.
                 $this->refreshLogger->warning('Refresh du match ignoré', [
                     'matchId' => $matchId,
-                    'queue' => $queue->name,
+                    'queue' => $queue->value,
                     'puuid' => $command->puuid,
                     'exception' => $e,
                 ]);

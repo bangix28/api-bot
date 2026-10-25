@@ -8,14 +8,12 @@ readonly class PlayerBuild
 
     /**
      * @param int[] $items exactement 7 entrées (item0..item6, 0 = slot vide)
-     * @param int[] $augments augments choisis, dans l'ordre (vide hors ARAM : Chaos / Arena)
      */
     public function __construct(
         public array $items,
         public int $summonerSpell1Id,
         public int $summonerSpell2Id,
         public Runes $runes,
-        public array $augments = [],
     )
     {
         if (count($this->items) !== self::ITEM_SLOTS) {

@@ -2,8 +2,8 @@
 
 namespace App\Tests\Domain\MatchHistory;
 
+use App\Domain\EloSnapshot\RankedQueueType;
 use App\Domain\MatchHistory\MatchData;
-use App\Domain\MatchHistory\MatchQueue;
 use App\Domain\MatchHistory\RiotMatchApiClientInterface;
 
 final class FakeRiotMatchApiClient implements RiotMatchApiClientInterface
@@ -14,7 +14,7 @@ final class FakeRiotMatchApiClient implements RiotMatchApiClientInterface
     /** Files effectivement interrogées, dans l'ordre. */
     public array $queriedQueues = [];
 
-    /** @param array<int, string[]>|string[] $matchIds par queueId, ou liste unique pour toutes les files */
+    /** @param array<string, string[]>|string[] $matchIds par file, ou liste unique pour toutes */
     public function __construct(
         private readonly MatchData $match,
         private readonly array $matchIds = ['match-1'],
@@ -43,11 +43,11 @@ final class FakeRiotMatchApiClient implements RiotMatchApiClientInterface
         );
     }
 
-    public function getMatchIds(string $puuid, MatchQueue $queue, ?int $since): array
+    public function getMatchIds(string $puuid, RankedQueueType $queue, ?int $since): array
     {
-        $this->queriedQueues[] = $queue;
+        $this->queriedQueues[] = $queue->value;
 
         // Liste indexée par file, ou liste unique servie pour chaque file.
-        return array_is_list($this->matchIds) ? $this->matchIds : ($this->matchIds[$queue->value] ?? []);
+        return $this->matchIds[$queue->value] ?? (array_is_list($this->matchIds) ? $this->matchIds : []);
     }
 }

@@ -7,10 +7,8 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * Orchestrateur : rafraîchit l'historique des comptes que fournit le provider.
+ * Orchestrateur : rafraîchit l'historique de tous les comptes.
  * Un seul endroit qui boucle ; les points d'entrée (HTTP, CLI) délèguent ici.
- * Deux instances existent (cf. services.yaml) : tous les comptes sur les files
- * classées, et les participants des LAN en cours sur l'ARAM : Chaos.
  */
 final readonly class RefreshAllMatchHistoryHandler
 {
@@ -25,7 +23,7 @@ final readonly class RefreshAllMatchHistoryHandler
         foreach ($this->targetsProvider->all() as $target) {
             try {
                 $this->refreshRiotMatchDataHandler->handle(
-                    new RefreshMatchHistoryCommand($target->puuid, $target->since, $target->queues),
+                    new RefreshMatchHistoryCommand($target->puuid, $target->since),
                 );
             } catch (\Exception $e) {
                 // L'échec d'un compte (erreur API, etc.) ne doit pas interrompre

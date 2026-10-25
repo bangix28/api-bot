@@ -31,7 +31,7 @@ class LanEventCrudController extends AbstractCrudController
         yield TextField::new('name', 'Nom');
         yield DateTimeField::new('startsAt', 'Début');
         yield DateTimeField::new('endsAt', 'Fin')
-            ->setHelp('Les parties ARAM : Chaos terminées entre le début et la fin sont collectées toutes les 2 minutes.');
+            ->setHelp('Seules les parties jouées entre le début et la fin comptent pour les défis.');
         // RiotAccount n'a pas de __toString : le Riot ID sert de libellé.
         yield AssociationField::new('participants', 'Participants')
             ->setFormTypeOption('choice_label', 'riotId')

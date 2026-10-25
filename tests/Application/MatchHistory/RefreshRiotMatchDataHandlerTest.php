@@ -4,7 +4,6 @@ namespace App\Tests\Application\MatchHistory;
 
 use App\Application\MatchHistory\RefreshData\RefreshMatchHistoryCommand;
 use App\Application\MatchHistory\RefreshData\RefreshRiotMatchDataHandler;
-use App\Domain\MatchHistory\MatchQueue;
 use App\Tests\Domain\MatchHistory\FakeRiotMatchApiClient;
 use App\Tests\Domain\MatchHistory\InMemoryMatchHistoryRepository;
 use App\Tests\Domain\MatchHistory\MatchDataBuilder;
@@ -72,7 +71,7 @@ class RefreshRiotMatchDataHandlerTest extends TestCase
         (new RefreshRiotMatchDataHandler($apiClient, new InMemoryMatchHistoryRepository()))
             ->handle(new RefreshMatchHistoryCommand('puuid-1', 170000));
 
-        $this->assertSame([MatchQueue::RANKED_SOLO, MatchQueue::RANKED_FLEX], $apiClient->queriedQueues);
+        $this->assertSame(['RANKED_SOLO_5x5', 'RANKED_FLEX_SR'], $apiClient->queriedQueues);
     }
 
     public function testLesMatchsDesDeuxFilesSontEnregistres()
@@ -82,7 +81,7 @@ class RefreshRiotMatchDataHandlerTest extends TestCase
             MatchDataBuilder::aMatch()
                 ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
                 ->build(),
-            [420 => ['solo-1'], 440 => ['flex-1']],
+            ['RANKED_SOLO_5x5' => ['solo-1'], 'RANKED_FLEX_SR' => ['flex-1']],
         );
 
         (new RefreshRiotMatchDataHandler($apiClient, $repository))
@@ -99,7 +98,7 @@ class RefreshRiotMatchDataHandlerTest extends TestCase
             MatchDataBuilder::aMatch()
                 ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
                 ->build(),
-            [420 => ['match-corrompu', 'solo-1'], 440 => ['flex-1']],
+            ['RANKED_SOLO_5x5' => ['match-corrompu', 'solo-1'], 'RANKED_FLEX_SR' => ['flex-1']],
             failingMatchId: 'match-corrompu',
         );
 
@@ -107,24 +106,5 @@ class RefreshRiotMatchDataHandlerTest extends TestCase
             ->handle(new RefreshMatchHistoryCommand('puuid-1', 170000));
 
         $this->assertCount(2, $repository->getListMatches());
-    }
-
-    public function testSeulesLesFilesDeLaCommandeSontInterrogees()
-    {
-        // Une LAN ne suit que l'ARAM : Chaos : interroger aussi les files classées
-        // coûterait deux appels Riot par participant à chaque passage.
-        $apiClient = new FakeRiotMatchApiClient(
-            MatchDataBuilder::aMatch()
-                ->withParticipantData(ParticipantDataBuilder::aParticipant()->build())
-                ->build(),
-            [2400 => ['aram-1']],
-        );
-        $repository = new InMemoryMatchHistoryRepository();
-
-        (new RefreshRiotMatchDataHandler($apiClient, $repository))
-            ->handle(new RefreshMatchHistoryCommand('puuid-1', 170000, [MatchQueue::ARAM_MAYHEM]));
-
-        $this->assertSame([MatchQueue::ARAM_MAYHEM], $apiClient->queriedQueues);
-        $this->assertCount(1, $repository->getListMatches());
     }
 }

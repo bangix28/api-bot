@@ -20,8 +20,5 @@
 # Rangs + historique des matchs, et points de la Ranked Race au passage
 # (les rangs sont déjà récupérés ici : l'écriture ne coûte aucun appel Riot).
 */30 *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console refreshSummoners --env=prod >> var/log/cron-refresh.log 2>&1
-# Parties ARAM : Chaos des participants des LAN en cours. Hors LAN, la commande
-# ne fait aucun appel Riot : elle peut tourner en permanence.
-*/2  *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console lan:refresh --env=prod >> var/log/cron-lan.log 2>&1
 # Courbe quotidienne /elo-daily (source distincte de la course, cf. ADR-0003)
 0    3   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console daily-elo --env=prod >> var/log/cron-daily-elo.log 2>&1

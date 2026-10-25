@@ -2,15 +2,16 @@
 
 namespace App\Infrastructure\MatchHistory;
 
+use App\Domain\EloSnapshot\RankedQueueType;
 use App\Domain\MatchHistory\CombatStats;
 use App\Domain\MatchHistory\MatchData;
 use App\Domain\MatchHistory\MatchPerformance;
-use App\Domain\MatchHistory\MatchQueue;
 use App\Domain\MatchHistory\ParticipantData;
 use App\Domain\MatchHistory\PlayerBuild;
 use App\Domain\MatchHistory\RiotMatchApiClientInterface;
 use App\Domain\MatchHistory\Runes;
 use App\Domain\MatchHistory\ScoreLine;
+use App\Enum\RiotApiEnum;
 use App\Infrastructure\Riot\RiotApiGateway;
 use RiotAPI\Base\Exceptions\GeneralException;
 use RiotAPI\LeagueAPI\Objects\ParticipantDto;
@@ -34,9 +35,13 @@ class LeagueApiRiotMatchClient implements RiotMatchApiClientInterface
      * @throws RequestException
      * @throws GeneralException
      */
-    public function getMatchIds(string $puuid, MatchQueue $queue, ?int $since): array
+    public function getMatchIds(string $puuid, RankedQueueType $queue, ?int $since): array
     {
-        return $this->riotApiGateway->getListIdMatchHistoryLol($puuid, $queue->value, $since);
+        return $this->riotApiGateway->getListIdMatchHistoryLol(
+            $puuid,
+            RiotApiEnum::matchQueueIdFor($queue),
+            $since,
+        );
     }
 
     /**
@@ -90,15 +95,6 @@ class LeagueApiRiotMatchClient implements RiotMatchApiClientInterface
                 $p->summoner1Id,
                 $p->summoner2Id,
                 $this->mapRunes($p->perks ?? null),
-                // Augments : remplis en ARAM : Chaos et en Arena, 0 ailleurs.
-                array_values(array_filter([
-                    $p->playerAugment1 ?? 0,
-                    $p->playerAugment2 ?? 0,
-                    $p->playerAugment3 ?? 0,
-                    $p->playerAugment4 ?? 0,
-                    $p->playerAugment5 ?? 0,
-                    $p->playerAugment6 ?? 0,
-                ])),
             ),
             new CombatStats(
                 $p->totalDamageDealtToChampions,
@@ -109,9 +105,6 @@ class LeagueApiRiotMatchClient implements RiotMatchApiClientInterface
                 $p->pentaKills,
                 $p->firstBloodKill,
                 $p->gameEndedInSurrender,
-                $p->totalHealsOnTeammates ?? 0,
-                $p->totalDamageShieldedOnTeammates ?? 0,
-                $p->timeCCingOthers ?? 0,
             ),
             MatchPerformance::fromChallenges($p->challenges),
         );
