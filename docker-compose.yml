@@ -2,6 +2,7 @@ services:
   api:
     container_name: api
     image: 'api-bot'
+    build: .
     environment:
       XDEBUG_MODE: coverage
     ports:
@@ -35,7 +36,8 @@ services:
     depends_on:
       - api
     ports:
-      - 80:80
+      # Surchargeable via NGINX_PORT dans .env si le port 80 est déjà pris sur le poste
+      - ${NGINX_PORT:-80}:80
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./:/usr/src/api

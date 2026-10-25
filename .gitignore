@@ -40,6 +40,9 @@ yarn-error.log
 ### Node ###
 /package-lock.json
 
+### Docker (surcharges propres à chaque poste) ###
+/docker-compose.override.yml
+
 ### Déploiement (drapeau créé/supprimé par deploy/deploy.sh) ###
 /maintenance.on
 
