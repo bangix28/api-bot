@@ -42,6 +42,7 @@ db-init: ## Create the database; empty DB → schema from entities, otherwise ru
 	if [ "$$tables" = "0" ]; then \
 		echo "Base vide : création du schéma depuis les entités"; \
 		docker compose exec -T api php bin/console doctrine:schema:create && \
+		docker compose exec -T api php bin/console doctrine:migrations:sync-metadata-storage && \
 		docker compose exec -T api php bin/console doctrine:migrations:version --add --all --no-interaction; \
 	else \
 		docker compose exec -T api php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration; \
