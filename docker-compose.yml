@@ -22,6 +22,9 @@ services:
       MYSQL_HOST: mysql
     ports:
       - 3306:3306
+    volumes:
+      # Volume nommé : sans lui, la base est perdue à chaque docker compose down
+      - mysql:/var/lib/mysql
   phpmyadmin:
     container_name: phpmyadmin
     image: phpmyadmin:latest
@@ -43,5 +46,6 @@ services:
       - ./:/usr/src/api
       - /var/run/php/php8.4-fpm.sock
 volumes:
+  mysql:
   var:
   vendor:
