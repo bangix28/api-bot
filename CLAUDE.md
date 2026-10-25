@@ -12,6 +12,7 @@
 
 > Le projet tourne dans Docker (conteneur `api` pour PHP-FPM 8.4, `mysql`, `nginx`, `phpmyadmin`).
 > Lancer les commandes via `docker exec api php bin/console ...`. Base MySQL : `apibot` (root, mot de passe vide).
+> Installation locale : `make .env && make setup` (détails dans `docs/dev-local.md`).
 
 ## Architecture — Hexagonal (Ports & Adapters)
 
