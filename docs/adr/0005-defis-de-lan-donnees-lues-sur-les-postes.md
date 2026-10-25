@@ -94,7 +94,8 @@ La LCU n'est utilisée que si une carte indispensable en dépend, et seulement
 après vérification sur une vraie partie.
 
 - **L'agent est un projet séparé** : autre langage, livré aux joueurs sous forme
-  d'exécutable Windows, sans rien de commun avec api-bot qu'un contrat d'API.
+  d'exécutable Windows, sans rien de commun avec api-bot qu'un contrat d'API
+  ([docs/agent/contrat-releve.md](../agent/contrat-releve.md)).
 - **Il envoie les données brutes** (`allPlayers`, `events`, `gameData`), et le
   **serveur fait les calculs** (série la plus longue, solo kills, kills
   d'équipe, vainqueur). Un calcul faux se corrige sans réinstaller l'agent sur
