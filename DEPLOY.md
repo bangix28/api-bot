@@ -79,6 +79,36 @@ points repris (03:00 pile) et laisse ceux écrits par le cron. `summoner_elo_dai
 
 ---
 
+## ⚠️ Spécificités de la release « relevés de l'agent de LAN »
+
+Décisions : **`docs/adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md`**.
+Contrat de l'agent : **`docs/agent/contrat-releve.md`** (§ 3).
+
+1. **Migration** : création de `lan_game` (parties reconstituées) et
+   `agent_report` (relevés reçus). Aucune table existante modifiée.
+2. **Nouveau cron `lan:abandon-stale-games`, toutes les 5 minutes** (cf.
+   `deploy/crontab.example`). Sans lui, une partie dont l'agent s'est coupé garde
+   les cartes de ses joueurs verrouillées indéfiniment. Il est sans effet hors LAN.
+3. **Taille des requêtes** : un relevé fait ~60 Ko, ~6 Ko en gzip ; le serveur
+   refuse au-delà d'1 Mo décompressé. Le `client_max_body_size` par défaut de
+   nginx (1 Mo) convient, ne pas le baisser.
+4. **Volume** : un relevé toutes les 15 s par agent ; seuls les relevés finaux
+   gardent leur contenu (colonne `final_payload`).
+
+### Contrôles spécifiques après déploiement
+
+```bash
+php bin/console lan:abandon-stale-games --env=prod   # « 0 partie(s) abandonnée(s). » hors LAN
+
+# Pendant une LAN : les parties avancent-elles ?
+mysql -u <DB_USER> -p <DB_NAME> -e "
+  SELECT status, COUNT(*) FROM lan_game GROUP BY status;"
+# Des relevés finaux contradictoires (plusieurs agents dans une partie) ?
+grep 'Relevés finaux contradictoires' var/log/app-$(date +%F).log
+```
+
+---
+
 ## ⚠️ Spécificités de la release « refonte hexagonale /refresh »
 
 Cette release embarque **2 migrations** dont une **destructive**. Trois points de vigilance :
@@ -197,7 +227,7 @@ Les logs applicatifs sont écrits dans `<PROJECT_DIR>/var/log/` via des handlers
 | `prod-YYYY-MM-DD.log` | Erreurs HTTP avec contexte complet (handler `fingers_crossed` : n'écrit que si une requête produit une `error`) | 14 jours |
 | `app-YYYY-MM-DD.log` | Signaux métier dès `info` : appels API Riot (channel `riot`), jobs de refresh (channel `refresh`) | 14 jours |
 | `deprecation-YYYY-MM-DD.log` | Dépréciations PHP/Symfony | 7 jours |
-| `cron-refresh.log`, `cron-daily-elo.log` | Sortie console des crons (résumés, erreurs fatales) | 8 semaines (logrotate) |
+| `cron-refresh.log`, `cron-daily-elo.log`, `cron-lan-abandon.log` | Sortie console des crons (résumés, erreurs fatales) | 8 semaines (logrotate) |
 
 ### Commandes utiles
 

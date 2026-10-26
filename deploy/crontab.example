@@ -8,7 +8,7 @@
 # fatales) ; le détail horodaté vit dans var/log/app-YYYY-MM-DD.log (Monolog).
 # La rotation des cron-*.log est gérée par deploy/logrotate/api-bot.
 
-# Les deux commandes sont protégées par un verrou (symfony/lock) : si un run
+# Les commandes sont protégées par un verrou (symfony/lock) : si un run
 # déborde sur le suivant, la seconde instance sort immédiatement en SUCCESS avec
 # un warning. Aucun risque de doublon, et pas d'alerte cron pour autant.
 #
@@ -22,3 +22,7 @@
 */30 *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console refreshSummoners --env=prod >> var/log/cron-refresh.log 2>&1
 # Courbe quotidienne /elo-daily (source distincte de la course, cf. ADR-0003)
 0    3   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console daily-elo --env=prod >> var/log/cron-daily-elo.log 2>&1
+# Défis de LAN : règle en verdict inconnu les parties restées une heure sans
+# relevé d'agent (ADR-0005), pour qu'aucune carte ne reste verrouillée. Sans
+# effet hors LAN ; protégée par le même verrou que les deux autres.
+*/5  *   *   *   *   cd /var/www/beauce-tigers/api-bot && php bin/console lan:abandon-stale-games --env=prod >> var/log/cron-lan-abandon.log 2>&1

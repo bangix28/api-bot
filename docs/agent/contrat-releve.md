@@ -297,6 +297,7 @@ partie (`sessionId`) et attend la suivante.
 | `no_participant_in_game` | Aucun participant de la LAN parmi les `allPlayers`. |
 | `joined_too_late` | Le premier relevé de cette partie est arrivé après 90 s de jeu : elle n'engage aucune carte (§ 4). |
 | `stale_sequence` | `sequence` déjà reçue ou dépassée : sans effet, rien à corriger. |
+| `lan_finished` | La partie a commencé après la fin de la LAN (`endsAt`) : elle ne compte pas. |
 
 ### Erreurs
 
@@ -308,8 +309,8 @@ Corps : `{ "code": "…", "message": "…" }` (message en français, pour les lo
 | `401` | `invalid_token` | Jeton absent, inconnu ou révoqué | Effacer le jeton, recommencer l'appairage (§ 1) |
 | `401` | `token_expired` | Relevé intermédiaire après `endsAt`, ou relevé final plus d'1 h après `endsAt` (cf. § 1) | Effacer le jeton, afficher « LAN terminée » |
 | `403` | `not_your_account` | `activePlayer.riotId` n'est pas un compte du joueur authentifié | Ne pas rejouer : on n'envoie que **sa propre** partie |
-| `413` | `report_too_large` | Corps décompressé > 1 Mo | Ne pas rejouer |
-| `426` | `agent_outdated` | `agentVersion` refusée | Avertir le joueur de mettre l'agent à jour |
+| `413` | `report_too_large` | Corps décompressé > 1 Mo. Un corps brut > 1 Mo est refusé plus tôt par le serveur web, avec un corps HTML : se fier au code HTTP | Ne pas rejouer |
+| `426` | `agent_outdated` | `agentVersion` refusée (réservé : aucune version n'est refusée en v1) | Avertir le joueur de mettre l'agent à jour |
 | `429` | `too_many_reports` | Plus d'un relevé toutes les 5 s pour ce jeton | Attendre `Retry-After` (secondes) |
 | `5xx` | — | Panne serveur | Relevé final : rejouer (§ 5) ; relevé intermédiaire : abandonner |
 
