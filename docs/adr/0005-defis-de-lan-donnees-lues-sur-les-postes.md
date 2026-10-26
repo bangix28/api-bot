@@ -6,8 +6,11 @@ Accepté (2026-10-25)
 
 Complété le même jour après une capture de la Live Client Data API sur une vraie
 partie d'ARAM du chaos (cf. « Vérifié sur une vraie partie ») : le résultat et le
-premier sang sont disponibles, pas les augments. Reste ouvert : la visibilité de
-la file 2400 dans Spectator-V5.
+premier sang sont disponibles, pas les augments.
+
+Révisé le 2026-10-26 : **Spectator-V5 est abandonné**. Le cycle des parties
+(début, regroupement, fin) est piloté par les relevés de l'agent (décision 2) ;
+la décision initiale est conservée dans les alternatives écartées.
 
 ## Contexte
 
@@ -79,24 +82,40 @@ Un joueur ne déclare jamais lui-même la réussite de son défi, même confirm�
 un autre participant. Une carte n'est validée que sur des données lues dans le
 jeu.
 
-### 2. Le serveur observe les parties avec Spectator-V5
+### 2. Les relevés de l'agent pilotent le cycle des parties
 
-Pendant une LAN en cours, api-bot interroge Spectator-V5 pour chaque participant.
-Il en déduit le **début** d'une partie (cartes verrouillées, participants qui
-jouent ensemble) et sa **fin** (l'endpoint repasse en 404 : la manche se clôt,
-une nouvelle offre est distribuée). Coût : 5 joueurs × 2 appels/min, négligeable.
+L'agent voit une partie du début à la fin (l'API locale du jeu n'existe que
+pendant la partie) et ses relevés contiennent les 10 joueurs : ils suffisent à
+dérouler une manche, sans interroger Riot.
+
+- **Identifier une partie.** La Live Client Data API ne donne pas d'identifiant :
+  le serveur en construit un à partir du mode, des 10 Riot ID et de l'heure de
+  début estimée (réception du premier relevé − `gameTime`). Deux agents de la
+  même partie retombent sur la même clé, à une minute près.
+- **Début.** Le **premier relevé** d'une partie la déclare commencée : la carte
+  de chaque participant de la LAN présent dans `allPlayers`, choisie avant ce
+  moment, est verrouillée sur elle. Une carte choisie après vaut pour la partie
+  suivante.
+- **Démarrage tardif.** Si ce premier relevé arrive après **90 secondes de jeu**
+  (agent lancé en retard), la partie n'engage aucune carte : sinon un joueur
+  pourrait choisir sa carte en connaissant déjà le début de la partie.
+- **Fin.** Le relevé final (`GameEnd`, ou fermeture du jeu) règle la manche et
+  distribue les offres suivantes.
+- **Partie abandonnée.** Sans relevé pendant **une heure**, la partie est réglée
+  en verdict inconnu (relance rendue) : une carte ne reste jamais bloquée sur
+  une partie dont on n'aura plus de nouvelles.
 
 ### 3. Les statistiques viennent d'un agent sur le poste d'un joueur
 
 Un agent lancé sur le PC d'un joueur lit la Live Client Data API pendant la
 partie et transmet ses relevés à api-bot, authentifié par le compte du joueur.
+La LCU n'est utilisée que si une carte indispensable en dépend, et seulement
+après vérification sur une vraie partie.
 
 - **Un agent par partie suffit** : l'API donne les scores et le journal des
   10 joueurs, donc un seul relevé règle les cartes de tous les participants de
   la partie. Les autres n'installent rien. Personne n'est désigné à l'avance :
   chaque relevé dit de qui il vient, par son jeton.
-La LCU n'est utilisée que si une carte indispensable en dépend, et seulement
-après vérification sur une vraie partie.
 
 - **L'agent est un projet séparé** : autre langage, livré aux joueurs sous forme
   d'exécutable Windows, sans rien de commun avec api-bot qu'un contrat d'API
@@ -112,9 +131,9 @@ après vérification sur une vraie partie.
 
 ### 4. Un relevé n'est cru que s'il est cohérent
 
-- Il doit porter sur une partie que le serveur a **vue démarrer** (décision 2),
-  avec les mêmes participants, et sur la propre partie de celui qui l'envoie
-  (le joueur du poste est l'un de ses comptes).
+- Il doit porter sur la propre partie de celui qui l'envoie (le joueur du poste
+  est l'un de ses comptes) et s'inscrire dans une partie cohérente : même clé
+  (décision 2), même mode, mêmes 10 joueurs d'un relevé à l'autre.
 - Une partie rapportée par un seul agent est acceptée sur son relevé. Rapportée
   par plusieurs, leurs relevés doivent **concorder** ; un relevé contradictoire
   est écarté.
@@ -132,6 +151,13 @@ rapporte pas le résultat.
 
 ## Alternatives écartées
 
+- **Spectator-V5 pour le cycle des parties** (décision initiale, abandonnée le
+  2026-10-26). Le serveur interrogeait Riot pour voir les parties démarrer et
+  finir. Abandonné : redondant avec l'agent, qui voit tout cela de première main ;
+  dépendant d'une clé Riot qui, en développement, expire toutes les 24 h — une
+  clé périmée en pleine LAN aurait tout bloqué ; et jamais vérifié sur la file
+  2400. Il reste envisageable comme **contrôle indépendant** (la partie a-t-elle
+  eu lieu ?) si la confiance dans un agent unique devenait un problème.
 - **Match-V5, file 2400** : ne renvoie rien (cf. Contexte).
 - **Validation par les joueurs**, avec ou sans confirmation croisée : trop facile
   à contourner, refusée.
@@ -157,7 +183,9 @@ rapporte pas le résultat.
   pas sous Linux) ; il se développe et se teste sous Linux contre un faux serveur
   Live Client qui rejoue les exemples officiels de Riot.
 - Avec un seul agent dans la partie, il n'y a pas de recoupement : la confiance
-  repose sur le joueur qui le porte, encadrée par la cohérence avec Spectator.
+  repose sur le joueur qui le porte. Aucun contrôle indépendant côté Riot ne
+  confirme que la partie a eu lieu ; entre amis, c'est assumé.
+- Un agent lancé après 90 s de jeu fait perdre la partie aux défis (décision 2).
 - Une partie sans aucun agent n'est pas vue : ses cartes finissent en verdict
   inconnu.
 - Catalogue réduit tant que dégâts, soins, CC et augments ne sont pas disponibles.
@@ -165,11 +193,10 @@ rapporte pas le résultat.
 
 ### Points ouverts
 
-- Spectator-V5 voit-il les parties de la file 2400 ?
-- La Live Client Data API ne donne pas d'identifiant de partie : le relevé est
-  rattaché à la partie que Spectator a vue démarrer pour ce joueur. Si Spectator
-  ne voit pas la file 2400, il faudra un autre moyen de grouper les relevés
-  (mêmes 10 Riot ID, même mode, horaires cohérents).
+- La valeur exacte de `GameEnd.Result` en cas de défaite (seul `"Win"` a été
+  observé).
+- Les seuils (90 s de démarrage tardif, une minute de tolérance sur la clé, une
+  heure avant abandon) sont des estimations, à confirmer en LAN.
 
 ### Déclencheurs de révision
 
