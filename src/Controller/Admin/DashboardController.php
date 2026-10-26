@@ -32,5 +32,6 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkTo(UserCrudController::class, 'User', 'fas fa-user');
         yield MenuItem::linkTo(RiotAccountCrudController::class, 'Compte riot', 'fas fa-user');
         yield MenuItem::linkTo(RankedRaceEventCrudController::class, 'Ranked Race', 'fas fa-flag-checkered');
+        yield MenuItem::linkTo(LanEventCrudController::class, 'LAN', 'fas fa-dice');
     }
 }
