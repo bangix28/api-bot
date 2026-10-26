@@ -342,7 +342,7 @@ Pour que l'agent sache ce qui compte, pas pour qu'il le reproduise.
    (`ChampionKill` sans `Assisters`), kills d'équipe (somme des `scores.kills`
    par `team`), Aces (`Ace.Acer`), premier sang (`FirstBlood.Recipient`),
    vainqueur (`GameEnd.Result`, vu du joueur du poste, étendu à son équipe),
-   plus de morts de la partie (`scores.deaths` des 10 joueurs, pour Martyr).
+   plus de morts de la partie (`scores.deaths` des 10 joueurs, pour la carte Gameplay Shaco).
 6. **Portée** : le relevé règle les cartes de **tous** les participants de la
    LAN présents dans `allPlayers`, pas seulement celle du joueur du poste.
 7. **Recoupement** : une partie rapportée par un seul agent est acceptée sur

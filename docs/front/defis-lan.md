@@ -41,7 +41,7 @@ Rareté à part, la plus rare (`saboteur`, ~3 % par emplacement d'offre), et
 | Carte | Type | Effet |
 |---|---|---|
 | Mauvais perdant | contre la partie | 40 pts si le joueur **perd** le match |
-| Martyr | contre la partie | 40 pts s'il finit avec **le plus de morts** de la partie |
+| Gameplay Shaco (code `martyr`) | contre la partie | 40 pts s'il finit avec **le plus de morts** de la partie |
 | Pickpocket | contre un joueur | Vole une relance à la cible choisie |
 | Malédiction | contre un joueur | Le prochain défi réussi de la cible ne lui rapporte que **50 %** |
 
@@ -57,7 +57,7 @@ Rareté à part, la plus rare (`saboteur`, ~3 % par emplacement d'offre), et
   le fil. Elle la découvre au règlement de son prochain défi réussi
   (`curseApplied: true`). Deux malédictions ne se cumulent pas.
 
-> ⚠️ « Mauvais perdant » et « Martyr » poussent à perdre ou mourir exprès, ce que
+> ⚠️ « Mauvais perdant » et « Gameplay Shaco » poussent à perdre ou mourir exprès, ce que
 > les règles de Riot sanctionnent (*feeding*, *throwing*). Les joueurs en
 > assument le risque sur leurs comptes.
 

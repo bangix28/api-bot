@@ -42,6 +42,7 @@ enum Challenge: string
 
     // Saboteur — contre la partie
     case BAD_LOSER = 'bad_loser';
+    // « Gameplay Shaco » pour les joueurs ; le code « martyr » reste stable pour le front.
     case MARTYR = 'martyr';
     // Saboteur — contre un joueur
     case PICKPOCKET = 'pickpocket';
@@ -68,7 +69,7 @@ enum Challenge: string
             self::IMMORTAL => 'Immortel',
             self::BLITZ => 'Blitz',
             self::BAD_LOSER => 'Mauvais perdant',
-            self::MARTYR => 'Martyr',
+            self::MARTYR => 'Gameplay Shaco',
             self::PICKPOCKET => 'Pickpocket',
             self::CURSE => 'Malédiction',
         };

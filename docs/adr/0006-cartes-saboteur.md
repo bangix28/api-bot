@@ -35,12 +35,12 @@ environ une offre sur onze. Tirée comme les autres, relançable comme les autre
 | Carte | Famille | Effet |
 |---|---|---|
 | Mauvais perdant | contre la partie | 40 pts si le joueur perd |
-| Martyr | contre la partie | 40 pts s'il finit avec le plus de morts de la partie |
+| Gameplay Shaco (code `martyr`) | contre la partie | 40 pts s'il finit avec le plus de morts de la partie |
 | Pickpocket | contre un joueur | vole une relance à la cible |
 | Malédiction | contre un joueur | prochain défi réussi de la cible à 50 % |
 
 - **Contre la partie** : une carte de match ordinaire (choisie, verrouillée,
-  jugée en fin de match). « Martyr » attend une donnée calculée par le serveur
+  jugée en fin de match). « Gameplay Shaco » attend une donnée calculée par le serveur
   sur les 10 joueurs (`mostDeathsInGame`) ; tant qu'elle manque, verdict inconnu.
 - **Contre un joueur** : effet **immédiat**, cible choisie parmi les participants
   inscrits aux défis (jamais soi-même). Le saboteur ne marque pas de points et
@@ -93,11 +93,11 @@ soi-même, relance disponible pour un Pickpocket.
 
 ### Négatives / limites assumées
 
-- ⚠️ **Mauvais perdant et Martyr** incitent à perdre ou mourir exprès : c'est du
+- ⚠️ **Mauvais perdant et Gameplay Shaco** incitent à perdre ou mourir exprès : c'est du
   *feeding* / *throwing* au sens des règles de Riot, sanctionnable (signalements,
   détection automatique). Retenues à la demande des joueurs, qui en assument le
   risque sur leurs comptes.
-- Martyr reste en verdict inconnu tant que la réception des relevés de l'agent
+- Gameplay Shaco reste en verdict inconnu tant que la réception des relevés de l'agent
   (lot 4) ne calcule pas `mostDeathsInGame`.
 - Ordre bonus / malédiction indifférent sur le barème actuel (10, 25, 40, 60,
   100) : il ne compterait que pour un barème aux arrondis différents.
