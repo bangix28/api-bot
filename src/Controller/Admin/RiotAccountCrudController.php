@@ -56,6 +56,18 @@ class RiotAccountCrudController extends AbstractCrudController
             ->setRequired(false)
             ->setHelp('Laisser vide pour reprendre la partie avant le # du Riot ID.');
 
+        // Propriétaire : le joueur lie lui-même son compte depuis le front. Ici,
+        // l'administration corrige une liaison erronée — vider les deux champs
+        // délie le compte. Absents à la création : un compte neuf n'a pas de propriétaire.
+        yield TextField::new('discordUsername', 'Joueur Discord')
+            ->setRequired(false)
+            ->hideWhenCreating();
+        yield TextField::new('discordId', 'Identifiant Discord')
+            ->setRequired(false)
+            ->setHelp('Vider ce champ et le précédent pour délier le compte.')
+            ->hideOnIndex()
+            ->hideWhenCreating();
+
         yield TextField::new('summonerRankedSoloTier', 'Palier solo')->hideOnForm();
         yield TextField::new('summonerRankedSoloRank', 'Division solo')->hideOnForm();
         yield TextField::new('summonerRankedSoloLeaguePoints', 'LP solo')->hideOnForm();
