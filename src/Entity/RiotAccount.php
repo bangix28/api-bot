@@ -16,6 +16,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: RiotAccountRepository::class)]
+// « Mes comptes » d'un joueur, et la connexion de l'agent, cherchent par discord_id.
+#[ORM\Index(name: 'idx_riot_account_discord_id', columns: ['discord_id'])]
 #[UniqueEntity(
     fields: ['riotId'],
     message: 'Vous êtes déja inscrit avec ce Riot ID !'
@@ -51,6 +53,17 @@ class RiotAccount
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['riotAccount:read:get'])]
     private ?string $puuid = '';
+
+    // Joueur Discord propriétaire du compte, null si personne ne l'a lié.
+    // Pas de groupe de sérialisation : l'identifiant Discord d'un joueur ne
+    // sort pas dans l'API publique des classements.
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $discordId = null;
+
+    // Nom Discord au moment de la liaison, pour que l'administration voie à qui
+    // appartient le compte (l'identifiant seul est illisible).
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $discordUsername = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['riotAccount:read:get'])]
@@ -510,6 +523,30 @@ class RiotAccount
                 $summonerEloDaily->setRiotAccount(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDiscordId(): ?string
+    {
+        return $this->discordId;
+    }
+
+    public function setDiscordId(?string $discordId): static
+    {
+        $this->discordId = $discordId;
+
+        return $this;
+    }
+
+    public function getDiscordUsername(): ?string
+    {
+        return $this->discordUsername;
+    }
+
+    public function setDiscordUsername(?string $discordUsername): static
+    {
+        $this->discordUsername = $discordUsername;
 
         return $this;
     }

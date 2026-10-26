@@ -16,6 +16,14 @@ parameters:
     # cache:clear ; repasser à 0 une fois les inscrits majoritairement placés.
     # Le classement Winrate, lui, continue pendant la suspension.
     env(RANKED_RACE_PROGRESSION_SUSPENDED): '0'
+    # Application Discord (https://discord.com/developers/applications) pour la
+    # connexion des joueurs. Vides par défaut : sans elles, seule la connexion
+    # Discord échoue (401 discord_login_failed), le reste du site fonctionne.
+    env(DISCORD_CLIENT_ID): ''
+    env(DISCORD_CLIENT_SECRET): ''
+    # Doit être identique, au caractère près, à l'URL de retour déclarée dans
+    # l'application Discord et à celle utilisée par le front.
+    env(DISCORD_REDIRECT_URI): ''
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -59,6 +67,13 @@ services:
 
     App\Domain\User\UserRepositoryInterface:
         alias: App\Infrastructure\User\DoctrineUserRepository
+
+    App\Infrastructure\Player\DiscordOAuthClient:
+        arguments:
+            $clientId: '%env(DISCORD_CLIENT_ID)%'
+            $clientSecret: '%env(DISCORD_CLIENT_SECRET)%'
+            $redirectUri: '%env(DISCORD_REDIRECT_URI)%'
+            $logger: '@monolog.logger.security'
 
 
     # Hasher concret de Symfony, injecté dans l'adaptateur SymfonyPasswordHasher
