@@ -5,7 +5,6 @@ namespace App\Tests\Application\LanChallenge;
 use App\Application\LanChallenge\JoinChallenges\JoinChallengesCommand;
 use App\Application\LanChallenge\JoinChallenges\JoinChallengesHandler;
 use App\Application\LanChallenge\PickCard\PickCardCommand;
-use App\Application\LanChallenge\PickCard\PickCardHandler;
 use App\Application\LanChallenge\RerollCard\RerollCardCommand;
 use App\Application\LanChallenge\RerollCard\RerollCardHandler;
 use App\Application\LanChallenge\ResolveGame\ResolveGameCommand;
@@ -40,8 +39,7 @@ class LanChallengeFlowTest extends TestCase
 
     private function pick(string $discordId, int $slot): void
     {
-        (new PickCardHandler($this->fixture->seats(), $this->fixture->runs))
-            ->handle(new PickCardCommand(LanChallengeFixture::LAN, $discordId, $slot));
+        $this->fixture->pickCardHandler()->handle(new PickCardCommand(LanChallengeFixture::LAN, $discordId, $slot));
     }
 
     public function testRejoindreDistribueLaPremiereOffreUneSeuleFois(): void

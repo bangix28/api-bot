@@ -27,6 +27,12 @@ final readonly class PlayerGameStats
         public int $aces,
         public ?bool $win = null,
         public ?bool $firstBlood = null,
+        /**
+         * Le joueur finit avec le plus de morts des 10 joueurs (égalité comprise).
+         * Calculé par le serveur sur l'ensemble de la partie, que le relevé
+         * d'un seul joueur ne suffit pas à établir.
+         */
+        public ?bool $mostDeathsInGame = null,
     ) {
         if ($kills < 0 || $deaths < 0 || $assists < 0 || $soloKills < 0 || $teamKills < 0 || $aces < 0) {
             throw new \InvalidArgumentException('Un relevé de partie ne peut pas contenir de compteur négatif.');

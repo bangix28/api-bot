@@ -44,6 +44,9 @@ class LanRoundResult
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $settledAt;
 
+    #[ORM\Column(options: ['default' => false])]
+    private bool $curseApplied;
+
     public function __construct(
         LanPlayerRun $run,
         int $position,
@@ -53,6 +56,7 @@ class LanRoundResult
         int $points,
         bool $roundBonus,
         \DateTimeImmutable $settledAt,
+        bool $curseApplied = false,
     ) {
         $this->run = $run;
         $this->position = $position;
@@ -62,6 +66,7 @@ class LanRoundResult
         $this->points = $points;
         $this->roundBonus = $roundBonus;
         $this->settledAt = $settledAt;
+        $this->curseApplied = $curseApplied;
     }
 
     public function getRun(): LanPlayerRun
@@ -102,5 +107,10 @@ class LanRoundResult
     public function getSettledAt(): \DateTimeImmutable
     {
         return $this->settledAt;
+    }
+
+    public function isCurseApplied(): bool
+    {
+        return $this->curseApplied;
     }
 }

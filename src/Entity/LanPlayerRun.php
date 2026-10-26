@@ -44,6 +44,10 @@ class LanPlayerRun
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $lockedGameId = null;
 
+    // Maudit par un saboteur : secret, jamais exposé tel quel par l'API.
+    #[ORM\Column(options: ['default' => false])]
+    private bool $cursed = false;
+
     /** @var Collection<int, LanRoundResult> */
     #[ORM\OneToMany(targetEntity: LanRoundResult::class, mappedBy: 'run', cascade: ['persist'])]
     #[ORM\OrderBy(['position' => 'ASC'])]
@@ -124,6 +128,18 @@ class LanPlayerRun
     public function setLockedGameId(?string $lockedGameId): static
     {
         $this->lockedGameId = $lockedGameId;
+
+        return $this;
+    }
+
+    public function isCursed(): bool
+    {
+        return $this->cursed;
+    }
+
+    public function setCursed(bool $cursed): static
+    {
+        $this->cursed = $cursed;
 
         return $this;
     }

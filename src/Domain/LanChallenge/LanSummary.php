@@ -28,6 +28,18 @@ final readonly class LanSummary
         return isset($this->participants[$puuid]);
     }
 
+    /** Participant désigné par son Riot ID, sans tenir compte de la casse ; null sinon. */
+    public function puuidOf(string $riotId): ?string
+    {
+        foreach ($this->participants as $puuid => $participantRiotId) {
+            if (strcasecmp($participantRiotId, trim($riotId)) === 0) {
+                return $puuid;
+            }
+        }
+
+        return null;
+    }
+
     /** Fin incluse : jusqu'à l'heure de fin, on peut encore choisir une carte. */
     public function isFinishedAt(\DateTimeImmutable $instant): bool
     {
