@@ -1,6 +1,6 @@
 # Contrat d'API : agent de LAN → api-bot
 
-Version du contrat : **v1** (2026-10-26 : cycle des parties piloté par les relevés, sans Spectator) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
+Version du contrat : **v1** (2026-10-26 : appairage de l'agent depuis le front ; cycle des parties piloté par les relevés) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
 
 L'agent tourne sur le PC Windows d'un ou plusieurs joueurs pendant une LAN. Il
 lit la Live Client Data API du jeu (`https://127.0.0.1:2999`) et transmet ce
@@ -27,33 +27,37 @@ redistribuer l'agent.
 
 ---
 
-## 1. Connexion : « Se connecter avec Discord » depuis l'agent
+## 1. Connexion : appairer l'agent depuis le front
 
 Chaque relevé doit prouver **qui l'envoie** : sans cela, n'importe qui pourrait
-déclarer un penta avec un simple `curl`. Cette preuve est un **jeton d'agent**,
-mais le joueur ne le manipule jamais : il l'obtient en se connectant avec
-Discord depuis l'agent, comme on se connecte à une application de bureau.
+déclarer un penta avec un simple `curl`. Cette preuve est un **jeton d'agent**.
+
+L'agent est un programme séparé : il ne peut pas lire la session du joueur dans
+son navigateur. Il ne se connecte donc pas lui-même : le joueur, **déjà connecté
+avec Discord sur le front**, y **approuve un code** affiché par l'agent — comme
+on connecte une télévision à un compte (RFC 8628). L'agent ne parle jamais à
+Discord.
 
 ### Ce que voit le joueur
 
-1. Il lance l'agent et clique sur **Se connecter avec Discord**.
-2. Son navigateur s'ouvre sur Discord ; il autorise l'application.
-3. L'onglet affiche « Connecté, tu peux fermer cet onglet » et l'agent :
-   « Connecté : Pseudo#EUW — LAN d'automne (sam. 14:00 → dim. 04:00) ».
+1. Il lance l'agent, qui affiche : « Sur le site, ouvre *Connecter mon agent* et
+   saisis le code **K7QF-92PZ** ».
+2. Sur le front, où il est déjà connecté, il saisit le code.
+3. L'agent affiche : « Connecté : Pseudo#EUW — LAN d'automne (sam. 14:00 → dim. 04:00) ».
 
-S'il n'est inscrit à aucune LAN, l'agent le dit **dès la connexion** :
-« Tu n'es inscrit à aucune LAN en cours ou à venir ».
+S'il n'est inscrit à aucune LAN en cours ou à venir, c'est **le front** qui le
+lui dit à la saisie du code (§ 1.2).
 
 ### Le jeton obtenu
 
-- Rattaché au joueur **et à une LAN** : celle en cours à laquelle il participe,
-  sinon la prochaine. Il ne vaut que pour cette LAN.
+- Rattaché au joueur **et à une LAN** : celle en cours à laquelle l'un de ses
+  comptes participe, sinon la prochaine. Il ne vaut que pour cette LAN.
 - **Expire à la fin de la LAN** (`endsAt`). Un jeton qui fuite ne sert à rien
-  après le week-end ; pour la LAN suivante, le joueur se reconnecte.
+  après le week-end ; pour la LAN suivante, le joueur appaire de nouveau l'agent.
 - **Une heure de grâce, pour le seul relevé final** : une partie lancée à
   03:50 se termine après la fin de la LAN, son relevé final est accepté
   jusqu'à `endsAt` + 1 h. Elle compte si elle a commencé avant `endsAt`.
-- Se reconnecter révoque le jeton précédent du joueur pour cette LAN.
+- Un nouvel appairage révoque le jeton précédent du joueur pour cette LAN.
 - L'agent le stocke dans le dossier de l'utilisateur Windows (`%APPDATA%`),
   jamais à côté de l'exécutable. Préfixe `agt_`, pour le repérer s'il fuite
   dans un log.
@@ -64,70 +68,84 @@ Chaque requête de l'agent porte l'en-tête :
 Authorization: Bearer agt_3f9c…
 ```
 
-### Le déroulé technique
-
-C'est **api-bot** qui parle à Discord : le secret de l'application Discord ne
-quitte jamais le serveur, et l'agent ne connaît ni Discord ni son secret.
-L'échange suit le schéma standard des applications de bureau (OAuth 2.0 pour
-applications natives, RFC 8252, avec PKCE, RFC 7636).
+### Le déroulé
 
 ```
-Agent                        Navigateur                         api-bot                         Discord
-  │ 1. state + code_verifier   │                                   │                               │
-  │    écoute 127.0.0.1:<port> │                                   │                               │
-  │──── ouvre ────────────────▶│ GET /agent/v1/login?… ───────────▶│ 2. ─── redirige ─────────────▶│
-  │                            │                                   │                               │ autorise
-  │                            │                                   │◀── 3. code Discord ───────────│
-  │                            │                                   │ joueur + LAN, code à usage unique
-  │◀─ 4. http://127.0.0.1:<port>/callback?code=…&state=… ──────────│                               │
-  │ 5. POST /api/agent/v1/token (code + code_verifier) ───────────▶│                               │
-  │◀──────────────────────────────── jeton agt_…, joueur, LAN ─────│                               │
+Agent                                   api-bot                                  Front (joueur connecté)
+  │ 1. POST /api/agent/v1/device ─────────▶│                                          │
+  │◀── userCode K7QF-92PZ, deviceCode ─────│                                          │
+  │ affiche le code                        │                                          │
+  │                                        │◀── 2. POST /api/me/agent-devices/approve │
+  │                                        │       { userCode }  (JWT du joueur)      │
+  │ 3. POST /api/agent/v1/token ──────────▶│                                          │
+  │    toutes les `interval` secondes      │                                          │
+  │◀── authorization_pending … puis jeton ─│                                          │
 ```
 
-**1. L'agent prépare la connexion.**
-- Tire un `state` et un `code_verifier` aléatoires (32 octets, base64url) ;
-  calcule `code_challenge = BASE64URL(SHA256(code_verifier))`.
-- Écoute sur `http://127.0.0.1:<port>/callback`, `<port>` étant un port libre
-  choisi par le système.
-- Ouvre le navigateur sur :
+#### 1.1 `POST /api/agent/v1/device` — l'agent demande un code
+
+Sans authentification, sans corps.
+
+Réponse `200` :
+
+```json
+{
+  "userCode": "K7QF-92PZ",
+  "deviceCode": "dev_Hn3V…",
+  "verificationUrl": "https://site.example/agent",
+  "expiresIn": 600,
+  "interval": 5
+}
+```
+
+| Champ | Sens |
+|---|---|
+| `userCode` | À **afficher** au joueur, qui le saisit sur le front. 8 caractères sans ambiguïté (ni `0`/`O`, ni `1`/`I`), casse et tiret indifférents à la saisie. |
+| `deviceCode` | **Secret de l'agent** : ne jamais l'afficher. Il sert à récupérer le jeton (§ 1.3). |
+| `verificationUrl` | Page du front où saisir le code : à afficher, ou à ouvrir dans le navigateur. |
+| `expiresIn` | Durée de validité du code, en secondes (10 min). Passé ce délai, en redemander un. |
+| `interval` | Délai minimal, en secondes, entre deux interrogations de `token`. |
+
+#### 1.2 `POST /api/me/agent-devices/approve` — le front approuve le code
+
+Appelé par le **front**, avec le JWT du joueur connecté (cf.
+[connexion-discord.md](../front/connexion-discord.md)) :
 
 ```
-GET {api-bot}/agent/v1/login?port=<port>&state=<state>&code_challenge=<code_challenge>
+POST /api/me/agent-devices/approve
+Authorization: Bearer <JWT du joueur>
+Content-Type: application/json
+
+{ "userCode": "k7qf92pz" }
 ```
 
-**2. api-bot envoie le joueur sur Discord** (scope `identify`), avec son propre
-URL de retour (`{api-bot}/agent/v1/login/callback`, déclaré dans l'application
-Discord).
+Réponse `200` : la LAN pour laquelle l'agent est appairé, à afficher au joueur.
 
-**3. api-bot identifie le joueur et sa LAN.** Il échange le code Discord,
-retrouve le compte par son identifiant Discord, puis la LAN en cours ou à venir
-à laquelle l'un de ses comptes Riot participe.
+```json
+{
+  "lan": { "id": 3, "name": "LAN d'automne", "startsAt": "2026-11-07T14:00:00+01:00", "endsAt": "2026-11-08T04:00:00+01:00" },
+  "player": { "riotIds": ["Pseudo#EUW", "Smurf#1234"] }
+}
+```
 
-**4. api-bot rend la main à l'agent** en redirigeant le navigateur vers
-`http://127.0.0.1:<port>/callback`, avec :
-- en cas de succès : `?code=<code>&state=<state>` — un code **à usage unique,
-  valable 60 secondes**, et non le jeton lui-même : une URL finit dans
-  l'historique du navigateur ;
-- en cas d'échec : `?error=<erreur>&state=<state>`, avec `error` parmi
-  `access_denied` (le joueur a refusé sur Discord), `unknown_player` (compte
-  Discord lié à aucun joueur), `not_registered` (inscrit à aucune LAN en cours
-  ou à venir).
+| Code | `code` | Cas |
+|---|---|---|
+| `400` | `invalid_user_code` | Code inconnu, expiré, ou déjà approuvé |
+| `409` | `not_registered` | Aucun compte du joueur ne participe à une LAN en cours ou à venir |
+| `401` / `403` | — | Pas de JWT de joueur |
 
-api-bot ne redirige **que** vers `http://127.0.0.1:<port>/callback` : jamais
-vers une autre adresse, ce qui interdit de détourner la connexion vers un site
-tiers. L'agent **ignore tout retour dont le `state` diffère** de celui qu'il a
-tiré, puis répond au navigateur par une page « Tu peux fermer cet onglet ».
+#### 1.3 `POST /api/agent/v1/token` — l'agent récupère son jeton
 
-**5. L'agent échange le code contre le jeton :**
+L'agent interroge toutes les `interval` secondes jusqu'à l'approbation :
 
 ```
 POST /api/agent/v1/token
 Content-Type: application/json
 
-{ "code": "<code>", "codeVerifier": "<code_verifier>" }
+{ "deviceCode": "dev_Hn3V…" }
 ```
 
-Réponse `200` :
+Réponse `200`, **une seule fois** : le code est ensuite consommé.
 
 ```json
 {
@@ -143,10 +161,22 @@ Réponse `200` :
 }
 ```
 
-Erreur `400 invalid_grant` : code inconnu, expiré, déjà utilisé, ou
-`codeVerifier` qui ne correspond pas au `code_challenge` de l'étape 1. Le
-`code_verifier` garantit que seul l'agent qui a lancé la connexion peut
-récupérer le jeton, même si le code est intercepté.
+| Code | `code` | Cas | Réaction de l'agent |
+|---|---|---|---|
+| `400` | `authorization_pending` | Le joueur n'a pas encore saisi le code | Réessayer après `interval` secondes |
+| `400` | `slow_down` | Interrogé plus vite que `interval` | Ajouter 5 s à l'intervalle |
+| `400` | `expired_token` | Le code a expiré sans être approuvé | Redemander un code (§ 1.1) |
+| `400` | `invalid_grant` | `deviceCode` inconnu ou déjà utilisé | Redemander un code (§ 1.1) |
+
+### Sécurité
+
+- Le `deviceCode` est le seul secret de l'agent avant le jeton : le serveur n'en
+  garde qu'une empreinte, et il ne sert qu'une fois.
+- Le `userCode` est court pour être saisi, mais il ne donne rien seul : il doit
+  être approuvé par un joueur **connecté**, expire en 10 minutes et ne sert
+  qu'une fois. Le jeton émis appartient au joueur qui l'a approuvé.
+- Approuver le code d'un autre lui donnerait un agent… lié à **son propre**
+  compte : on ne peut pas se faire passer pour quelqu'un d'autre ainsi.
 
 ---
 
@@ -187,8 +217,8 @@ valable et donne les réglages du moment.
 
 | Code | `code` | Cas | Réaction de l'agent |
 |---|---|---|---|
-| `401` | `invalid_token` | Jeton absent, inconnu ou révoqué (reconnexion ailleurs, révocation par un admin) | Effacer le jeton, proposer **Se connecter avec Discord** |
-| `401` | `token_expired` | La LAN du jeton est terminée | Effacer le jeton, afficher « LAN terminée », proposer de se reconnecter pour la suivante |
+| `401` | `invalid_token` | Jeton absent, inconnu ou révoqué (nouvel appairage, révocation par un admin) | Effacer le jeton, recommencer l'appairage (§ 1) |
+| `401` | `token_expired` | La LAN du jeton est terminée | Effacer le jeton, afficher « LAN terminée », proposer un nouvel appairage pour la suivante |
 
 ---
 
@@ -275,7 +305,7 @@ Corps : `{ "code": "…", "message": "…" }` (message en français, pour les lo
 | Code HTTP | `code` | Cas | Réaction de l'agent |
 |---|---|---|---|
 | `400` | `invalid_report` | Champ manquant, `liveClient` sans `allPlayers` / `events` / `gameData` | Journaliser, ne pas rejouer |
-| `401` | `invalid_token` | Jeton absent, inconnu ou révoqué | Effacer le jeton, proposer **Se connecter avec Discord** |
+| `401` | `invalid_token` | Jeton absent, inconnu ou révoqué | Effacer le jeton, recommencer l'appairage (§ 1) |
 | `401` | `token_expired` | Relevé intermédiaire après `endsAt`, ou relevé final plus d'1 h après `endsAt` (cf. § 1) | Effacer le jeton, afficher « LAN terminée » |
 | `403` | `not_your_account` | `activePlayer.riotId` n'est pas un compte du joueur authentifié | Ne pas rejouer : on n'envoie que **sa propre** partie |
 | `413` | `report_too_large` | Corps décompressé > 1 Mo | Ne pas rejouer |
