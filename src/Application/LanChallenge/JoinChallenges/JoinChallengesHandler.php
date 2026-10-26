@@ -2,6 +2,7 @@
 
 namespace App\Application\LanChallenge\JoinChallenges;
 
+use App\Application\LanChallenge\PlayerSeat\PlayerSeatResolver;
 use App\Domain\LanChallenge\CardDealer;
 use App\Domain\LanChallenge\PlayerRun;
 use App\Domain\LanChallenge\PlayerRunRepositoryInterface;
@@ -14,6 +15,7 @@ use App\Domain\LanChallenge\PlayerRunRepositoryInterface;
 final readonly class JoinChallengesHandler
 {
     public function __construct(
+        private PlayerSeatResolver $seats,
         private PlayerRunRepositoryInterface $runs,
         private CardDealer $dealer,
     ) {
@@ -21,12 +23,14 @@ final readonly class JoinChallengesHandler
 
     public function handle(JoinChallengesCommand $command): PlayerRun
     {
-        $existing = $this->runs->find($command->lanId, $command->puuid);
+        $seat = $this->seats->resolveForAction($command->lanId, $command->discordId);
+
+        $existing = $this->runs->find($command->lanId, $seat->puuid);
         if ($existing !== null) {
             return $existing;
         }
 
-        $run = PlayerRun::start($command->lanId, $command->puuid, $this->dealer->dealOffer());
+        $run = PlayerRun::start($command->lanId, $seat->puuid, $this->dealer->dealOffer());
         $this->runs->save($run);
 
         return $run;

@@ -74,6 +74,11 @@ security:
        - { path: ^/api/auth/discord, roles: PUBLIC_ACCESS }
        # Profil et comptes du joueur connecté : un compte e-mail n'en a pas.
        - { path: ^/api/me, roles: ROLE_PLAYER }
+       # Défis de LAN : le parcours d'un joueur n'appartient qu'à lui ; le
+       # catalogue, le classement et le fil s'affichent aussi sur l'écran de la
+       # LAN, servi par le compte API du front.
+       - { path: ^/api/lan-events/\d+/me, roles: ROLE_PLAYER }
+       - { path: ^/api/(lan-events|lan-challenges), roles: [ROLE_API, ROLE_PLAYER] }
        - { path: ^/admin, roles: ROLE_ADMIN }
        - { path: ^/refresh, roles: ROLE_ADMIN }
        - { path: ^/getDailyElo, roles: ROLE_ADMIN }
