@@ -17,10 +17,36 @@ final readonly class DoctrineLanSummaryReader implements LanSummaryReaderInterfa
     public function find(int $lanId): ?LanSummary
     {
         $row = $this->entityManager->find(LanEvent::class, $lanId);
-        if ($row === null) {
+
+        return $row === null ? null : self::toDomain($row);
+    }
+
+    public function findCurrentOrNextFor(array $puuids, \DateTimeImmutable $now): ?LanSummary
+    {
+        if ($puuids === []) {
             return null;
         }
 
+        // Pas encore terminée, et la plus tôt commencée : la LAN en cours passe
+        // devant la prochaine.
+        $row = $this->entityManager->createQueryBuilder()
+            ->select('lan')
+            ->from(LanEvent::class, 'lan')
+            ->join('lan.participants', 'participant')
+            ->where('participant.puuid IN (:puuids)')
+            ->andWhere('lan.endsAt >= :now')
+            ->setParameter('puuids', $puuids)
+            ->setParameter('now', $now)
+            ->orderBy('lan.startsAt', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $row === null ? null : self::toDomain($row);
+    }
+
+    private static function toDomain(LanEvent $row): LanSummary
+    {
         $participants = [];
         foreach ($row->getParticipants() as $account) {
             /** @var RiotAccount $account */
