@@ -10,6 +10,7 @@ use ApiPlatform\OpenApi\Model\PathItem;
 use ApiPlatform\OpenApi\Model\RequestBody;
 use ApiPlatform\OpenApi\Model\Response;
 use ApiPlatform\OpenApi\OpenApi;
+use App\Application\LanGame\ReceiveReport\IgnoredReason;
 use Symfony\Component\DependencyInjection\Attribute\AsDecorator;
 
 /**
@@ -151,6 +152,24 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 'agent_session', self::AGENT_TAG, self::AGENT,
                 'Session de l\'agent : LAN, comptes du joueur, réglages.', null, null,
                 [200 => ['Session.', 'AgentSession'], 401 => ['invalid_token | token_expired']],
+            )],
+            ['/api/agent/v1/reports', 'post', self::operation(
+                'agent_report', self::AGENT_TAG, self::AGENT,
+                'L\'agent envoie un relevé de la partie en cours.',
+                'Corps : enveloppe du contrat (§ 3) avec « liveClient », la réponse brute de /liveclientdata/allgamedata. Content-Encoding: gzip accepté ; 1 Mo au plus une fois décompressé. Le premier relevé d\'une partie verrouille les cartes, le relevé final les règle.',
+                new RequestBody(
+                    content: new \ArrayObject(['application/json' => new MediaType(new \ArrayObject(['$ref' => '#/components/schemas/AgentReport']))]),
+                    required: true,
+                ),
+                [
+                    202 => ['Relevé enregistré.', 'AgentReportAccepted'],
+                    200 => ['Relevé valide mais sans objet : cesser d\'envoyer pour cette partie.', 'AgentReportIgnored'],
+                    400 => ['invalid_report'],
+                    401 => ['invalid_token | token_expired'],
+                    403 => ['not_your_account : le joueur du poste n\'est pas un compte du joueur.'],
+                    413 => ['report_too_large'],
+                    429 => ['too_many_reports : attendre Retry-After secondes.'],
+                ],
             )],
         ];
     }
@@ -336,6 +355,22 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 ]]]],
                 'acceptedGameModes' => $listOf(['type' => 'string', 'example' => 'KIWI']),
                 'reportIntervalSeconds' => ['type' => 'integer'],
+            ]],
+            'AgentReport' => ['type' => 'object', 'required' => ['agentVersion', 'sessionId', 'sequence', 'final', 'endReason', 'observedAt', 'liveClient'], 'properties' => [
+                'agentVersion' => ['type' => 'string', 'example' => '1.0.0'],
+                'sessionId' => ['type' => 'string', 'format' => 'uuid', 'description' => 'Tiré par l\'agent au début de chaque partie.'],
+                'sequence' => ['type' => 'integer', 'minimum' => 1],
+                'final' => ['type' => 'boolean'],
+                'endReason' => ['type' => ['string', 'null'], 'enum' => ['game_end', 'client_closed', null], 'description' => 'Obligatoire si final, null sinon.'],
+                'observedAt' => $dateTime,
+                'liveClient' => ['type' => 'object', 'description' => 'Réponse de GET /liveclientdata/allgamedata, telle quelle.', 'required' => ['activePlayer', 'allPlayers', 'events', 'gameData']],
+            ]],
+            'AgentReportAccepted' => ['type' => 'object', 'properties' => [
+                'status' => ['type' => 'string', 'enum' => ['accepted']],
+            ]],
+            'AgentReportIgnored' => ['type' => 'object', 'properties' => [
+                'status' => ['type' => 'string', 'enum' => ['ignored']],
+                'reason' => ['type' => 'string', 'enum' => array_map(static fn(IgnoredReason $reason) => $reason->value, IgnoredReason::cases())],
             ]],
         ];
     }

@@ -32,7 +32,7 @@ final class AgentAuthenticationResponder implements AuthenticationFailureHandler
         return new JsonResponse(['code' => $code, 'message' => $message], Response::HTTP_UNAUTHORIZED);
     }
 
-    private static function invalidToken(): JsonResponse
+    public static function invalidToken(): JsonResponse
     {
         return self::unauthorized('invalid_token', 'Jeton d\'agent absent, inconnu ou révoqué : recommence l\'appairage.');
     }
