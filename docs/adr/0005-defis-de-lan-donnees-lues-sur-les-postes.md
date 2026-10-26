@@ -86,10 +86,15 @@ Il en déduit le **début** d'une partie (cartes verrouillées, participants qui
 jouent ensemble) et sa **fin** (l'endpoint repasse en 404 : la manche se clôt,
 une nouvelle offre est distribuée). Coût : 5 joueurs × 2 appels/min, négligeable.
 
-### 3. Les statistiques viennent d'un agent sur chaque poste
+### 3. Les statistiques viennent d'un agent sur le poste d'un joueur
 
-Un agent lancé sur le PC du joueur lit la Live Client Data API pendant la partie
-et transmet ses relevés à api-bot, authentifié par le compte du joueur.
+Un agent lancé sur le PC d'un joueur lit la Live Client Data API pendant la
+partie et transmet ses relevés à api-bot, authentifié par le compte du joueur.
+
+- **Un agent par partie suffit** : l'API donne les scores et le journal des
+  10 joueurs, donc un seul relevé règle les cartes de tous les participants de
+  la partie. Les autres n'installent rien. Personne n'est désigné à l'avance :
+  chaque relevé dit de qui il vient, par son jeton.
 La LCU n'est utilisée que si une carte indispensable en dépend, et seulement
 après vérification sur une vraie partie.
 
@@ -105,13 +110,14 @@ après vérification sur une vraie partie.
   événements sont d'abord résolus en Riot ID complet dans la partie (cf.
   « Vérifié sur une vraie partie »).
 
-### 4. Un relevé n'est cru que s'il est recoupé
+### 4. Un relevé n'est cru que s'il est cohérent
 
 - Il doit porter sur une partie que le serveur a **vue démarrer** (décision 2),
-  avec les mêmes participants.
-- Chaque agent voit les scores de tous les joueurs : quand plusieurs participants
-  jouent la même partie, leurs relevés doivent **concorder**. Un relevé isolé et
-  contradictoire est écarté.
+  avec les mêmes participants, et sur la propre partie de celui qui l'envoie
+  (le joueur du poste est l'un de ses comptes).
+- Une partie rapportée par un seul agent est acceptée sur son relevé. Rapportée
+  par plusieurs, leurs relevés doivent **concorder** ; un relevé contradictoire
+  est écarté.
 
 ### 5. Une carte n'existe que si sa condition est mesurable
 
@@ -147,11 +153,13 @@ rapporte pas le résultat.
 
 ### Négatives / limites assumées
 
-- Un composant de plus à installer sur chaque PC, sous Windows (LoL ne tourne
+- Un composant de plus à installer, sur au moins un PC par partie, sous Windows (LoL ne tourne
   pas sous Linux) ; il se développe et se teste sous Linux contre un faux serveur
   Live Client qui rejoue les exemples officiels de Riot.
-- Un joueur seul dans sa partie n'a personne pour recouper son relevé : seule la
-  cohérence avec Spectator le protège.
+- Avec un seul agent dans la partie, il n'y a pas de recoupement : la confiance
+  repose sur le joueur qui le porte, encadrée par la cohérence avec Spectator.
+- Une partie sans aucun agent n'est pas vue : ses cartes finissent en verdict
+  inconnu.
 - Catalogue réduit tant que dégâts, soins, CC et augments ne sont pas disponibles.
 - Le résultat n'est connu que par les agents présents jusqu'à `GameEnd`.
 

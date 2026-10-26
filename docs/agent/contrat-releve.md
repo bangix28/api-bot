@@ -2,9 +2,22 @@
 
 Version du contrat : **v1** (2026-10-25, connexion Discord depuis l'agent) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
 
-L'agent tourne sur le PC Windows de chaque joueur pendant une LAN. Il lit la
-Live Client Data API du jeu (`https://127.0.0.1:2999`) et transmet ce qu'il lit
-à api-bot, qui valide les cartes défis. L'agent est un projet séparé : ce
+L'agent tourne sur le PC Windows d'un ou plusieurs joueurs pendant une LAN. Il
+lit la Live Client Data API du jeu (`https://127.0.0.1:2999`) et transmet ce
+qu'il lit à api-bot, qui valide les cartes défis.
+
+**Un agent par partie suffit.** La Live Client Data API donne les scores et le
+journal d'événements des **10 joueurs** de la partie : le relevé d'un seul agent
+permet de régler les cartes de tous les participants de la LAN qui y jouent. Les
+autres n'installent rien ; ils se connectent seulement avec Discord sur le front
+pour choisir leurs cartes. Nul besoin de désigner à l'avance qui porte l'agent :
+le serveur l'apprend du jeton de chaque relevé (§ 1).
+
+| Situation | Conséquence |
+|---|---|
+| Un agent dans la partie | Toutes les cartes de la partie sont réglées sur son relevé. |
+| Plusieurs agents dans la même partie | Leurs relevés sont **recoupés** : ils doivent concorder (§ 4). |
+| Aucun agent dans la partie | Rien n'est rapporté : les cartes engagées finissent en verdict inconnu (relance rendue). | L'agent est un projet séparé : ce
 document est **la seule chose que les deux projets partagent**.
 
 Principe directeur : **l'agent transporte, le serveur juge.** L'agent n'interprète
@@ -288,9 +301,14 @@ Pour que l'agent sache ce qui compte, pas pour qu'il le reproduise.
    (`ChampionKill` sans `Assisters`), kills d'équipe (somme des `scores.kills`
    par `team`), Aces (`Ace.Acer`), premier sang (`FirstBlood.Recipient`),
    vainqueur (`GameEnd.Result`, vu du joueur du poste, étendu à son équipe).
-5. **Recoupement** : quand plusieurs agents rapportent la même partie, leurs
-   relevés finaux doivent concorder (scores, journal d'événements). Un relevé
-   isolé et contradictoire est écarté.
+5. **Portée** : le relevé règle les cartes de **tous** les participants de la
+   LAN présents dans `allPlayers`, pas seulement celle du joueur du poste.
+6. **Recoupement** : une partie rapportée par un seul agent est acceptée sur
+   son relevé. Rapportée par plusieurs, leurs relevés finaux doivent concorder
+   (scores, journal d'événements) ; un relevé contradictoire est écarté.
+   Sans recoupement, la confiance repose sur le joueur qui porte l'agent : la
+   règle du `403` (le relevé porte sur sa propre partie) et la cohérence avec
+   Spectator-V5 (partie vue démarrer, mêmes joueurs) en sont les garde-fous.
 
 ---
 
