@@ -5,7 +5,7 @@ namespace App\Application\LanChallenge\StartGame;
 use App\Domain\LanChallenge\PlayerRunRepositoryInterface;
 
 /**
- * Une partie démarre (détectée par Spectator-V5, cf. ADR-0005) : la carte de
+ * Une partie démarre (premier relevé de l'agent, cf. ADR-0005) : la carte de
  * chaque joueur de la LAN présent est engagée sur cette partie.
  */
 final readonly class StartGameHandler

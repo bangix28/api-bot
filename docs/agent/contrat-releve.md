@@ -1,6 +1,6 @@
 # Contrat d'API : agent de LAN → api-bot
 
-Version du contrat : **v1** (2026-10-25, connexion Discord depuis l'agent) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
+Version du contrat : **v1** (2026-10-26 : cycle des parties piloté par les relevés, sans Spectator) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
 
 L'agent tourne sur le PC Windows d'un ou plusieurs joueurs pendant une LAN. Il
 lit la Live Client Data API du jeu (`https://127.0.0.1:2999`) et transmet ce
@@ -200,6 +200,7 @@ Envoie un relevé : l'état de la partie à un instant donné.
 
 | Moment | `final` | Remarque |
 |---|---|---|
+| **Dès que la partie est détectée** | `false` | Relevé d'ouverture (`sequence: 1`), **sans attendre** l'intervalle : c'est lui qui déclare la partie commencée et verrouille les cartes (§ 4). Rejoué une fois en cas d'échec réseau. |
 | Toutes les `reportIntervalSeconds` pendant la partie | `false` | Alimente les annonces en direct. Un envoi raté n'est **pas** rejoué : le suivant le remplace. |
 | Dès qu'un événement `GameEnd` apparaît | `true` | Le relevé qui compte pour la validation. **À rejouer** jusqu'à succès (cf. § 5). |
 | L'API locale disparaît sans `GameEnd` | `true` | Dernier état connu, avec `endReason: "client_closed"` (crash, quitte la partie). |
@@ -264,6 +265,7 @@ partie (`sessionId`) et attend la suivante.
 | `lan_not_started` | La LAN du jeton n'a pas encore commencé (horloge du poste en avance, par ex.). |
 | `game_mode_not_accepted` | `gameData.gameMode` n'est pas dans `acceptedGameModes`. |
 | `no_participant_in_game` | Aucun participant de la LAN parmi les `allPlayers`. |
+| `joined_too_late` | Le premier relevé de cette partie est arrivé après 90 s de jeu : elle n'engage aucune carte (§ 4). |
 | `stale_sequence` | `sequence` déjà reçue ou dépassée : sans effet, rien à corriger. |
 
 ### Erreurs
@@ -290,25 +292,35 @@ Pour que l'agent sache ce qui compte, pas pour qu'il le reproduise.
 1. **Identité** : le joueur du poste est `activePlayer.riotId`, rapproché des
    comptes du joueur authentifié (sinon `403`).
 2. **Rattachement à une partie** : la Live Client Data API ne donne **pas**
-   d'identifiant de partie. Le serveur rattache le relevé à la partie que
-   Spectator-V5 a vue démarrer pour ce joueur ; à défaut, il regroupe les
-   relevés qui partagent les mêmes 10 `riotId`, le même mode et une heure de
-   début cohérente (`réception − gameTime`).
-3. **Pseudos des événements** : `KillerName`, `VictimName`, `Assisters`, `Acer`,
+   d'identifiant de partie. Le serveur en construit un à partir du mode, des
+   10 `riotId` et de l'heure de début estimée (`réception − gameTime`) ; les
+   relevés de plusieurs agents d'une même partie retombent sur la même clé, à
+   une minute près.
+3. **Cycle de la partie** (les relevés le pilotent seuls, sans interroger Riot) :
+   - **premier relevé** : la partie commence ; la carte de chaque participant de
+     la LAN présent, choisie avant ce moment, est verrouillée sur elle ;
+   - premier relevé **après 90 s de jeu** : la partie n'engage aucune carte
+     (`joined_too_late`) — sinon une carte pourrait être choisie en connaissant
+     déjà le début de la partie ;
+   - **relevé final** : la manche est réglée, les offres suivantes distribuées ;
+   - **plus aucun relevé pendant une heure** : la partie est réglée en verdict
+     inconnu, pour qu'aucune carte ne reste bloquée.
+4. **Pseudos des événements** : `KillerName`, `VictimName`, `Assisters`, `Acer`,
    `Recipient` ne contiennent que le pseudo (`riotIdGameName`), sans le tag. Le
    serveur les résout en Riot ID complet grâce à `allPlayers` de la même partie.
-4. **Calculs** : série la plus longue (`Multikill.KillStreak`), solo kills
+5. **Calculs** : série la plus longue (`Multikill.KillStreak`), solo kills
    (`ChampionKill` sans `Assisters`), kills d'équipe (somme des `scores.kills`
    par `team`), Aces (`Ace.Acer`), premier sang (`FirstBlood.Recipient`),
-   vainqueur (`GameEnd.Result`, vu du joueur du poste, étendu à son équipe).
-5. **Portée** : le relevé règle les cartes de **tous** les participants de la
+   vainqueur (`GameEnd.Result`, vu du joueur du poste, étendu à son équipe),
+   plus de morts de la partie (`scores.deaths` des 10 joueurs, pour Martyr).
+6. **Portée** : le relevé règle les cartes de **tous** les participants de la
    LAN présents dans `allPlayers`, pas seulement celle du joueur du poste.
-6. **Recoupement** : une partie rapportée par un seul agent est acceptée sur
+7. **Recoupement** : une partie rapportée par un seul agent est acceptée sur
    son relevé. Rapportée par plusieurs, leurs relevés finaux doivent concorder
    (scores, journal d'événements) ; un relevé contradictoire est écarté.
    Sans recoupement, la confiance repose sur le joueur qui porte l'agent : la
-   règle du `403` (le relevé porte sur sa propre partie) et la cohérence avec
-   Spectator-V5 (partie vue démarrer, mêmes joueurs) en sont les garde-fous.
+   règle du `403` (le relevé porte sur sa propre partie) et la cohérence d'un
+   relevé à l'autre (même clé, mêmes joueurs) en sont les garde-fous.
 
 ---
 
@@ -322,12 +334,15 @@ Pour que l'agent sache ce qui compte, pas pour qu'il le reproduise.
   ([riotgames.pem](https://static.developer.riotgames.com/docs/lol/riotgames.pem)),
   embarqué dans l'agent. Ne jamais désactiver la vérification.
 - **Partie détectée** (l'API répond après une période sans réponse) : rappeler
-  `session`, tirer un nouveau `sessionId`, remettre `sequence` à 1.
+  `session`, tirer un nouveau `sessionId`, remettre `sequence` à 1, et envoyer
+  **aussitôt** le relevé d'ouverture (§ 3).
+- **Lancer l'agent avant de jouer** : il doit tourner dès l'écran de chargement.
+  Un agent démarré après 90 s de jeu ne fait pas compter la partie (§ 4).
 - **Ne rien envoyer** si : `session.lan.status` vaut `upcoming` ; `gameData.gameMode`
   n'est pas accepté ; `activePlayer.riotId` n'est pas dans `player.riotIds`
   (le joueur regarde une partie en spectateur, ou joue sur un compte non lié).
-- Le journal `events` est cumulatif depuis `GameStart` : un agent lancé en
-  cours de partie ne perd rien, il n'a pas à reconstituer le passé.
+- Le journal `events` est cumulatif depuis `GameStart` : l'agent n'a jamais à
+  reconstituer le passé d'une partie.
 
 ### Fin de partie et rejeu
 
@@ -403,5 +418,5 @@ objets, runes, sorts : l'agent les transmet tous, l'extrait est abrégé.)
 - Retirer ou changer le sens d'un champ impose une **v2** (`/api/agent/v2/…`),
   servie en parallèle de la v1 le temps que les agents soient mis à jour.
 - Points encore ouverts (cf. ADR-0005) : la valeur exacte de `GameEnd.Result`
-  en cas de défaite (seul `"Win"` a été observé) ; la visibilité de la file
-  2400 dans Spectator-V5, qui conditionne le rattachement des relevés (§ 4).
+  en cas de défaite (seul `"Win"` a été observé) ; les seuils (90 s, une minute
+  de tolérance sur la clé, une heure avant abandon), à confirmer en LAN.
