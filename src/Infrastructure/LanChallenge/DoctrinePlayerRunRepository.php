@@ -52,13 +52,14 @@ final readonly class DoctrinePlayerRunRepository implements PlayerRunRepositoryI
             ->setScore($run->score)
             ->setOffer($run->offer === null ? null : array_map(static fn(Challenge $card) => $card->value, $run->offer->cards))
             ->setActiveCard($run->activeCard)
-            ->setLockedGameId($run->lockedGameId);
+            ->setLockedGameId($run->lockedGameId)
+            ->setCursed($run->cursed);
 
         $storedRounds = $row->getResults()->count();
         foreach (array_slice($run->results, $storedRounds, preserve_keys: true) as $position => $result) {
             $row->addResult(new LanRoundResult(
                 $row, $position, $result->gameId, $result->card, $result->verdict,
-                $result->points, $result->roundBonus, $this->clock->now(),
+                $result->points, $result->roundBonus, $this->clock->now(), $result->curseApplied,
             ));
         }
 
@@ -87,10 +88,12 @@ final readonly class DoctrinePlayerRunRepository implements PlayerRunRepositoryI
             $row->getLockedGameId(),
             array_map(
                 static fn(LanRoundResult $result) => new RoundResult(
-                    $result->getGameId(), $result->getCard(), $result->getVerdict(), $result->getPoints(), $result->isRoundBonus(),
+                    $result->getGameId(), $result->getCard(), $result->getVerdict(), $result->getPoints(),
+                    $result->isRoundBonus(), $result->isCurseApplied(),
                 ),
                 $row->getResults()->toArray(),
             ),
+            $row->isCursed(),
         );
     }
 }

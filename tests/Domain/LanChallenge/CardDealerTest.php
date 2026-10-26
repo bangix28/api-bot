@@ -15,11 +15,13 @@ class CardDealerTest extends TestCase
     public static function rolls(): iterable
     {
         yield '1 → argent' => [1, Rarity::SILVER];
-        yield '65 → argent' => [65, Rarity::SILVER];
-        yield '66 → or' => [66, Rarity::GOLD];
-        yield '93 → or' => [93, Rarity::GOLD];
-        yield '94 → prismatique' => [94, Rarity::PRISMATIC];
-        yield '100 → prismatique' => [100, Rarity::PRISMATIC];
+        yield '62 → argent' => [62, Rarity::SILVER];
+        yield '63 → or' => [63, Rarity::GOLD];
+        yield '90 → or' => [90, Rarity::GOLD];
+        yield '91 → prismatique' => [91, Rarity::PRISMATIC];
+        yield '97 → prismatique' => [97, Rarity::PRISMATIC];
+        yield '98 → saboteur' => [98, Rarity::SABOTEUR];
+        yield '100 → saboteur' => [100, Rarity::SABOTEUR];
     }
 
     #[DataProvider('rolls')]

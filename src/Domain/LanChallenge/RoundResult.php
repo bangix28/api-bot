@@ -11,6 +11,8 @@ final readonly class RoundResult
         public Verdict $verdict,
         public int $points,
         public bool $roundBonus,
+        /** Points réduits par une Malédiction : c'est ici que la cible la découvre. */
+        public bool $curseApplied = false,
     ) {
     }
 }

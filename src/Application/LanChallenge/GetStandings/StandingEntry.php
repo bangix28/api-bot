@@ -15,9 +15,11 @@ final readonly class StandingEntry
         public int $successes,
         public int $roundsPlayed,
         public int $rerollsLeft,
-        /** Carte choisie pour la prochaine partie, ou en jeu ; null sinon. */
+        /** Carte choisie pour la prochaine partie, ou en jeu ; null sinon, ou si elle est secrète. */
         public ?Challenge $activeCard,
         public bool $cardLocked,
+        /** Le joueur a choisi une carte saboteur : les autres ne savent pas laquelle. */
+        public bool $secretCard = false,
     ) {
     }
 }

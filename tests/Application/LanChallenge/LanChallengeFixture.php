@@ -2,12 +2,15 @@
 
 namespace App\Tests\Application\LanChallenge;
 
+use App\Application\LanChallenge\PickCard\PickCardHandler;
 use App\Application\LanChallenge\PlayerSeat\PlayerSeatResolver;
 use App\Domain\LanChallenge\CardDealer;
 use App\Domain\LanChallenge\LanSummary;
+use App\Domain\LanChallenge\SabotageService;
 use App\Domain\Player\TrackedRiotAccount;
 use App\Tests\Domain\LanChallenge\InMemoryLanSummaryReader;
 use App\Tests\Domain\LanChallenge\InMemoryPlayerRunRepository;
+use App\Tests\Domain\LanChallenge\InMemorySabotageLog;
 use App\Tests\Domain\LanChallenge\ScriptedRandomizer;
 use App\Tests\Domain\Player\InMemoryTrackedRiotAccountRepository;
 use App\Tests\Domain\Shared\FixedClock;
@@ -31,6 +34,7 @@ final class LanChallengeFixture
     public InMemoryPlayerRunRepository $runs;
     public CardDealer $dealer;
     public FixedClock $clock;
+    public InMemorySabotageLog $sabotageLog;
 
     public function __construct(?\DateTimeImmutable $now = null)
     {
@@ -47,11 +51,17 @@ final class LanChallengeFixture
             ->add(new TrackedRiotAccount('Charlie#EUW', 'puuid-c', self::CHARLIE));
         $this->runs = new InMemoryPlayerRunRepository();
         $this->dealer = new CardDealer(new ScriptedRandomizer());
+        $this->sabotageLog = new InMemorySabotageLog();
         $this->clock = new FixedClock($now ?? new \DateTimeImmutable('2026-11-07 21:00'));
     }
 
     public function seats(): PlayerSeatResolver
     {
         return new PlayerSeatResolver($this->lans, $this->accounts, $this->clock);
+    }
+
+    public function pickCardHandler(): PickCardHandler
+    {
+        return new PickCardHandler($this->seats(), $this->runs, new SabotageService($this->dealer), $this->sabotageLog);
     }
 }

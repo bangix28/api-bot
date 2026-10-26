@@ -15,6 +15,9 @@ use App\Domain\LanChallenge\Verdict;
  *
  * Ordre : points, puis défis réussis (à points égaux, la régularité l'emporte),
  * puis Riot ID pour un ordre stable.
+ *
+ * Une carte saboteur choisie reste secrète : seul son propriétaire la voit,
+ * dans son propre parcours. Une Malédiction subie n'apparaît nulle part.
  */
 final readonly class GetStandingsHandler
 {
@@ -60,8 +63,9 @@ final readonly class GetStandingsHandler
             $successes,
             count($run->results),
             $run->rerollsLeft,
-            $run->activeCard,
+            $run->activeCard?->isSecret() ? null : $run->activeCard,
             $run->lockedGameId !== null,
+            $run->activeCard?->isSecret() ?? false,
         );
     }
 }

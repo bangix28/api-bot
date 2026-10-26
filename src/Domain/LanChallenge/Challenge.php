@@ -12,6 +12,10 @@ namespace App\Domain\LanChallenge;
  *
  * Les seuils sont des premières estimations pour l'ARAM du chaos, à caler sur
  * de vraies parties.
+ *
+ * Saboteur : cartes secrètes. Celles qui sabotent la partie se jouent comme les
+ * autres (jugées en fin de match). Celles qui visent un joueur ne se jouent pas
+ * sur un match : leur effet est immédiat (cf. SabotageService).
  */
 enum Challenge: string
 {
@@ -36,6 +40,13 @@ enum Challenge: string
     case IMMORTAL = 'immortal';
     case BLITZ = 'blitz';
 
+    // Saboteur — contre la partie
+    case BAD_LOSER = 'bad_loser';
+    case MARTYR = 'martyr';
+    // Saboteur — contre un joueur
+    case PICKPOCKET = 'pickpocket';
+    case CURSE = 'curse';
+
     private const int BLITZ_MAX_SECONDS = 15 * 60;
 
     public function label(): string
@@ -56,6 +67,10 @@ enum Challenge: string
             self::PENTA_KILL => 'Penta',
             self::IMMORTAL => 'Immortel',
             self::BLITZ => 'Blitz',
+            self::BAD_LOSER => 'Mauvais perdant',
+            self::MARTYR => 'Martyr',
+            self::PICKPOCKET => 'Pickpocket',
+            self::CURSE => 'Malédiction',
         };
     }
 
@@ -77,6 +92,10 @@ enum Challenge: string
             self::PENTA_KILL => 'Réalise un penta.',
             self::IMMORTAL => 'Gagne sans mourir.',
             self::BLITZ => 'Gagne une partie de moins de 15 minutes.',
+            self::BAD_LOSER => 'Perds la partie.',
+            self::MARTYR => 'Termine avec le plus de morts de la partie.',
+            self::PICKPOCKET => 'Vole une relance au joueur de ton choix.',
+            self::CURSE => 'Le prochain défi réussi du joueur de ton choix ne lui rapporte que la moitié des points. Il ne le saura qu\'au règlement.',
         };
     }
 
@@ -86,14 +105,32 @@ enum Challenge: string
             self::DOUBLE_KILL, self::PRUDENT, self::TEAM_SPIRIT, self::HUNTER, self::WINGMAN => Rarity::SILVER,
             self::TRIPLE_KILL, self::EXECUTIONER, self::DUELIST, self::CLEANER, self::FIRST_BLOOD, self::UNTOUCHABLE => Rarity::GOLD,
             self::QUADRA_KILL, self::PENTA_KILL, self::IMMORTAL, self::BLITZ => Rarity::PRISMATIC,
+            self::BAD_LOSER, self::MARTYR, self::PICKPOCKET, self::CURSE => Rarity::SABOTEUR,
         };
     }
 
     public function points(): int
     {
-        // Le penta est la seule carte au-dessus du barème de sa rareté :
-        // à 60 points, elle vaudrait autant qu'un Blitz bien plus accessible.
-        return $this === self::PENTA_KILL ? 100 : $this->rarity()->points();
+        return match ($this) {
+            // Le penta est la seule carte au-dessus du barème de sa rareté :
+            // à 60 points, elle vaudrait autant qu'un Blitz bien plus accessible.
+            self::PENTA_KILL => 100,
+            // Saboter un joueur ne rapporte rien : l'effet est la récompense.
+            self::PICKPOCKET, self::CURSE => 0,
+            default => $this->rarity()->points(),
+        };
+    }
+
+    /** Carte qui vise un autre joueur : effet immédiat, jamais jouée sur un match. */
+    public function targetsPlayer(): bool
+    {
+        return $this === self::PICKPOCKET || $this === self::CURSE;
+    }
+
+    /** Carte cachée aux autres joueurs tant qu'elle n'est pas réglée. */
+    public function isSecret(): bool
+    {
+        return $this->rarity() === Rarity::SABOTEUR;
     }
 
     public function evaluate(PlayerGameStats $stats, GameReport $game): Verdict
@@ -114,6 +151,12 @@ enum Challenge: string
             self::PENTA_KILL => Verdict::of($stats->largestMultiKill >= 5),
             self::IMMORTAL => self::ifWon($stats, $stats->deaths === 0),
             self::BLITZ => self::ifWon($stats, $game->durationSeconds < self::BLITZ_MAX_SECONDS),
+            self::BAD_LOSER => $stats->win === null ? Verdict::UNKNOWN : Verdict::of(!$stats->win),
+            self::MARTYR => $stats->mostDeathsInGame === null ? Verdict::UNKNOWN : Verdict::of($stats->mostDeathsInGame),
+            self::PICKPOCKET, self::CURSE => throw new \LogicException(sprintf(
+                'La carte %s vise un joueur : elle ne se joue pas sur un match.',
+                $this->value,
+            )),
         };
     }
 
