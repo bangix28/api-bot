@@ -6,7 +6,8 @@ final readonly class JoinChallengesCommand
 {
     public function __construct(
         public int $lanId,
-        public string $puuid,
+        /** Joueur connecté ; son compte participant est retrouvé par PlayerSeatResolver. */
+        public string $discordId,
     ) {
     }
 }
