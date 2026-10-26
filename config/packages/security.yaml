@@ -24,6 +24,17 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        # Agent de LAN : authentifié par son jeton « agt_… » (contrat de l'agent, § 1).
+        # Avant « main », qui couvre tout ^/api. L'appairage (device, token) reste
+        # sous « main », public : l'agent n'a pas encore de jeton à ce moment-là.
+        agent:
+            pattern: ^/api/agent/v1/(session|reports)
+            stateless: true
+            provider: player_provider
+            access_token:
+                token_handler: App\Infrastructure\Security\AgentAccessTokenHandler
+                failure_handler: App\Infrastructure\Security\AgentAuthenticationResponder
+            entry_point: App\Infrastructure\Security\AgentAuthenticationResponder
         main:
             pattern: ^/api
             stateless: true
@@ -79,6 +90,7 @@ security:
        # LAN, servi par le compte API du front.
        - { path: ^/api/lan-events/\d+/me, roles: ROLE_PLAYER }
        - { path: ^/api/(lan-events|lan-challenges), roles: [ROLE_API, ROLE_PLAYER] }
+       - { path: ^/api/agent/v1/(session|reports), roles: ROLE_AGENT }
        - { path: ^/admin, roles: ROLE_ADMIN }
        - { path: ^/refresh, roles: ROLE_ADMIN }
        - { path: ^/getDailyElo, roles: ROLE_ADMIN }

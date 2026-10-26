@@ -24,6 +24,9 @@ parameters:
     # Doit être identique, au caractère près, à l'URL de retour déclarée dans
     # l'application Discord et à celle utilisée par le front.
     env(DISCORD_REDIRECT_URI): ''
+    # Page du front où le joueur saisit le code d'appairage de son agent
+    # (contrat de l'agent, § 1.1) : renvoyée telle quelle à l'agent.
+    env(FRONT_AGENT_URL): ''
 services:
     # default configuration for services in *this* file
     _defaults:

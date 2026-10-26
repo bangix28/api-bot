@@ -18,6 +18,7 @@ comptes Riot qui la portent. Il n'a ni e-mail ni mot de passe, et n'a pas accès
 POST /api/auth/discord          code Discord → jeton du joueur        (public)
 GET  /api/me                    profil du joueur connecté             (joueur)
 POST /api/me/riot-accounts      lier un compte Riot suivi             (joueur)
+POST /api/me/agent-devices/approve   connecter l'agent de LAN du joueur  (joueur)
 ```
 
 Erreurs : corps `{ "code": "…", "message": "…" }`, `message` en français et
@@ -144,3 +145,39 @@ même joueur renvoie aussi `200` : le front peut rejouer la demande sans risque.
 
 Il n'y a pas de route pour délier un compte : une liaison erronée se corrige en
 administration.
+
+---
+
+## 5. Page « Connecter mon agent »
+
+L'agent de LAN (programme lancé sur le PC du joueur pendant une LAN) ne se
+connecte pas lui-même : il affiche un **code** que le joueur saisit sur cette
+page, où il est déjà connecté. L'URL de la page est celle que l'agent affiche
+(`verificationUrl`, par ex. `https://site.example/agent`). Déroulé complet côté
+agent : [contrat de l'agent](../agent/contrat-releve.md), § 1.
+
+```
+POST /api/me/agent-devices/approve
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "userCode": "K7QF-92PZ" }
+```
+
+- Accepter la saisie telle quelle : casse, espaces et tiret sont indifférents.
+- Le code vaut **10 minutes** et ne sert qu'une fois.
+
+**`200`** : afficher « Agent connecté pour la LAN *LAN d'automne* ».
+
+```json
+{
+  "lan": { "id": 3, "name": "LAN d'automne", "startsAt": "2026-11-07T14:00:00+01:00", "endsAt": "2026-11-08T04:00:00+01:00" },
+  "player": { "riotIds": ["Pseudo#EUW"] }
+}
+```
+
+| Code | `code` | Message à afficher |
+|---|---|---|
+| `400` | `invalid_user_code` | « Code inconnu ou expiré : relance la connexion depuis l'agent » |
+| `409` | `not_registered` | « Tu n'es inscrit à aucune LAN en cours ou à venir » |
+| `401` / `403` | — | Reconnexion Discord nécessaire (§ 2) |
