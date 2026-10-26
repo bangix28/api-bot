@@ -45,32 +45,33 @@ class ChallengeTest extends TestCase
     /** @return iterable<string, array{Challenge, PlayerGameStats, Verdict}> */
     public static function cases(): iterable
     {
-        $p = static fn() => PlayerGameStatsBuilder::aPlayer();
+        $player = static fn() => PlayerGameStatsBuilder::aPlayer();
 
-        yield 'doublé réussi' => [Challenge::DOUBLE_KILL, $p()->withLargestMultiKill(2)->build(), Verdict::SUCCESS];
-        yield 'doublé raté' => [Challenge::DOUBLE_KILL, $p()->withLargestMultiKill(1)->build(), Verdict::FAILURE];
-        yield 'un penta vaut aussi un doublé' => [Challenge::DOUBLE_KILL, $p()->withLargestMultiKill(5)->build(), Verdict::SUCCESS];
-        yield 'prudent à 5 morts' => [Challenge::PRUDENT, $p()->withDeaths(5)->build(), Verdict::SUCCESS];
-        yield 'prudent à 6 morts' => [Challenge::PRUDENT, $p()->withDeaths(6)->build(), Verdict::FAILURE];
-        yield 'participation 60 %' => [Challenge::TEAM_SPIRIT, $p()->withKills(5)->withAssists(7)->withTeamKills(20)->build(), Verdict::SUCCESS];
-        yield 'participation 55 %' => [Challenge::TEAM_SPIRIT, $p()->withKills(5)->withAssists(6)->withTeamKills(20)->build(), Verdict::FAILURE];
-        yield 'participation sans kill d\'équipe' => [Challenge::TEAM_SPIRIT, $p()->withTeamKills(0)->build(), Verdict::FAILURE];
-        yield 'chasseur' => [Challenge::HUNTER, $p()->withKills(10)->build(), Verdict::SUCCESS];
-        yield 'bras droit' => [Challenge::WINGMAN, $p()->withAssists(19)->build(), Verdict::FAILURE];
-        yield 'triplé' => [Challenge::TRIPLE_KILL, $p()->withLargestMultiKill(3)->build(), Verdict::SUCCESS];
-        yield 'exécuteur sans mort' => [Challenge::EXECUTIONER, $p()->withKills(3)->withAssists(2)->withDeaths(0)->build(), Verdict::SUCCESS];
-        yield 'exécuteur KDA 4,5' => [Challenge::EXECUTIONER, $p()->withKills(5)->withAssists(4)->withDeaths(2)->build(), Verdict::FAILURE];
-        yield 'duelliste' => [Challenge::DUELIST, $p()->withSoloKills(2)->build(), Verdict::SUCCESS];
-        yield 'nettoyeur' => [Challenge::CLEANER, $p()->withAces(1)->build(), Verdict::SUCCESS];
-        yield 'premier sang' => [Challenge::FIRST_BLOOD, $p()->withFirstBlood(true)->build(), Verdict::SUCCESS];
-        yield 'premier sang inconnu' => [Challenge::FIRST_BLOOD, $p()->withFirstBlood(null)->build(), Verdict::UNKNOWN];
-        yield 'intouchable' => [Challenge::UNTOUCHABLE, $p()->withWin(true)->withDeaths(3)->build(), Verdict::SUCCESS];
-        yield 'intouchable mais défaite' => [Challenge::UNTOUCHABLE, $p()->withWin(false)->withDeaths(0)->build(), Verdict::FAILURE];
-        yield 'intouchable sans résultat connu' => [Challenge::UNTOUCHABLE, $p()->withWin(null)->withDeaths(0)->build(), Verdict::UNKNOWN];
-        yield 'quadra' => [Challenge::QUADRA_KILL, $p()->withLargestMultiKill(4)->build(), Verdict::SUCCESS];
-        yield 'penta raté sur un quadra' => [Challenge::PENTA_KILL, $p()->withLargestMultiKill(4)->build(), Verdict::FAILURE];
-        yield 'immortel' => [Challenge::IMMORTAL, $p()->withWin(true)->withDeaths(0)->build(), Verdict::SUCCESS];
-        yield 'immortel avec une mort' => [Challenge::IMMORTAL, $p()->withWin(true)->withDeaths(1)->build(), Verdict::FAILURE];
+        yield 'doublé réussi' => [Challenge::DOUBLE_KILL, $player()->withLargestMultiKill(2)->build(), Verdict::SUCCESS];
+        yield 'doublé raté' => [Challenge::DOUBLE_KILL, $player()->withLargestMultiKill(1)->build(), Verdict::FAILURE];
+        yield 'un penta vaut aussi un doublé' => [Challenge::DOUBLE_KILL, $player()->withLargestMultiKill(5)->build(), Verdict::SUCCESS];
+        yield 'prudent à 5 morts' => [Challenge::PRUDENT, $player()->withDeaths(5)->build(), Verdict::SUCCESS];
+        yield 'prudent à 6 morts' => [Challenge::PRUDENT, $player()->withDeaths(6)->build(), Verdict::FAILURE];
+        yield 'participation 60 %' => [Challenge::TEAM_SPIRIT, $player()->withKills(5)->withAssists(7)->withTeamKills(20)->build(), Verdict::SUCCESS];
+        yield 'participation 55 %' => [Challenge::TEAM_SPIRIT, $player()->withKills(5)->withAssists(6)->withTeamKills(20)->build(), Verdict::FAILURE];
+        yield 'participation sans kill d\'équipe' => [Challenge::TEAM_SPIRIT, $player()->withTeamKills(0)->build(), Verdict::FAILURE];
+        yield 'chasseur' => [Challenge::HUNTER, $player()->withKills(10)->build(), Verdict::SUCCESS];
+        yield 'bras droit à 20 assistances' => [Challenge::WINGMAN, $player()->withAssists(20)->build(), Verdict::SUCCESS];
+        yield 'bras droit à 19 assistances' => [Challenge::WINGMAN, $player()->withAssists(19)->build(), Verdict::FAILURE];
+        yield 'triplé' => [Challenge::TRIPLE_KILL, $player()->withLargestMultiKill(3)->build(), Verdict::SUCCESS];
+        yield 'exécuteur sans mort' => [Challenge::EXECUTIONER, $player()->withKills(3)->withAssists(2)->withDeaths(0)->build(), Verdict::SUCCESS];
+        yield 'exécuteur KDA 4,5' => [Challenge::EXECUTIONER, $player()->withKills(5)->withAssists(4)->withDeaths(2)->build(), Verdict::FAILURE];
+        yield 'duelliste' => [Challenge::DUELIST, $player()->withSoloKills(2)->build(), Verdict::SUCCESS];
+        yield 'nettoyeur' => [Challenge::CLEANER, $player()->withAces(1)->build(), Verdict::SUCCESS];
+        yield 'premier sang' => [Challenge::FIRST_BLOOD, $player()->withFirstBlood(true)->build(), Verdict::SUCCESS];
+        yield 'premier sang inconnu' => [Challenge::FIRST_BLOOD, $player()->withFirstBlood(null)->build(), Verdict::UNKNOWN];
+        yield 'intouchable' => [Challenge::UNTOUCHABLE, $player()->withWin(true)->withDeaths(3)->build(), Verdict::SUCCESS];
+        yield 'intouchable mais défaite' => [Challenge::UNTOUCHABLE, $player()->withWin(false)->withDeaths(0)->build(), Verdict::FAILURE];
+        yield 'intouchable sans résultat connu' => [Challenge::UNTOUCHABLE, $player()->withWin(null)->withDeaths(0)->build(), Verdict::UNKNOWN];
+        yield 'quadra' => [Challenge::QUADRA_KILL, $player()->withLargestMultiKill(4)->build(), Verdict::SUCCESS];
+        yield 'penta raté sur un quadra' => [Challenge::PENTA_KILL, $player()->withLargestMultiKill(4)->build(), Verdict::FAILURE];
+        yield 'immortel' => [Challenge::IMMORTAL, $player()->withWin(true)->withDeaths(0)->build(), Verdict::SUCCESS];
+        yield 'immortel avec une mort' => [Challenge::IMMORTAL, $player()->withWin(true)->withDeaths(1)->build(), Verdict::FAILURE];
     }
 
     #[DataProvider('cases')]

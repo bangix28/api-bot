@@ -39,7 +39,7 @@ final readonly class CardDealer
     {
         $notExcluded = static fn(array $cards) => array_values(array_filter(
             $cards,
-            static fn(Challenge $c) => !in_array($c, $excluded, true),
+            static fn(Challenge $card) => !in_array($card, $excluded, true),
         ));
 
         $pool = $notExcluded(Challenge::ofRarity($this->drawRarity()));

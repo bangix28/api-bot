@@ -95,9 +95,9 @@ class LanChallengeFlowTest extends TestCase
         $this->assertSame(15, $this->runs->find(self::LAN, 'b')->score);
         $this->assertNotNull($this->runs->find(self::LAN, 'a')->offer, 'Une nouvelle offre est distribuée.');
 
-        $c = $this->runs->find(self::LAN, 'c');
-        $this->assertSame(0, $c->score, 'Un penta sans carte engagée ne rapporte rien.');
-        $this->assertSame([Challenge::DOUBLE_KILL, Challenge::PRUDENT, Challenge::TEAM_SPIRIT], $c->offer->cards);
+        $playerWithoutCard = $this->runs->find(self::LAN, 'c');
+        $this->assertSame(0, $playerWithoutCard->score, 'Un penta sans carte engagée ne rapporte rien.');
+        $this->assertSame([Challenge::DOUBLE_KILL, Challenge::PRUDENT, Challenge::TEAM_SPIRIT], $playerWithoutCard->offer->cards);
     }
 
     public function testUnRelevePourUnePartieSansCarteEngageeNeChangeRien(): void

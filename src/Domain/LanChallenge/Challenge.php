@@ -120,7 +120,7 @@ enum Challenge: string
     /** @return self[] */
     public static function ofRarity(Rarity $rarity): array
     {
-        return array_values(array_filter(self::cases(), static fn(self $c) => $c->rarity() === $rarity));
+        return array_values(array_filter(self::cases(), static fn(self $card) => $card->rarity() === $rarity));
     }
 
     /** Une carte « gagne… » ne se juge que si la source connaît le résultat. */

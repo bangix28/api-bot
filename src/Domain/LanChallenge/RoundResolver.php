@@ -29,7 +29,7 @@ final readonly class RoundResolver
         $verdicts = array_map(static fn(PlayerRun $run) => $run->evaluate($report), $engaged);
 
         $roundBonus = count($engaged) >= 2
-            && array_all($verdicts, static fn(Verdict $v) => $v === Verdict::SUCCESS);
+            && array_all($verdicts, static fn(Verdict $verdict) => $verdict === Verdict::SUCCESS);
 
         return array_map(
             fn(PlayerRun $run, Verdict $verdict) => $run->settle($report->gameId, $verdict, $roundBonus, $this->dealer->dealOffer()),

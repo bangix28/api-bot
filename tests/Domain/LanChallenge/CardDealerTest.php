@@ -35,7 +35,7 @@ class CardDealerTest extends TestCase
 
     public function testLesPoidsDeRareteFontCent(): void
     {
-        $this->assertSame(100, array_sum(array_map(static fn(Rarity $r) => $r->drawWeight(), Rarity::cases())));
+        $this->assertSame(100, array_sum(array_map(static fn(Rarity $rarity) => $rarity->drawWeight(), Rarity::cases())));
     }
 
     public function testUneOffreNeContientJamaisDeuxFoisLaMemeCarte(): void

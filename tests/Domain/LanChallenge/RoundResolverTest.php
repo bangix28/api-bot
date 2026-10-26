@@ -18,7 +18,7 @@ class RoundResolverTest extends TestCase
     {
         $others = array_values(array_filter(
             [Challenge::PRUDENT, Challenge::HUNTER, Challenge::WINGMAN],
-            static fn(Challenge $c) => $c !== $card,
+            static fn(Challenge $candidate) => $candidate !== $card,
         ));
 
         return PlayerRun::start(1, $puuid, new CardOffer([$card, $others[0], $others[1]]))
@@ -36,7 +36,7 @@ class RoundResolverTest extends TestCase
     {
         $settled = (new RoundResolver(new CardDealer(new ScriptedRandomizer())))->resolve($report, $runs);
 
-        return array_column(array_map(static fn(PlayerRun $r) => [$r->puuid, $r], $settled), 1, 0);
+        return array_column(array_map(static fn(PlayerRun $run) => [$run->puuid, $run], $settled), 1, 0);
     }
 
     public function testUneCarteReussieRapporteSesPoints(): void

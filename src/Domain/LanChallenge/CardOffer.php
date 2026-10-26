@@ -19,7 +19,7 @@ final readonly class CardOffer
             throw new \InvalidArgumentException(sprintf('Une offre contient exactement %d cartes.', self::SIZE));
         }
 
-        if (count(array_unique(array_map(static fn(Challenge $c) => $c->value, $cards))) !== self::SIZE) {
+        if (count(array_unique(array_map(static fn(Challenge $card) => $card->value, $cards))) !== self::SIZE) {
             throw new \InvalidArgumentException('Les cartes d\'une offre doivent être toutes différentes.');
         }
     }
