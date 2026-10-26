@@ -4,7 +4,11 @@ namespace App\Tests\Domain\LanChallenge;
 
 use App\Domain\LanChallenge\PlayerGameStats;
 
-/** Relevé neutre par défaut : aucune carte n'est réussie sans réglage explicite. */
+/**
+ * Relevé neutre par défaut : aucune carte n'est réussie sans réglage explicite.
+ * Résultat et premier sang inconnus : une victoire comme une défaite ferait
+ * réussir une carte (Mauvais perdant gagne sur une défaite).
+ */
 final class PlayerGameStatsBuilder
 {
     private string $puuid = 'puuid-1';
@@ -15,8 +19,9 @@ final class PlayerGameStatsBuilder
     private int $soloKills = 0;
     private int $teamKills = 20;
     private int $aces = 0;
-    private ?bool $win = false;
-    private ?bool $firstBlood = false;
+    private ?bool $win = null;
+    private ?bool $firstBlood = null;
+    private ?bool $mostDeathsInGame = false;
 
     public static function aPlayer(string $puuid = 'puuid-1'): self
     {
@@ -35,12 +40,13 @@ final class PlayerGameStatsBuilder
     public function withAces(int $aces): self { $this->aces = $aces; return $this; }
     public function withWin(?bool $win): self { $this->win = $win; return $this; }
     public function withFirstBlood(?bool $firstBlood): self { $this->firstBlood = $firstBlood; return $this; }
+    public function withMostDeathsInGame(?bool $mostDeathsInGame): self { $this->mostDeathsInGame = $mostDeathsInGame; return $this; }
 
     public function build(): PlayerGameStats
     {
         return new PlayerGameStats(
             $this->puuid, $this->kills, $this->deaths, $this->assists, $this->largestMultiKill,
-            $this->soloKills, $this->teamKills, $this->aces, $this->win, $this->firstBlood,
+            $this->soloKills, $this->teamKills, $this->aces, $this->win, $this->firstBlood, $this->mostDeathsInGame,
         );
     }
 }

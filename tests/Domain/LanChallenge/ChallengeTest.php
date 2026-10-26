@@ -96,7 +96,9 @@ class ChallengeTest extends TestCase
         $neutral = PlayerGameStatsBuilder::aPlayer()->build();
 
         foreach (Challenge::cases() as $card) {
-            $this->assertSame(Verdict::FAILURE, self::verdict($card, $neutral), $card->value);
+            if (!$card->targetsPlayer()) {
+                $this->assertNotSame(Verdict::SUCCESS, self::verdict($card, $neutral), $card->value);
+            }
         }
     }
 }

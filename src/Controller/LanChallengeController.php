@@ -12,6 +12,7 @@ use App\Application\LanChallenge\PickCard\PickCardHandler;
 use App\Application\LanChallenge\RerollCard\RerollCardCommand;
 use App\Application\LanChallenge\RerollCard\RerollCardHandler;
 use App\Domain\LanChallenge\InvalidOfferSlotException;
+use App\Domain\LanChallenge\InvalidSabotageTargetException;
 use App\Domain\LanChallenge\LanFinishedException;
 use App\Domain\LanChallenge\LanNotFoundException;
 use App\Domain\LanChallenge\NoOfferToChooseFromException;
@@ -20,7 +21,10 @@ use App\Domain\LanChallenge\NotALanParticipantException;
 use App\Domain\LanChallenge\PlayerRun;
 use App\Domain\LanChallenge\PlayerRunNotFoundException;
 use App\Domain\LanChallenge\RoundResolver;
+use App\Domain\LanChallenge\SabotageTargetNotAllowedException;
+use App\Domain\LanChallenge\SabotageTargetRequiredException;
 use App\Domain\LanChallenge\SeveralAccountsInLanException;
+use App\Domain\LanChallenge\TargetHasNoRerollException;
 use App\Infrastructure\Security\PlayerUser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,6 +49,10 @@ class LanChallengeController extends AbstractController
         NoOfferToChooseFromException::class => [Response::HTTP_CONFLICT, 'no_offer'],
         NoRerollLeftException::class => [Response::HTTP_CONFLICT, 'no_reroll_left'],
         InvalidOfferSlotException::class => [Response::HTTP_BAD_REQUEST, 'invalid_slot'],
+        SabotageTargetRequiredException::class => [Response::HTTP_BAD_REQUEST, 'target_required'],
+        SabotageTargetNotAllowedException::class => [Response::HTTP_BAD_REQUEST, 'target_not_allowed'],
+        InvalidSabotageTargetException::class => [Response::HTTP_BAD_REQUEST, 'invalid_target'],
+        TargetHasNoRerollException::class => [Response::HTTP_CONFLICT, 'target_has_no_reroll'],
     ];
 
     #[Route('/api/lan-challenges/cards', name: 'api_lan_challenge_cards', methods: ['GET'])]
@@ -91,8 +99,13 @@ class LanChallengeController extends AbstractController
             return self::error(Response::HTTP_BAD_REQUEST, 'invalid_slot', 'L\'emplacement de la carte (« slot », de 0 à 2) est obligatoire.');
         }
 
-        return $this->respond(function () use ($lanId, $player, $slot, $handler, $myRun) {
-            $handler->handle(new PickCardCommand($lanId, $player->discord->userId, $slot));
+        $target = $request->getPayload()->all()['target'] ?? null;
+        if ($target !== null && !is_string($target)) {
+            return self::error(Response::HTTP_BAD_REQUEST, 'invalid_target', 'La cible (« target ») est le Riot ID d\'un participant, « Pseudo#TAG ».');
+        }
+
+        return $this->respond(function () use ($lanId, $player, $slot, $target, $handler, $myRun) {
+            $handler->handle(new PickCardCommand($lanId, $player->discord->userId, $slot, $target));
 
             return LanChallengePresenter::myRun($myRun->handle($lanId, $player->discord->userId));
         });

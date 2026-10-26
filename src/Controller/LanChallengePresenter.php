@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Application\LanChallenge\GetMyRun\MyRunView;
+use App\Application\LanChallenge\GetMyRun\SabotageTarget;
 use App\Application\LanChallenge\GetStandings\StandingEntry;
 use App\Application\LanChallenge\GetStandings\StandingsView;
 use App\Domain\LanChallenge\Challenge;
@@ -27,6 +28,8 @@ final class LanChallengePresenter
             'description' => $card->description(),
             'rarity' => $card->rarity()->value,
             'points' => $card->points(),
+            'secret' => $card->isSecret(),
+            'needsTarget' => $card->targetsPlayer(),
         ];
     }
 
@@ -39,7 +42,11 @@ final class LanChallengePresenter
                 static fn(Rarity $rarity) => ['rarity' => $rarity->value, 'points' => $rarity->points(), 'drawWeight' => $rarity->drawWeight()],
                 Rarity::cases(),
             ),
-            'rules' => ['initialRerolls' => $initialRerolls, 'roundBonusPercent' => $roundBonusPercent],
+            'rules' => [
+                'initialRerolls' => $initialRerolls,
+                'roundBonusPercent' => $roundBonusPercent,
+                'cursePercent' => PlayerRun::CURSE_PERCENT,
+            ],
         ];
     }
 
@@ -51,6 +58,11 @@ final class LanChallengePresenter
             'riotId' => $view->riotId,
             'joined' => $view->run !== null,
             'run' => $view->run === null ? null : self::run($view->run),
+            // Choix possibles pour une carte qui vise un joueur ; vide sinon.
+            'sabotageTargets' => array_map(
+                static fn(SabotageTarget $target) => ['riotId' => $target->riotId, 'canBePickpocketed' => $target->canBePickpocketed],
+                $view->sabotageTargets,
+            ),
         ];
     }
 
@@ -69,6 +81,7 @@ final class LanChallengePresenter
                     'roundsPlayed' => $entry->roundsPlayed,
                     'rerollsLeft' => $entry->rerollsLeft,
                     'activeCard' => $entry->activeCard === null ? null : self::card($entry->activeCard),
+                    'secretCard' => $entry->secretCard,
                     'cardLocked' => $entry->cardLocked,
                 ],
                 $view->entries,
@@ -86,13 +99,15 @@ final class LanChallengePresenter
         return [
             'entries' => array_map(
                 static fn(FeedEntry $entry) => [
+                    'kind' => $entry->kind->value,
                     'riotId' => $entry->riotId,
-                    'gameId' => $entry->gameId,
                     'card' => self::card($entry->card),
-                    'verdict' => $entry->verdict->value,
+                    'gameId' => $entry->gameId,
+                    'verdict' => $entry->verdict?->value,
                     'points' => $entry->points,
                     'roundBonus' => $entry->roundBonus,
-                    'settledAt' => $entry->settledAt->format(\DateTimeInterface::ATOM),
+                    'curseApplied' => $entry->curseApplied,
+                    'occurredAt' => $entry->occurredAt->format(\DateTimeInterface::ATOM),
                 ],
                 $entries,
             ),
@@ -126,6 +141,7 @@ final class LanChallengePresenter
                     'verdict' => $result->verdict->value,
                     'points' => $result->points,
                     'roundBonus' => $result->roundBonus,
+                    'curseApplied' => $result->curseApplied,
                 ],
                 $run->results,
             ),

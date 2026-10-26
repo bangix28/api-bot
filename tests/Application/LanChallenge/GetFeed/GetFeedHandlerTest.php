@@ -6,6 +6,7 @@ use App\Application\LanChallenge\GetFeed\GetFeedHandler;
 use App\Domain\LanChallenge\Challenge;
 use App\Domain\LanChallenge\FeedEntry;
 use App\Domain\LanChallenge\LanNotFoundException;
+use App\Domain\LanChallenge\RoundResult;
 use App\Domain\LanChallenge\Verdict;
 use App\Tests\Application\LanChallenge\LanChallengeFixture;
 use App\Tests\Domain\LanChallenge\InMemoryLanFeedQuery;
@@ -16,7 +17,11 @@ class GetFeedHandlerTest extends TestCase
 {
     public function testLeFilRenvoieLesDernieresManchesDeLaLan(): void
     {
-        $entry = new FeedEntry('Alpha#EUW', 'game-1', Challenge::PENTA_KILL, Verdict::SUCCESS, 100, false, new \DateTimeImmutable('2026-11-07 21:30'));
+        $entry = FeedEntry::round(
+            'Alpha#EUW',
+            new RoundResult('game-1', Challenge::PENTA_KILL, Verdict::SUCCESS, 100, false),
+            new \DateTimeImmutable('2026-11-07 21:30'),
+        );
         $feed = new InMemoryLanFeedQuery([LanChallengeFixture::LAN => [$entry]]);
 
         $entries = (new GetFeedHandler((new LanChallengeFixture())->lans, $feed))->handle(LanChallengeFixture::LAN);
