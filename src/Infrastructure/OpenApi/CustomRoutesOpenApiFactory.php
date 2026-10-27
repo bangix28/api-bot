@@ -303,6 +303,10 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 'lan' => ['anyOf' => [
                     ['allOf' => [$ref('LanSummary'), ['type' => 'object', 'properties' => [
                         'status' => ['type' => 'string', 'enum' => ['upcoming', 'in_progress']],
+                        'queues' => [...$listOf(['type' => 'object', 'properties' => [
+                            'id' => ['type' => 'integer', 'example' => 2400],
+                            'label' => ['type' => 'string', 'example' => 'ARAM du chaos'],
+                        ]]), 'description' => 'Files où les parties comptent pour les défis.'],
                     ]]]],
                     ['type' => 'null'],
                 ]],
@@ -368,7 +372,10 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 'lan' => ['allOf' => [$ref('LanSummary'), ['type' => 'object', 'properties' => [
                     'status' => ['type' => 'string', 'enum' => ['upcoming', 'in_progress']],
                 ]]]],
-                'acceptedGameModes' => $listOf(['type' => 'string', 'example' => 'KIWI']),
+                'acceptedQueues' => $listOf(['type' => 'object', 'properties' => [
+                    'queueId' => ['type' => 'integer', 'example' => 2400, 'description' => 'File Riot : 2400 ARAM du chaos, 420 classée solo/duo, 440 classée flexible.'],
+                    'gameMode' => ['type' => 'string', 'example' => 'KIWI', 'description' => 'gameData.gameMode de la Live Client Data API pour cette file.'],
+                ]]),
                 'reportIntervalSeconds' => ['type' => 'integer'],
             ]],
             'AgentReport' => ['type' => 'object', 'required' => ['agentVersion', 'sessionId', 'sequence', 'final', 'endReason', 'observedAt', 'liveClient'], 'properties' => [
@@ -378,6 +385,7 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 'final' => ['type' => 'boolean'],
                 'endReason' => ['type' => ['string', 'null'], 'enum' => ['game_end', 'client_closed', null], 'description' => 'Obligatoire si final, null sinon.'],
                 'observedAt' => $dateTime,
+                'queueId' => ['type' => ['integer', 'null'], 'example' => 420, 'description' => 'File lue dans le client LoL (/lol-gameflow/v1/session) ; null s\'il est illisible. Sans elle, seule une ARAM du chaos (KIWI) peut compter.'],
                 'liveClient' => ['type' => 'object', 'description' => 'Réponse de GET /liveclientdata/allgamedata, telle quelle.', 'required' => ['activePlayer', 'allPlayers', 'events', 'gameData']],
             ]],
             'AgentReportAccepted' => ['type' => 'object', 'properties' => [

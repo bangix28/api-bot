@@ -3,7 +3,7 @@
 namespace App\Domain\LanChallenge;
 
 /**
- * Relevé d'une partie terminée : sa durée et les statistiques des joueurs suivis.
+ * Relevé d'une partie terminée : sa file, sa durée et les statistiques des joueurs suivis.
  */
 final readonly class GameReport
 {
@@ -15,6 +15,8 @@ final readonly class GameReport
      */
     public function __construct(
         public string $gameId,
+        /** Les cartes ont des seuils propres à la Faille (Challenge). */
+        public LanQueue $queue,
         public int $durationSeconds,
         array $players,
     ) {

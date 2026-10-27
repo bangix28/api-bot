@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanChallenge;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\GameReport;
 use App\Domain\LanChallenge\PlayerGameStats;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,12 +53,12 @@ class PlayerGameStatsTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        new GameReport('game-1', -1, []);
+        new GameReport('game-1', LanQueue::ARAM_MAYHEM, -1, []);
     }
 
     public function testUnReleveRetrouveChaqueJoueurParSonPuuid(): void
     {
-        $report = new GameReport('game-1', 600, [
+        $report = new GameReport('game-1', LanQueue::ARAM_MAYHEM, 600, [
             PlayerGameStatsBuilder::aPlayer('puuid-a')->withKills(3)->build(),
             PlayerGameStatsBuilder::aPlayer('puuid-b')->withKills(7)->build(),
         ]);

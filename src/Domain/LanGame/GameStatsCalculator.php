@@ -3,6 +3,7 @@
 namespace App\Domain\LanGame;
 
 use App\Domain\LanChallenge\GameReport;
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\PlayerGameStats;
 use App\Domain\LanGame\Event\Ace;
 use App\Domain\LanGame\Event\ChampionKill;
@@ -19,7 +20,7 @@ final class GameStatsCalculator
     /**
      * @param array<string, string> $participantPuuids puuid des participants de la LAN, indexés par Riot ID en minuscules
      */
-    public static function report(string $gameId, GameSnapshot $snapshot, array $participantPuuids): GameReport
+    public static function report(string $gameId, LanQueue $queue, GameSnapshot $snapshot, array $participantPuuids): GameReport
     {
         $stats = [];
         foreach ($snapshot->players as $player) {
@@ -29,7 +30,7 @@ final class GameStatsCalculator
             }
         }
 
-        return new GameReport($gameId, (int) $snapshot->gameTimeSeconds, $stats);
+        return new GameReport($gameId, $queue, (int) $snapshot->gameTimeSeconds, $stats);
     }
 
     private static function statsOf(string $puuid, ObservedPlayer $player, GameSnapshot $snapshot): PlayerGameStats

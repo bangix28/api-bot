@@ -6,7 +6,6 @@ use App\Application\LanChallenge\ResolveGame\ResolveGameCommand;
 use App\Application\LanChallenge\ResolveGame\ResolveGameHandler;
 use App\Application\LanChallenge\StartGame\StartGameCommand;
 use App\Application\LanChallenge\StartGame\StartGameHandler;
-use App\Domain\Agent\AgentSettings;
 use App\Domain\Agent\AgentTokenExpiredException;
 use App\Domain\LanChallenge\LanNotFoundException;
 use App\Domain\LanChallenge\LanSummary;
@@ -131,11 +130,19 @@ final readonly class ReceiveReportHandler
     {
         return match (true) {
             $now < $lan->startsAt => IgnoredReason::LAN_NOT_STARTED,
-            !in_array($command->snapshot->gameMode, AgentSettings::ACCEPTED_GAME_MODES, true) => IgnoredReason::GAME_MODE_NOT_ACCEPTED,
+            !self::isAcceptedBy($lan, $command->snapshot) => IgnoredReason::QUEUE_NOT_ACCEPTED,
             self::participantsIn($command->snapshot, $lan) === [] => IgnoredReason::NO_PARTICIPANT_IN_GAME,
             $this->isStale($command) => IgnoredReason::STALE_SEQUENCE,
             default => null,
         };
+    }
+
+    /** File connue (LanQueue::observed) et choisie pour la LAN en administration. */
+    private static function isAcceptedBy(LanSummary $lan, GameSnapshot $snapshot): bool
+    {
+        $queue = $snapshot->queue();
+
+        return $queue !== null && $lan->accepts($queue);
     }
 
     private function isStale(ReceiveReportCommand $command): bool
@@ -147,7 +154,8 @@ final readonly class ReceiveReportHandler
 
     private function findMatchingGame(LanSummary $lan, GameSnapshot $snapshot, \DateTimeImmutable $now): ?LanGame
     {
-        $candidates = $this->games->findCandidates($lan->lanId, $snapshot->gameMode, $snapshot->playersFingerprint());
+        // File acceptée, donc connue : ignoredReason() l'a vérifiée.
+        $candidates = $this->games->findCandidates($lan->lanId, $snapshot->queue(), $snapshot->playersFingerprint());
 
         return array_find($candidates, static fn(LanGame $candidate) => $candidate->matches($snapshot, $now));
     }
@@ -164,7 +172,7 @@ final readonly class ReceiveReportHandler
             return null;
         }
 
-        $game = LanGame::open(LanGame::idFor($lan->lanId, $snapshot, $now), $lan->lanId, $snapshot, $now);
+        $game = LanGame::open(LanGame::idFor($lan->lanId, $snapshot, $now), $lan->lanId, $snapshot->queue(), $snapshot, $now);
         $this->games->save($game);
 
         if ($game->engagesCards()) {
@@ -180,7 +188,7 @@ final readonly class ReceiveReportHandler
         if ($game->status === LanGameStatus::IN_PROGRESS) {
             $this->resolveGame->handle(new ResolveGameCommand(
                 $game->lanId,
-                GameStatsCalculator::report($game->gameId, $finalSnapshot, $participants),
+                GameStatsCalculator::report($game->gameId, $game->queue, $finalSnapshot, $participants),
             ));
 
             return $game->settle($finalSnapshot);

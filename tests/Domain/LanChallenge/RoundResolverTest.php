@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanChallenge;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\CardDealer;
 use App\Domain\LanChallenge\CardOffer;
 use App\Domain\LanChallenge\Challenge;
@@ -28,7 +29,7 @@ class RoundResolverTest extends TestCase
 
     private static function report(PlayerGameStats ...$players): GameReport
     {
-        return new GameReport('game-1', 20 * 60, $players);
+        return new GameReport('game-1', LanQueue::ARAM_MAYHEM, 20 * 60, $players);
     }
 
     /** @return PlayerRun[] indexés par puuid */

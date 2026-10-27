@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanChallenge;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\Challenge;
 use App\Domain\LanChallenge\GameReport;
 use App\Domain\LanChallenge\PlayerGameStats;
@@ -15,7 +16,7 @@ class SaboteurCardsTest extends TestCase
 {
     private static function verdict(Challenge $card, PlayerGameStats $stats): Verdict
     {
-        return $card->evaluate($stats, new GameReport('game-1', 20 * 60, [$stats]));
+        return $card->evaluate($stats, new GameReport('game-1', LanQueue::ARAM_MAYHEM, 20 * 60, [$stats]));
     }
 
     public function testLesQuatreCartesSaboteurSontSecretes(): void

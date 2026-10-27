@@ -12,6 +12,8 @@ use App\Application\LanGame\ReceiveReport\IgnoredReason;
 use App\Application\LanGame\ReceiveReport\ReceiveReportCommand;
 use App\Application\LanGame\ReceiveReport\ReceiveReportHandler;
 use App\Domain\Agent\AgentToken;
+use App\Domain\LanChallenge\LanQueue;
+use App\Domain\LanChallenge\LanSummary;
 use App\Domain\LanChallenge\PlayerRun;
 use App\Domain\LanChallenge\RoundResolver;
 use App\Domain\LanGame\GameSnapshot;
@@ -67,6 +69,15 @@ final class LanGameFixture
     }
 
     /** Le joueur rejoint les défis et choisit la première carte de son offre (Doublé). */
+    /** Files choisies pour la LAN en administration (par défaut : l'ARAM du chaos). */
+    public function accepting(LanQueue ...$queues): self
+    {
+        $lan = $this->lan->lans->find(LanChallengeFixture::LAN) ?? throw new \LogicException('LAN introuvable.');
+        $this->lan->lans->add(new LanSummary($lan->lanId, $lan->name, $lan->startsAt, $lan->endsAt, $lan->participants, $queues));
+
+        return $this;
+    }
+
     public function picksDoubleKill(string $discordId): void
     {
         (new JoinChallengesHandler($this->lan->seats(), $this->lan->runs, $this->lan->dealer))

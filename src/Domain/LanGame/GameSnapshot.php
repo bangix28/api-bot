@@ -2,6 +2,7 @@
 
 namespace App\Domain\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\Event\GameEnd;
 use App\Domain\LanGame\Event\ObservedEvent;
 
@@ -22,6 +23,8 @@ final readonly class GameSnapshot
         public string $activeRiotId,
         public array $players,
         public array $events,
+        /** File lue par l'agent dans le client LoL ; null s'il n'a pas pu la lire. */
+        public ?int $queueId = null,
     ) {
         if ($gameTimeSeconds < 0) {
             throw new \InvalidArgumentException('Le temps de jeu ne peut pas être négatif.');
@@ -30,6 +33,12 @@ final readonly class GameSnapshot
         if ($this->playerByRiotId($activeRiotId) === null) {
             throw new \InvalidArgumentException('Le joueur du poste doit figurer parmi les joueurs de la partie.');
         }
+    }
+
+    /** File de la partie ; null si le relevé ne permet pas de la connaître (LanQueue::observed). */
+    public function queue(): ?LanQueue
+    {
+        return LanQueue::observed($this->queueId, $this->gameMode);
     }
 
     /**

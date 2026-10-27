@@ -12,6 +12,12 @@ Révisé le 2026-10-26 : **Spectator-V5 est abandonné**. Le cycle des parties
 (début, regroupement, fin) est piloté par les relevés de l'agent (décision 2) ;
 la décision initiale est conservée dans les alternatives écartées.
 
+Révisé le 2026-10-28 : **chaque LAN choisit ses files** en administration
+(ARAM du chaos, classée solo/duo, classée flexible). La Live Client Data API ne
+donnant que le mode (`CLASSIC` pour toute partie sur la Faille, personnalisée
+comprise), l'agent lit la file dans la LCU (décision 3) ; les cartes ont des
+seuils propres à la Faille (décision 5).
+
 ## Contexte
 
 Les défis de LAN reprennent la mécanique de l'ARAM du chaos (« ARAM: Mayhem »,
@@ -109,8 +115,16 @@ dérouler une manche, sans interroger Riot.
 
 Un agent lancé sur le PC d'un joueur lit la Live Client Data API pendant la
 partie et transmet ses relevés à api-bot, authentifié par le compte du joueur.
-La LCU n'est utilisée que si une carte indispensable en dépend, et seulement
-après vérification sur une vraie partie.
+La LCU n'est utilisée que si une carte ou une règle indispensable en dépend, et
+seulement après vérification sur une vraie partie.
+
+- **La file de la partie vient de la LCU** (révision du 2026-10-28) :
+  `GET /lol-gameflow/v1/session`, `gameData.queue.id`. C'est le seul moyen de
+  distinguer une classée d'une normale ou d'une partie personnalisée — où deux
+  amis pourraient se laisser des pentas. Sans elle (client illisible), le
+  serveur ne retient que les files que le mode désigne seul (`KIWI` → ARAM du
+  chaos). La valeur de `queue.id` pendant une partie reste à vérifier sur une
+  vraie partie de chaque file.
 
 - **Un agent par partie suffit** : l'API donne les scores et le journal des
   10 joueurs, donc un seul relevé règle les cartes de tous les participants de
@@ -133,7 +147,7 @@ après vérification sur une vraie partie.
 
 - Il doit porter sur la propre partie de celui qui l'envoie (le joueur du poste
   est l'un de ses comptes) et s'inscrire dans une partie cohérente : même clé
-  (décision 2), même mode, mêmes 10 joueurs d'un relevé à l'autre.
+  (décision 2), même file, mêmes 10 joueurs d'un relevé à l'autre.
 - Une partie rapportée par un seul agent est acceptée sur son relevé. Rapportée
   par plusieurs, leurs relevés doivent **concorder** ; un relevé contradictoire
   est écarté.
@@ -148,6 +162,10 @@ retirées tant qu'aucune source fiable ne les fournit.
 
 Le verdict « inconnu » reste nécessaire : un agent coupé avant `GameEnd` ne
 rapporte pas le résultat.
+
+Les cartes à seuil (morts, kills, assistances, participation, durée) en ont un
+pour l'ARAM du chaos et un pour la Faille, appliqué selon la file de la partie.
+La carte est choisie avant la partie : sa description donne les deux.
 
 ## Alternatives écartées
 
@@ -195,6 +213,10 @@ rapporte pas le résultat.
 
 - La valeur exacte de `GameEnd.Result` en cas de défaite (seul `"Win"` a été
   observé).
+- La lecture de la file dans la LCU (`gameData.queue.id` pendant la partie,
+  emplacement du `lockfile`) n'a pas encore été vérifiée sur une vraie partie.
+- Les seuils de la Faille (Prudent, Esprit d'équipe, Chasseur, Bras droit,
+  Intouchable, Blitz) sont des estimations, à caler sur de vraies classées.
 - Les seuils (90 s de démarrage tardif, une minute de tolérance sur la clé, une
   heure avant abandon) sont des estimations, à confirmer en LAN.
 

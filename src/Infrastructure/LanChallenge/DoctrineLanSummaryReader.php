@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\LanChallenge;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\LanSummary;
 use App\Domain\LanChallenge\LanSummaryReaderInterface;
 use App\Entity\LanEvent;
@@ -56,6 +57,9 @@ final readonly class DoctrineLanSummaryReader implements LanSummaryReaderInterfa
             }
         }
 
-        return new LanSummary($row->getId(), $row->getName(), $row->getStartsAt(), $row->getEndsAt(), $participants);
+        // Une file retirée du catalogue depuis l'enregistrement de la LAN est ignorée.
+        $acceptedQueues = array_values(array_filter(array_map(LanQueue::tryFrom(...), $row->getAcceptedQueueIds())));
+
+        return new LanSummary($row->getId(), $row->getName(), $row->getStartsAt(), $row->getEndsAt(), $participants, $acceptedQueues);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Application\LanChallenge;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Application\LanChallenge\JoinChallenges\JoinChallengesCommand;
 use App\Application\LanChallenge\JoinChallenges\JoinChallengesHandler;
 use App\Application\LanChallenge\PickCard\PickCardCommand;
@@ -112,7 +113,7 @@ class LanChallengeFlowTest extends TestCase
         (new StartGameHandler($this->fixture->runs))
             ->handle(new StartGameCommand(LanChallengeFixture::LAN, 'game-1', ['puuid-a', 'puuid-b', 'puuid-c', 'pas-inscrit']));
 
-        $report = new GameReport('game-1', 18 * 60, [
+        $report = new GameReport('game-1', LanQueue::ARAM_MAYHEM, 18 * 60, [
             PlayerGameStatsBuilder::aPlayer('puuid-a')->withLargestMultiKill(2)->build(),
             PlayerGameStatsBuilder::aPlayer('puuid-b')->withDeaths(4)->build(),
             PlayerGameStatsBuilder::aPlayer('puuid-c')->withLargestMultiKill(5)->build(),
@@ -136,7 +137,7 @@ class LanChallengeFlowTest extends TestCase
         $this->join(LanChallengeFixture::ALPHA);
 
         $settled = (new ResolveGameHandler($this->fixture->runs, new RoundResolver($this->fixture->dealer)))
-            ->handle(new ResolveGameCommand(LanChallengeFixture::LAN, new GameReport('game-x', 600, [])));
+            ->handle(new ResolveGameCommand(LanChallengeFixture::LAN, new GameReport('game-x', LanQueue::ARAM_MAYHEM, 600, [])));
 
         $this->assertSame([], $settled);
         $this->assertSame(0, $this->fixture->runs->find(LanChallengeFixture::LAN, 'puuid-a')->score);

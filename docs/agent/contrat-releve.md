@@ -1,10 +1,11 @@
 # Contrat d'API : agent de LAN → api-bot
 
-Version du contrat : **v1** (2026-10-26 : appairage de l'agent depuis le front ; cycle des parties piloté par les relevés) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
+Version du contrat : **v1** (2026-10-26 : appairage de l'agent depuis le front ; cycle des parties piloté par les relevés ; 2026-10-28 : files choisies par LAN, `acceptedQueues` et `queueId` remplacent `acceptedGameModes` — aucun agent n'était encore distribué, la v1 est amendée sans passer par une v2) · Décisions : [ADR-0005](../adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md)
 
 L'agent tourne sur le PC Windows d'un ou plusieurs joueurs pendant une LAN. Il
 lit la Live Client Data API du jeu (`https://127.0.0.1:2999`) et transmet ce
-qu'il lit à api-bot, qui valide les cartes défis.
+qu'il lit à api-bot, qui valide les cartes défis. Il lit aussi, une fois par
+partie, la file de la partie dans le client LoL (§ 5).
 
 **Un agent par partie suffit.** La Live Client Data API donne les scores et le
 journal d'événements des **10 joueurs** de la partie : le relevé d'un seul agent
@@ -200,7 +201,10 @@ valable et donne les réglages du moment.
     "endsAt": "2026-11-08T04:00:00+01:00",
     "status": "in_progress"
   },
-  "acceptedGameModes": ["KIWI"],
+  "acceptedQueues": [
+    { "queueId": 2400, "gameMode": "KIWI" },
+    { "queueId": 420, "gameMode": "CLASSIC" }
+  ],
   "reportIntervalSeconds": 15
 }
 ```
@@ -210,7 +214,7 @@ valable et donne les réglages du moment.
 | `player.riotIds` | Comptes Riot liés au joueur. L'agent n'envoie un relevé que si le joueur du poste (`activePlayer.riotId`) en fait partie. |
 | `lan` | La LAN du jeton (toujours présente). |
 | `lan.status` | `upcoming` : la LAN n'a pas commencé, **l'agent n'envoie rien** et attend `startsAt`. `in_progress` : l'agent envoie. |
-| `acceptedGameModes` | Valeurs de `gameData.gameMode` qui comptent. `KIWI` = ARAM du chaos. Toute autre partie est ignorée par l'agent, sans rien envoyer. |
+| `acceptedQueues` | Files où les parties comptent, choisies pour la LAN en administration (au moins une). `queueId` : `2400` ARAM du chaos, `420` classée solo/duo, `440` classée flexible. `gameMode` : la valeur de `gameData.gameMode` correspondante, pour écarter une partie sans interroger le client LoL. Toute autre partie est ignorée par l'agent, sans rien envoyer (§ 5). |
 | `reportIntervalSeconds` | Cadence d'envoi pendant une partie. Fixée par le serveur pour pouvoir l'ajuster sans redistribuer l'agent. |
 
 ### Erreurs
@@ -252,6 +256,7 @@ Content-Encoding: gzip          (facultatif, recommandé : ~60 Ko → ~6 Ko)
   "final": false,
   "endReason": null,
   "observedAt": "2026-11-07T21:14:03+01:00",
+  "queueId": 2400,
   "liveClient": {
     "activePlayer": { "riotId": "Pseudo#EUW", "…": "…" },
     "allPlayers": [ "…" ],
@@ -269,6 +274,7 @@ Content-Encoding: gzip          (facultatif, recommandé : ~60 Ko → ~6 Ko)
 | `final` | bool | `true` pour le relevé de fin (§ « Quand envoyer »). Un seul par `sessionId`. |
 | `endReason` | `"game_end"` \| `"client_closed"` \| `null` | Obligatoire si `final`, `null` sinon. |
 | `observedAt` | date ISO 8601 avec fuseau | Heure de la lecture locale. **Indicative** : le serveur se fie à son heure de réception. |
+| `queueId` | entier \| `null` | File de la partie, lue dans le client LoL (§ 5). `null` (ou absent) si l'agent n'a pas pu la lire : le serveur la déduit alors du mode quand il n'en désigne qu'une (`KIWI` → `2400`) ; une partie `CLASSIC` sans `queueId` est ignorée, car ce peut être une normale ou une partie personnalisée. |
 | `liveClient` | objet | La réponse de `GET /liveclientdata/allgamedata`, **telle quelle**, sans rien retirer ni renommer. |
 
 Le serveur ne lit dans `liveClient` que ce dont il a besoin (`activePlayer.riotId`,
@@ -287,13 +293,13 @@ ait à suivre ses évolutions.
 partie (`sessionId`) et attend la suivante.
 
 ```json
-{ "status": "ignored", "reason": "game_mode_not_accepted" }
+{ "status": "ignored", "reason": "queue_not_accepted" }
 ```
 
 | `reason` | Cas |
 |---|---|
 | `lan_not_started` | La LAN du jeton n'a pas encore commencé (horloge du poste en avance, par ex.). |
-| `game_mode_not_accepted` | `gameData.gameMode` n'est pas dans `acceptedGameModes`. |
+| `queue_not_accepted` | La file de la partie n'est pas dans `acceptedQueues`, ou le serveur ne peut pas la connaître (partie `CLASSIC` sans `queueId`, `queueId` incohérent avec `gameData.gameMode`). |
 | `no_participant_in_game` | Aucun participant de la LAN parmi les `allPlayers`. |
 | `joined_too_late` | Le premier relevé de cette partie est arrivé après 90 s de jeu : elle n'engage aucune carte (§ 4). |
 | `stale_sequence` | `sequence` déjà reçue ou dépassée : sans effet, rien à corriger. |
@@ -370,8 +376,23 @@ Pour que l'agent sache ce qui compte, pas pour qu'il le reproduise.
 - **Lancer l'agent avant de jouer** : il doit tourner dès l'écran de chargement.
   Un agent démarré après 90 s de jeu ne fait pas compter la partie (§ 4).
 - **Ne rien envoyer** si : `session.lan.status` vaut `upcoming` ; `gameData.gameMode`
-  n'est pas accepté ; `activePlayer.riotId` n'est pas dans `player.riotIds`
+  n'est celui d'aucune des `acceptedQueues` ; la file lue dans le client LoL n'est
+  pas acceptée ; `activePlayer.riotId` n'est pas dans `player.riotIds`
   (le joueur regarde une partie en spectateur, ou joue sur un compte non lié).
+
+### Lecture de la file dans le client LoL
+
+La Live Client Data API ne donne pas la file : `CLASSIC` vaut pour la SoloQ, la
+Flex, une normale ou une partie personnalisée. L'agent la lit dans l'API du
+client LoL (LCU), non documentée par Riot (ADR-0005, révision du 2026-10-28) :
+
+- port et mot de passe dans le `lockfile` du dossier d'installation de League
+  (`LeagueClient:<pid>:<port>:<mot de passe>:<protocole>`) ;
+- `GET https://127.0.0.1:<port>/lol-gameflow/v1/session`, Basic `riot:<mot de passe>`,
+  file dans `gameData.queue.id` ; certificat vérifié avec le même `riotgames.pem` ;
+- une seule lecture réussie par partie, retentée à chaque relevé tant qu'elle échoue ;
+- client illisible : envoyer quand même avec `queueId: null` (une ARAM du chaos
+  compte encore) et avertir le joueur une fois par partie.
 - Le journal `events` est cumulatif depuis `GameStart` : l'agent n'a jamais à
   reconstituer le passé d'une partie.
 
@@ -388,8 +409,9 @@ Pour que l'agent sache ce qui compte, pas pour qu'il le reproduise.
 
 ### Respect du joueur
 
-- L'agent ne lit **que** la Live Client Data API : aucune lecture mémoire,
-  aucune interaction avec le jeu, aucune autre donnée du PC.
+- L'agent ne lit **que** la Live Client Data API et, dans le client LoL, la file
+  de la partie : aucune lecture mémoire, aucune interaction avec le jeu, aucune
+  autre donnée du PC.
 - Il n'envoie rien hors d'une LAN en cours à laquelle le joueur participe.
 - Il journalise localement ce qu'il envoie, pour que le joueur puisse le vérifier.
 

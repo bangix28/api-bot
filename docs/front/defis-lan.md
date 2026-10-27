@@ -226,7 +226,10 @@ suivantes.
 
 ```json
 {
-  "lan": { "id": 3, "name": "LAN d'automne", "startsAt": "2026-11-07T14:00:00+01:00", "endsAt": "2026-11-08T04:00:00+01:00", "status": "in_progress" },
+  "lan": {
+    "id": 3, "name": "LAN d'automne", "startsAt": "2026-11-07T14:00:00+01:00", "endsAt": "2026-11-08T04:00:00+01:00", "status": "in_progress",
+    "queues": [{ "id": 2400, "label": "ARAM du chaos" }, { "id": 420, "label": "Classée solo/duo" }]
+  },
   "riotIds": ["Pseudo#EUW"]
 }
 ```
@@ -235,6 +238,7 @@ suivantes.
 |---|---|
 | `lan` | `null` (et `riotIds` vide) : inscrit à aucune LAN en cours ou à venir — « Aucune LAN prévue pour toi » |
 | `lan.status` | `upcoming` : afficher la date de début, les défis ouvrent à `startsAt` ; `in_progress` : ouvrir le parcours |
+| `lan.queues` | Files où les parties comptent, choisies par l'organisateur (au moins une) : « Défis valables en ARAM du chaos et en classée solo/duo ». Codes : `2400` ARAM du chaos, `420` classée solo/duo, `440` classée flexible |
 | `riotIds` | Comptes du joueur inscrits à cette LAN (un seul en temps normal) |
 
 Une LAN terminée n'est plus renvoyée : on passe à la suivante. C'est la même

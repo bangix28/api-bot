@@ -6,6 +6,7 @@ use App\Application\LanGame\ReceiveReport\IgnoredReason;
 use App\Domain\Agent\AgentToken;
 use App\Domain\Agent\AgentTokenExpiredException;
 use App\Domain\LanChallenge\LanNotFoundException;
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\Verdict;
 use App\Domain\LanGame\Event\GameEnd;
 use App\Domain\LanGame\Event\Multikill;
@@ -257,12 +258,62 @@ class ReceiveReportHandlerTest extends TestCase
         $this->assertSame([], $this->fixture->games->all());
     }
 
-    public function testUnAutreModeDeJeuEstIgnore(): void
+    public function testUneFileQueLaLanNAcceptePasEstIgnoree(): void
     {
+        $ignored = $this->fixture->receive(LanGameFixture::alphaAgent(), GameSnapshotBuilder::aGame()->inQueue(LanQueue::RANKED_SOLO)->build(), 1);
+
+        $this->assertSame(IgnoredReason::QUEUE_NOT_ACCEPTED, $ignored);
+        $this->assertSame([], $this->fixture->reportLog->records);
+    }
+
+    public function testUnModeHorsCatalogueEstIgnore(): void
+    {
+        $ignored = $this->fixture->receive(LanGameFixture::alphaAgent(), GameSnapshotBuilder::aGame()->inMode('ARAM')->withQueueId(450)->build(), 1);
+
+        $this->assertSame(IgnoredReason::QUEUE_NOT_ACCEPTED, $ignored);
+    }
+
+    public function testUneClasseeAccepteeParLaLanSeJoueEtSeRegle(): void
+    {
+        $this->fixture->accepting(LanQueue::ARAM_MAYHEM, LanQueue::RANKED_FLEX);
+        $this->fixture->picksDoubleKill(LanChallengeFixture::ALPHA);
+
+        $this->fixture->receive(LanGameFixture::alphaAgent(), GameSnapshotBuilder::aGame()->inQueue(LanQueue::RANKED_FLEX)->build(), 1);
+        $this->fixture->advance('+970 seconds');
+        $this->fixture->receive(LanGameFixture::alphaAgent(), self::finalSnapshot()->inQueue(LanQueue::RANKED_FLEX)->build(), 2, final: true);
+
+        $game = $this->fixture->games->all()[0];
+        $this->assertSame(LanQueue::RANKED_FLEX, $game->queue);
+        $this->assertSame(LanGameStatus::SETTLED, $game->status);
+        $this->assertSame(Verdict::SUCCESS, $this->fixture->run('puuid-a')->results[0]->verdict);
+    }
+
+    public function testUnePartieSurLaFailleSansFileLueEstIgnoree(): void
+    {
+        // CLASSIC vaut aussi pour une normale ou une partie personnalisée : sans queueId, impossible de savoir.
+        $this->fixture->accepting(LanQueue::RANKED_SOLO, LanQueue::RANKED_FLEX);
+
         $ignored = $this->fixture->receive(LanGameFixture::alphaAgent(), GameSnapshotBuilder::aGame()->inMode('CLASSIC')->build(), 1);
 
-        $this->assertSame(IgnoredReason::GAME_MODE_NOT_ACCEPTED, $ignored);
-        $this->assertSame([], $this->fixture->reportLog->records);
+        $this->assertSame(IgnoredReason::QUEUE_NOT_ACCEPTED, $ignored);
+    }
+
+    public function testUnePartiePersonnaliseeSurLaFailleEstIgnoree(): void
+    {
+        $this->fixture->accepting(LanQueue::RANKED_SOLO);
+
+        $ignored = $this->fixture->receive(LanGameFixture::alphaAgent(), GameSnapshotBuilder::aGame()->inMode('CLASSIC')->withQueueId(0)->build(), 1);
+
+        $this->assertSame(IgnoredReason::QUEUE_NOT_ACCEPTED, $ignored);
+    }
+
+    public function testUneLanSansARAMDuChaosIgnoreSesParties(): void
+    {
+        $this->fixture->accepting(LanQueue::RANKED_SOLO);
+
+        $ignored = $this->fixture->receive(LanGameFixture::alphaAgent(), GameSnapshotBuilder::aGame()->build(), 1);
+
+        $this->assertSame(IgnoredReason::QUEUE_NOT_ACCEPTED, $ignored);
     }
 
     public function testUnePartieSansParticipantDeLaLanEstIgnoree(): void

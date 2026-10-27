@@ -36,7 +36,7 @@ final readonly class AbandonStaleGamesHandler
 
             // Relevé vide : chaque carte engagée sur la partie est jugée « inconnue »
             // et le joueur récupère une relance.
-            $this->resolveGame->handle(new ResolveGameCommand($game->lanId, new GameReport($game->gameId, 0, [])));
+            $this->resolveGame->handle(new ResolveGameCommand($game->lanId, new GameReport($game->gameId, $game->queue, 0, [])));
 
             $abandonedGame = $game->abandon();
             $this->games->save($abandonedGame);

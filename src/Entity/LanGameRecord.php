@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\LanGameStatus;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -10,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'lan_game')]
 // Pas d'index sur players_fingerprint : trop long pour InnoDB, et une LAN ne compte que quelques dizaines de parties.
-#[ORM\Index(name: 'idx_lan_game_lookup', columns: ['lan_event_id', 'game_mode'])]
+#[ORM\Index(name: 'idx_lan_game_lookup', columns: ['lan_event_id', 'queue_id'])]
 #[ORM\Index(name: 'idx_lan_game_status', columns: ['status'])]
 class LanGameRecord
 {
@@ -22,10 +23,10 @@ class LanGameRecord
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private LanEvent $lanEvent;
 
-    #[ORM\Column(length: 32)]
-    private string $gameMode;
+    #[ORM\Column(name: 'queue_id', enumType: LanQueue::class)]
+    private LanQueue $queue;
 
-    /** Les 10 Riot ID triés, en minuscules : identifie la partie avec le mode et l'heure de début. */
+    /** Les 10 Riot ID triés, en minuscules : identifie la partie avec la file et l'heure de début. */
     #[ORM\Column(length: 1024)]
     private string $playersFingerprint;
 
@@ -41,11 +42,11 @@ class LanGameRecord
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $settledScores = null;
 
-    public function __construct(string $gameId, LanEvent $lanEvent, string $gameMode, string $playersFingerprint, \DateTimeImmutable $estimatedStartAt)
+    public function __construct(string $gameId, LanEvent $lanEvent, LanQueue $queue, string $playersFingerprint, \DateTimeImmutable $estimatedStartAt)
     {
         $this->gameId = $gameId;
         $this->lanEvent = $lanEvent;
-        $this->gameMode = $gameMode;
+        $this->queue = $queue;
         $this->playersFingerprint = $playersFingerprint;
         $this->estimatedStartAt = $estimatedStartAt;
     }
@@ -60,9 +61,9 @@ class LanGameRecord
         return $this->lanEvent;
     }
 
-    public function getGameMode(): string
+    public function getQueue(): LanQueue
     {
-        return $this->gameMode;
+        return $this->queue;
     }
 
     public function getPlayersFingerprint(): string

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\Event\ObservedEvent;
 use App\Domain\LanGame\GameSnapshot;
 use App\Domain\LanGame\ObservedPlayer;
@@ -9,11 +10,13 @@ use App\Domain\LanGame\ObservedPlayer;
 /**
  * Une partie d'ARAM du chaos à 10 : Alpha#EUW et Bravo#EUW chez ORDER,
  * Charlie#EUW chez CHAOS, les autres sont des inconnus. Joueur du poste : Alpha.
- * Scores à zéro, journal vide, 30 s de jeu.
+ * Scores à zéro, journal vide, 30 s de jeu. Sans queueId : l'agent n'a pas lu
+ * le client LoL, le mode KIWI suffit à désigner l'ARAM du chaos.
  */
 final class GameSnapshotBuilder
 {
     private string $gameMode = 'KIWI';
+    private ?int $queueId = null;
     private float $gameTimeSeconds = 30.0;
     private string $activeRiotId = 'Alpha#EUW';
     /** @var array<string, ObservedPlayer> indexés par Riot ID */
@@ -40,6 +43,22 @@ final class GameSnapshotBuilder
     public function inMode(string $gameMode): self
     {
         $this->gameMode = $gameMode;
+
+        return $this;
+    }
+
+    /** File lue par l'agent dans le client LoL, avec le mode qui lui correspond. */
+    public function inQueue(LanQueue $queue): self
+    {
+        $this->gameMode = $queue->gameMode();
+        $this->queueId = $queue->value;
+
+        return $this;
+    }
+
+    public function withQueueId(?int $queueId): self
+    {
+        $this->queueId = $queueId;
 
         return $this;
     }
@@ -85,6 +104,6 @@ final class GameSnapshotBuilder
 
     public function build(): GameSnapshot
     {
-        return new GameSnapshot($this->gameMode, $this->gameTimeSeconds, $this->activeRiotId, array_values($this->players), $this->events);
+        return new GameSnapshot($this->gameMode, $this->gameTimeSeconds, $this->activeRiotId, array_values($this->players), $this->events, $this->queueId);
     }
 }

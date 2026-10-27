@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\GameSnapshot;
 use App\Domain\LanGame\LanGame;
 use App\Domain\LanGame\LanGameStatus;
@@ -20,7 +21,7 @@ class LanGameTest extends TestCase
     {
         $snapshot = GameSnapshotBuilder::aGame()->at($gameTimeSeconds)->build();
 
-        return LanGame::open(LanGame::idFor(self::LAN, $snapshot, self::receivedAt()), self::LAN, $snapshot, self::receivedAt());
+        return LanGame::open(LanGame::idFor(self::LAN, $snapshot, self::receivedAt()), self::LAN, LanQueue::ARAM_MAYHEM, $snapshot, self::receivedAt());
     }
 
     public function testLeDebutEstEstimeDepuisLaReceptionEtLeTempsDeJeu(): void
@@ -48,7 +49,7 @@ class LanGameTest extends TestCase
 
         $this->assertSame(LanGameStatus::IN_PROGRESS, $game->status);
         $this->assertTrue($game->engagesCards());
-        $this->assertSame('KIWI', $game->gameMode);
+        $this->assertSame(LanQueue::ARAM_MAYHEM, $game->queue);
         $this->assertEquals(self::receivedAt(), $game->lastReportAt);
         $this->assertNull($game->settledScores);
     }
@@ -77,6 +78,8 @@ class LanGameTest extends TestCase
         $game = self::openedAt(30);
 
         $this->assertFalse($game->matches(GameSnapshotBuilder::aGame()->inMode('ARAM')->at(30)->build(), self::receivedAt()));
+        $this->assertFalse($game->matches(GameSnapshotBuilder::aGame()->inQueue(LanQueue::RANKED_FLEX)->at(30)->build(), self::receivedAt()));
+        $this->assertTrue($game->matches(GameSnapshotBuilder::aGame()->inQueue(LanQueue::ARAM_MAYHEM)->at(30)->build(), self::receivedAt()), 'Avec ou sans file lue, c\'est la même ARAM du chaos.');
         $this->assertFalse($game->matches(GameSnapshotBuilder::aGame()->replacing('Inconnu1#EUW', 'Autre#EUW')->at(30)->build(), self::receivedAt()));
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\PlayerGameStats;
 use App\Domain\LanGame\Event\Ace;
 use App\Domain\LanGame\Event\ChampionKill;
@@ -19,7 +20,7 @@ class GameStatsCalculatorTest extends TestCase
 
     private static function statsOf(string $puuid, GameSnapshot $snapshot): PlayerGameStats
     {
-        $stats = GameStatsCalculator::report('game-1', $snapshot, self::PARTICIPANTS)->statsFor($puuid);
+        $stats = GameStatsCalculator::report('game-1', LanQueue::ARAM_MAYHEM, $snapshot, self::PARTICIPANTS)->statsFor($puuid);
         self::assertNotNull($stats);
 
         return $stats;
@@ -27,7 +28,7 @@ class GameStatsCalculatorTest extends TestCase
 
     public function testLeRapportNeContientQueLesParticipantsDeLaLan(): void
     {
-        $report = GameStatsCalculator::report('game-1', GameSnapshotBuilder::aGame()->at(1234.9)->build(), self::PARTICIPANTS);
+        $report = GameStatsCalculator::report('game-1', LanQueue::ARAM_MAYHEM, GameSnapshotBuilder::aGame()->at(1234.9)->build(), self::PARTICIPANTS);
 
         $this->assertSame('game-1', $report->gameId);
         $this->assertSame(1234, $report->durationSeconds);
@@ -38,7 +39,7 @@ class GameStatsCalculatorTest extends TestCase
 
     public function testUnParticipantAbsentDeLaPartieNeFigurePasAuRapport(): void
     {
-        $report = GameStatsCalculator::report('game-1', GameSnapshotBuilder::aGame()->build(), ['alpha#euw' => 'puuid-a']);
+        $report = GameStatsCalculator::report('game-1', LanQueue::ARAM_MAYHEM, GameSnapshotBuilder::aGame()->build(), ['alpha#euw' => 'puuid-a']);
 
         $this->assertNull($report->statsFor('puuid-b'));
     }
