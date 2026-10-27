@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Application\LanChallenge\GetCurrentLan\CurrentLanView;
 use App\Application\LanChallenge\GetMyRun\MyRunView;
 use App\Application\LanChallenge\GetMyRun\SabotageTarget;
 use App\Application\LanChallenge\GetStandings\StandingEntry;
@@ -111,6 +112,19 @@ final class LanChallengePresenter
                 ],
                 $entries,
             ),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function currentLan(?CurrentLanView $view): array
+    {
+        if ($view === null) {
+            return ['lan' => null, 'riotIds' => []];
+        }
+
+        return [
+            'lan' => [...self::lan($view->lan), 'status' => $view->inProgress ? 'in_progress' : 'upcoming'],
+            'riotIds' => $view->riotIds,
         ];
     }
 

@@ -112,6 +112,12 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 [200 => ['Fil.', 'LanFeed'], 404 => ['lan_not_found']],
                 [$lanId, new Parameter('limit', 'query', 'Nombre d\'entrées, de 1 à 50 (20 par défaut).', schema: ['type' => 'integer', 'default' => 20])],
             )],
+            ['/api/me/lan-events/current', 'get', self::operation(
+                'lan_challenge_current_lan', self::CHALLENGE_TAG, self::JWT,
+                'LAN du joueur connecté : en cours, sinon la prochaine.',
+                'Donne le lanId à utiliser dans les routes des défis. « lan » vaut null si aucun compte du joueur n\'est inscrit à une LAN en cours ou à venir.', null,
+                [200 => ['LAN du joueur.', 'CurrentLan'], 401 => ['Jeton absent ou invalide.'], 403 => ['Jeton valide mais pas celui d\'un joueur.']],
+            )],
             ['/api/lan-events/{lanId}/me', 'get', self::operation(
                 'lan_challenge_my_run', self::CHALLENGE_TAG, self::JWT,
                 'Parcours du joueur connecté dans la LAN.', 'Inclut les cibles possibles quand l\'offre contient une carte qui vise un joueur.', null,
@@ -292,6 +298,15 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 'activeCard' => $nullableRef('Card'),
                 'cardLocked' => ['type' => 'boolean'],
                 'results' => $listOf($ref('RoundResult')),
+            ]],
+            'CurrentLan' => ['type' => 'object', 'properties' => [
+                'lan' => ['anyOf' => [
+                    ['allOf' => [$ref('LanSummary'), ['type' => 'object', 'properties' => [
+                        'status' => ['type' => 'string', 'enum' => ['upcoming', 'in_progress']],
+                    ]]]],
+                    ['type' => 'null'],
+                ]],
+                'riotIds' => [...$riotIds, 'description' => 'Comptes du joueur inscrits à cette LAN.'],
             ]],
             'MyRun' => ['type' => 'object', 'properties' => [
                 'lan' => $ref('LanSummary'),

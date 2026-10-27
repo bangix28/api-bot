@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Application\LanChallenge\GetCurrentLan\GetCurrentLanHandler;
 use App\Application\LanChallenge\GetFeed\GetFeedHandler;
 use App\Application\LanChallenge\GetMyRun\GetMyRunHandler;
 use App\Application\LanChallenge\GetStandings\GetStandingsHandler;
@@ -73,6 +74,12 @@ class LanChallengeController extends AbstractController
         $limit = $request->query->getInt('limit', GetFeedHandler::DEFAULT_LIMIT);
 
         return $this->respond(fn() => LanChallengePresenter::feed($handler->handle($lanId, $limit)));
+    }
+
+    #[Route('/api/me/lan-events/current', name: 'api_lan_challenge_current_lan', methods: ['GET'])]
+    public function currentLan(#[CurrentUser] PlayerUser $player, GetCurrentLanHandler $handler): JsonResponse
+    {
+        return new JsonResponse(LanChallengePresenter::currentLan($handler->handle($player->discord->userId)));
     }
 
     #[Route('/api/lan-events/{lanId}/me', name: 'api_lan_challenge_my_run', requirements: ['lanId' => '\d+'], methods: ['GET'])]

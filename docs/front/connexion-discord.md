@@ -19,7 +19,10 @@ POST /api/auth/discord          code Discord → jeton du joueur        (public)
 GET  /api/me                    profil du joueur connecté             (joueur)
 POST /api/me/riot-accounts      lier un compte Riot suivi             (joueur)
 POST /api/me/agent-devices/approve   connecter l'agent de LAN du joueur  (joueur)
+GET  /api/me/lan-events/current      LAN du joueur, en cours sinon la prochaine (joueur)
 ```
+
+La dernière route ouvre les défis de LAN : voir [defis-lan.md](defis-lan.md), § 7.
 
 Erreurs : corps `{ "code": "…", "message": "…" }`, `message` en français et
 affichable tel quel.
