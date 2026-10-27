@@ -51,6 +51,29 @@ final readonly class DoctrineTrackedRiotAccountRepository implements TrackedRiot
         $this->entityManager->flush();
     }
 
+    /** @return TrackedRiotAccount[] */
+    public function findAllTracked(): array
+    {
+        $rows = $this->entityManager->createQueryBuilder()
+            ->select('a')
+            ->from(RiotAccount::class, 'a')
+            ->where("a.puuid IS NOT NULL AND a.puuid <> ''")
+            ->orderBy('a.riotId', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(self::toDomain(...), $rows);
+    }
+
+    public function renameRiotId(string $puuid, RiotId $riotId): void
+    {
+        $row = $this->entityManager->getRepository(RiotAccount::class)->findOneBy(['puuid' => $puuid])
+            ?? throw new \LogicException(sprintf('Aucun compte suivi pour le puuid %s.', $puuid));
+
+        $row->setRiotId($riotId->value);
+        $this->entityManager->flush();
+    }
+
     private static function toDomain(RiotAccount $row): TrackedRiotAccount
     {
         return new TrackedRiotAccount($row->getRiotId(), $row->getPuuid(), $row->getDiscordId());

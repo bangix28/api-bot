@@ -136,6 +136,10 @@ Seuls les comptes **déjà suivis par le site** (ajoutés par un administrateur)
 peuvent être liés : un joueur ne fait pas entrer un compte dans les classements
 par lui-même. La casse est ignorée (`pseudo#euw` = `Pseudo#EUW`).
 
+Le Riot ID d'un compte suivi est celui que Riot connaît **aujourd'hui** : il est
+remis à jour depuis Riot toutes les 30 minutes. Après un changement de pseudo,
+c'est le nouveau qu'il faut saisir.
+
 **`200`** : le profil à jour (même format que § 3). Lier un compte déjà lié au
 même joueur renvoie aussi `200` : le front peut rejouer la demande sans risque.
 
