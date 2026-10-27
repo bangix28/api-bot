@@ -42,6 +42,19 @@ final class InMemoryTrackedRiotAccountRepository implements TrackedRiotAccountRe
         ));
     }
 
+    /** @return TrackedRiotAccount[] */
+    public function findAllTracked(): array
+    {
+        return array_values($this->accounts);
+    }
+
+    public function renameRiotId(string $puuid, RiotId $riotId): void
+    {
+        $account = $this->accounts[$puuid] ?? throw new \LogicException("Aucun compte suivi pour le puuid $puuid.");
+
+        $this->accounts[$puuid] = new TrackedRiotAccount($riotId->value, $account->puuid, $account->ownerDiscordId);
+    }
+
     public function linkTo(string $puuid, DiscordIdentity $player): void
     {
         $account = $this->accounts[$puuid] ?? throw new \LogicException("Aucun compte suivi pour le puuid $puuid.");

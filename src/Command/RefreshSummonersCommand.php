@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Application\MatchHistory\RefreshData\RefreshAllMatchHistoryHandler;
+use App\Application\Player\SyncRiotIds\SyncRiotIdsHandler;
 use App\Application\RiotAccount\RefreshData\RefreshRiotAccountDataHandler;
 use App\Infrastructure\RiotAccount\NullRefreshPresenter;
 use Psr\Log\LoggerInterface;
@@ -25,6 +26,7 @@ class RefreshSummonersCommand extends Command
     public function __construct(
         private readonly RefreshRiotAccountDataHandler $refreshRankedHandler,
         private readonly RefreshAllMatchHistoryHandler $refreshAllMatchHistory,
+        private readonly SyncRiotIdsHandler            $syncRiotIds,
         private readonly LoggerInterface               $refreshLogger = new NullLogger(),
     ) {
         parent::__construct();
@@ -51,7 +53,13 @@ class RefreshSummonersCommand extends Command
         $this->refreshLogger->info('Commande refreshSummoners démarrée');
 
         try {
-            // L'historique d'abord : il lit lastUpdate (date du run précédent) comme
+            // Riot ID d'abord : le refresh ranked retrouve chaque compte par son
+            // Riot ID, qui ne doit pas changer entre sa lecture et son écriture.
+            // C'est sous ce nom (« Pseudo#TAG ») que les joueurs lient leur compte
+            // et que l'agent de LAN les désigne : il suit les changements de pseudo.
+            $this->syncRiotIds->handle();
+
+            // Puis l'historique, avant le ranked : il lit lastUpdate (date du run précédent) comme
             // curseur "since", avant que le refresh ranked ne l'écrase à maintenant.
             $this->refreshAllMatchHistory->handle();
 

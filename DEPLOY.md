@@ -79,6 +79,25 @@ points repris (03:00 pile) et laisse ceux écrits par le cron. `summoner_elo_dai
 
 ---
 
+## ⚠️ Spécificités de la release « Riot ID tenus à jour depuis Riot »
+
+Le champ `riot_id` des comptes suivis prend la forme `Pseudo#TAG`, lue chez Riot
+(ACCOUNT-V1) à partir du puuid, au début de chaque `refreshSummoners`. C'est sous
+ce nom que les joueurs lient leur compte Discord et que l'agent de LAN les désigne.
+
+1. **Aucune migration, aucune variable** : la clé Riot existante (`RIOT_API_TOKEN`) suffit.
+2. **Juste après le déploiement**, mettre à niveau tous les comptes sans attendre le cron :
+   ```bash
+   php bin/console riot:sync-riot-ids --env=prod
+   ```
+   Elle affiche les comptes renommés (ancien → actuel) et ceux non vérifiés
+   (Riot injoignable, puuid inconnu, Riot ID déjà porté par un autre compte),
+   qui gardent leur valeur. Rejouable sans risque.
+3. **Visible côté front** : le champ `riotId` de `/api/ranked-race` passe des anciens
+   identifiants techniques à `Pseudo#TAG`.
+
+---
+
 ## ⚠️ Spécificités de la release « relevés de l'agent de LAN »
 
 Décisions : **`docs/adr/0005-defis-de-lan-donnees-lues-sur-les-postes.md`**.
