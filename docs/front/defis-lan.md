@@ -66,6 +66,7 @@ Rareté à part, la plus rare (`saboteur`, ~3 % par emplacement d'offre), et
 ## 2. Le contrat en un coup d'œil
 
 ```
+GET  /api/me/lan-events/current            ma LAN : en cours, sinon la prochaine joueur
 GET  /api/lan-challenges/cards             catalogue des cartes et règles        compte API ou joueur
 GET  /api/lan-events/{lanId}/standings     classement de la LAN                  compte API ou joueur
 GET  /api/lan-events/{lanId}/feed?limit=   fil d'exploits                        compte API ou joueur
@@ -216,6 +217,28 @@ Pour animer les nouveaux événements, comparer avec le fil précédent sur
 ---
 
 ## 7. Le parcours du joueur
+
+### `GET /api/me/lan-events/current` — quelle LAN ouvrir ?
+
+Le point d'entrée du joueur connecté : la LAN en cours à laquelle l'un de ses
+comptes est inscrit, sinon la prochaine. Son `id` est le `lanId` des routes
+suivantes.
+
+```json
+{
+  "lan": { "id": 3, "name": "LAN d'automne", "startsAt": "2026-11-07T14:00:00+01:00", "endsAt": "2026-11-08T04:00:00+01:00", "status": "in_progress" },
+  "riotIds": ["Pseudo#EUW"]
+}
+```
+
+| Champ | Usage |
+|---|---|
+| `lan` | `null` (et `riotIds` vide) : inscrit à aucune LAN en cours ou à venir — « Aucune LAN prévue pour toi » |
+| `lan.status` | `upcoming` : afficher la date de début, les défis ouvrent à `startsAt` ; `in_progress` : ouvrir le parcours |
+| `riotIds` | Comptes du joueur inscrits à cette LAN (un seul en temps normal) |
+
+Une LAN terminée n'est plus renvoyée : on passe à la suivante. C'est la même
+LAN que celle à laquelle l'agent est appairé (§ 1 du contrat de l'agent).
 
 ### `GET /api/lan-events/{lanId}/me`
 
