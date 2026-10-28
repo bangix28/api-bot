@@ -149,6 +149,18 @@ Cette release embarque **2 migrations** dont une **destructive**. Trois points d
 
 ## Procédure
 
+Les étapes ci-dessous sont automatisées par `deploy/deploy.sh`, à lancer sur le VPS
+par l'utilisateur qui a `sudo` (`debian`) ; le projet appartient à `deploy`, sous
+lequel tournent git, composer et la console :
+
+```bash
+cd /var/www/beauce-tigers/api-bot
+sudo -v && bash deploy/deploy.sh
+```
+
+La sauvegarde utilise `~/.my.cnf` s'il existe, sinon root MariaDB par socket
+(`sudo mysqldump`). Le détail manuel, pour comprendre ou reprendre à la main :
+
 ```bash
 cd <PROJECT_DIR>
 ```
