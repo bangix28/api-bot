@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\LanGame;
 use App\Domain\LanGame\LanGameRepositoryInterface;
 use App\Domain\LanGame\LanGameStatus;
@@ -21,11 +22,11 @@ final class InMemoryLanGameRepository implements LanGameRepositoryInterface
         $this->games[$game->gameId] = $game;
     }
 
-    public function findCandidates(int $lanId, string $gameMode, string $playersFingerprint): array
+    public function findCandidates(int $lanId, LanQueue $queue, string $playersFingerprint): array
     {
         return array_values(array_filter(
             $this->games,
-            static fn(LanGame $game) => $game->lanId === $lanId && $game->gameMode === $gameMode && $game->playersFingerprint === $playersFingerprint,
+            static fn(LanGame $game) => $game->lanId === $lanId && $game->queue === $queue && $game->playersFingerprint === $playersFingerprint,
         ));
     }
 

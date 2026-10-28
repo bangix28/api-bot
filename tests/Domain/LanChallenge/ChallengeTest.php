@@ -4,6 +4,7 @@ namespace App\Tests\Domain\LanChallenge;
 
 use App\Domain\LanChallenge\Challenge;
 use App\Domain\LanChallenge\GameReport;
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\PlayerGameStats;
 use App\Domain\LanChallenge\Rarity;
 use App\Domain\LanChallenge\Verdict;
@@ -12,9 +13,13 @@ use PHPUnit\Framework\TestCase;
 
 class ChallengeTest extends TestCase
 {
-    private static function verdict(Challenge $card, PlayerGameStats $stats, int $durationSeconds = 20 * 60): Verdict
-    {
-        return $card->evaluate($stats, new GameReport('game-1', $durationSeconds, [$stats]));
+    private static function verdict(
+        Challenge $card,
+        PlayerGameStats $stats,
+        int $durationSeconds = 20 * 60,
+        LanQueue $queue = LanQueue::ARAM_MAYHEM,
+    ): Verdict {
+        return $card->evaluate($stats, new GameReport('game-1', $queue, $durationSeconds, [$stats]));
     }
 
     public function testChaqueRareteALieuAUneOffreComplete(): void
@@ -32,6 +37,13 @@ class ChallengeTest extends TestCase
             $this->assertNotSame('', $card->label(), $card->value);
             $this->assertNotSame('', $card->description(), $card->value);
         }
+    }
+
+    public function testLaDescriptionDonneLeSeuilDeChaqueTerrain(): void
+    {
+        $this->assertSame('Réalise au moins 10 kills (7 sur la Faille).', Challenge::HUNTER->description());
+        $this->assertSame('Participe à au moins 60 % des kills de ton équipe (55 % sur la Faille).', Challenge::TEAM_SPIRIT->description());
+        $this->assertSame('Gagne une partie de moins de 15 minutes (22 minutes sur la Faille).', Challenge::BLITZ->description());
     }
 
     public function testLesPointsSuiventLaRareteSaufLePenta(): void
@@ -80,6 +92,39 @@ class ChallengeTest extends TestCase
         $this->assertSame($expected, self::verdict($card, $stats));
     }
 
+    /** @return iterable<string, array{Challenge, PlayerGameStats, Verdict}> */
+    public static function riftCases(): iterable
+    {
+        $player = static fn() => PlayerGameStatsBuilder::aPlayer();
+
+        yield 'prudent à 3 morts' => [Challenge::PRUDENT, $player()->withDeaths(3)->build(), Verdict::SUCCESS];
+        yield 'prudent à 4 morts' => [Challenge::PRUDENT, $player()->withDeaths(4)->build(), Verdict::FAILURE];
+        yield 'participation 55 %' => [Challenge::TEAM_SPIRIT, $player()->withKills(5)->withAssists(6)->withTeamKills(20)->build(), Verdict::SUCCESS];
+        yield 'participation 50 %' => [Challenge::TEAM_SPIRIT, $player()->withKills(5)->withAssists(5)->withTeamKills(20)->build(), Verdict::FAILURE];
+        yield 'chasseur à 7 kills' => [Challenge::HUNTER, $player()->withKills(7)->build(), Verdict::SUCCESS];
+        yield 'chasseur à 6 kills' => [Challenge::HUNTER, $player()->withKills(6)->build(), Verdict::FAILURE];
+        yield 'bras droit à 12 assistances' => [Challenge::WINGMAN, $player()->withAssists(12)->build(), Verdict::SUCCESS];
+        yield 'bras droit à 11 assistances' => [Challenge::WINGMAN, $player()->withAssists(11)->build(), Verdict::FAILURE];
+        yield 'intouchable à 2 morts' => [Challenge::UNTOUCHABLE, $player()->withWin(true)->withDeaths(2)->build(), Verdict::SUCCESS];
+        yield 'intouchable à 3 morts' => [Challenge::UNTOUCHABLE, $player()->withWin(true)->withDeaths(3)->build(), Verdict::FAILURE];
+        yield 'les seuils fixes ne changent pas' => [Challenge::TRIPLE_KILL, $player()->withLargestMultiKill(3)->build(), Verdict::SUCCESS];
+    }
+
+    #[DataProvider('riftCases')]
+    public function testEvaluationSurLaFaille(Challenge $card, PlayerGameStats $stats, Verdict $expected): void
+    {
+        $this->assertSame($expected, self::verdict($card, $stats, 30 * 60, LanQueue::RANKED_SOLO));
+        $this->assertSame($expected, self::verdict($card, $stats, 30 * 60, LanQueue::RANKED_FLEX));
+    }
+
+    public function testBlitzSurLaFailleSeJugeA22Minutes(): void
+    {
+        $won = PlayerGameStatsBuilder::aPlayer()->withWin(true)->build();
+
+        $this->assertSame(Verdict::SUCCESS, self::verdict(Challenge::BLITZ, $won, 22 * 60 - 1, LanQueue::RANKED_SOLO));
+        $this->assertSame(Verdict::FAILURE, self::verdict(Challenge::BLITZ, $won, 22 * 60, LanQueue::RANKED_SOLO));
+    }
+
     public function testBlitzSeJugeSurLaDureeDeLaPartie(): void
     {
         $won = PlayerGameStatsBuilder::aPlayer()->withWin(true)->build();
@@ -96,8 +141,10 @@ class ChallengeTest extends TestCase
         $neutral = PlayerGameStatsBuilder::aPlayer()->build();
 
         foreach (Challenge::cases() as $card) {
-            if (!$card->targetsPlayer()) {
-                $this->assertNotSame(Verdict::SUCCESS, self::verdict($card, $neutral), $card->value);
+            foreach (LanQueue::cases() as $queue) {
+                if (!$card->targetsPlayer()) {
+                    $this->assertNotSame(Verdict::SUCCESS, self::verdict($card, $neutral, queue: $queue), $card->value . ' en ' . $queue->name);
+                }
             }
         }
     }

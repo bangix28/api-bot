@@ -13,6 +13,7 @@ use App\Domain\Agent\AgentTokenExpiredException;
 use App\Domain\Agent\InvalidDeviceCodeException;
 use App\Domain\Agent\InvalidUserCodeException;
 use App\Domain\Agent\NotRegisteredInAnyLanException;
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\LanSummary;
 use App\Infrastructure\Security\AgentAccessTokenHandler;
 use App\Infrastructure\Security\AgentAuthenticationResponder;
@@ -100,7 +101,11 @@ class AgentController extends AbstractController
         return new JsonResponse([
             'player' => ['riotIds' => $session->riotIds],
             'lan' => [...self::lan($session->lan), 'status' => $session->lanInProgress ? 'in_progress' : 'upcoming'],
-            'acceptedGameModes' => $session->acceptedGameModes,
+            // Le mode permet à l'agent d'écarter une partie sans interroger le client LoL.
+            'acceptedQueues' => array_map(
+                static fn(LanQueue $queue) => ['queueId' => $queue->value, 'gameMode' => $queue->gameMode()],
+                $session->lan->acceptedQueues,
+            ),
             'reportIntervalSeconds' => $session->reportIntervalSeconds,
         ]);
     }

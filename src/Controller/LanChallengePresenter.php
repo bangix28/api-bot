@@ -9,6 +9,7 @@ use App\Application\LanChallenge\GetStandings\StandingEntry;
 use App\Application\LanChallenge\GetStandings\StandingsView;
 use App\Domain\LanChallenge\Challenge;
 use App\Domain\LanChallenge\FeedEntry;
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanChallenge\LanSummary;
 use App\Domain\LanChallenge\PlayerRun;
 use App\Domain\LanChallenge\Rarity;
@@ -123,7 +124,14 @@ final class LanChallengePresenter
         }
 
         return [
-            'lan' => [...self::lan($view->lan), 'status' => $view->inProgress ? 'in_progress' : 'upcoming'],
+            'lan' => [
+                ...self::lan($view->lan),
+                'status' => $view->inProgress ? 'in_progress' : 'upcoming',
+                'queues' => array_map(
+                    static fn(LanQueue $queue) => ['id' => $queue->value, 'label' => $queue->label()],
+                    $view->lan->acceptedQueues,
+                ),
+            ],
             'riotIds' => $view->riotIds,
         ];
     }

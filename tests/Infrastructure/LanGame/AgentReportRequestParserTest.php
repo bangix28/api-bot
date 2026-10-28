@@ -51,6 +51,19 @@ class AgentReportRequestParserTest extends TestCase
         $this->assertSame($body, $command->rawPayload);
     }
 
+    public function testLaFileLueDansLeClientLoLAccompagneLeReleve(): void
+    {
+        $command = AgentReportRequestParser::parse(self::token(), self::json(self::envelope(['queueId' => 2400])), null);
+
+        $this->assertSame(2400, $command->snapshot->queueId);
+    }
+
+    public function testSansFileLueLeReleveEstQuandMemeAccepte(): void
+    {
+        $this->assertNull(AgentReportRequestParser::parse(self::token(), self::json(self::envelope()), null)->snapshot->queueId, 'Champ absent.');
+        $this->assertNull(AgentReportRequestParser::parse(self::token(), self::json(self::envelope(['queueId' => null])), null)->snapshot->queueId, 'Champ null.');
+    }
+
     public function testUnReleveIntermediaire(): void
     {
         $command = AgentReportRequestParser::parse(self::token(), self::json(self::envelope(['final' => false, 'endReason' => null, 'observedAt' => '2026-11-07T20:30:21.123Z'])), 'identity');
@@ -138,6 +151,7 @@ class AgentReportRequestParserTest extends TestCase
         yield 'relevé final sans raison' => [['endReason' => null]];
         yield 'relevé final avec une raison inconnue' => [['endReason' => 'rage_quit']];
         yield 'relevé intermédiaire avec une raison' => [['final' => false, 'endReason' => 'game_end']];
+        yield 'file en texte' => [['queueId' => '420']];
         yield 'liveClient absent' => [['liveClient' => null]];
         yield 'liveClient incomplet' => [['liveClient' => ['gameData' => []]]];
     }

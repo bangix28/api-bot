@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Domain\LanChallenge\LanQueue;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -40,6 +41,11 @@ class LanEvent
     #[ORM\JoinTable(name: 'lan_event_participant')]
     #[Assert\Count(min: 1, minMessage: 'Une LAN doit avoir au moins un participant.')]
     private Collection $participants;
+
+    /** @var int[] identifiants de file Riot (Domain\LanChallenge\LanQueue) où les défis comptent */
+    #[ORM\Column(type: Types::JSON)]
+    #[Assert\Count(min: 1, minMessage: 'Une LAN doit accepter au moins une file.')]
+    private array $acceptedQueueIds = [LanQueue::ARAM_MAYHEM->value];
 
     public function __construct()
     {
@@ -105,6 +111,21 @@ class LanEvent
     public function removeParticipant(RiotAccount $participant): static
     {
         $this->participants->removeElement($participant);
+
+        return $this;
+    }
+
+    /** @return int[] */
+    public function getAcceptedQueueIds(): array
+    {
+        return $this->acceptedQueueIds;
+    }
+
+    /** @param int[] $acceptedQueueIds */
+    public function setAcceptedQueueIds(array $acceptedQueueIds): static
+    {
+        // Le formulaire peut renvoyer des chaînes : on stocke des entiers, sans doublon.
+        $this->acceptedQueueIds = array_values(array_unique(array_map('intval', $acceptedQueueIds)));
 
         return $this;
     }

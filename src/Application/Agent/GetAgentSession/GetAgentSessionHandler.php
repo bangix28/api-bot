@@ -41,7 +41,6 @@ final readonly class GetAgentSessionHandler
             array_map(static fn(TrackedRiotAccount $account) => $account->riotId, $this->accounts->findOwnedBy($token->player->userId)),
             $lan,
             $now >= $lan->startsAt,
-            AgentSettings::ACCEPTED_GAME_MODES,
             AgentSettings::REPORT_INTERVAL_SECONDS,
         );
     }

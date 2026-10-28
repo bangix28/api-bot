@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\LanGame;
 use App\Domain\LanGame\LanGameRepositoryInterface;
 use App\Domain\LanGame\LanGameStatus;
@@ -23,7 +24,7 @@ final readonly class DoctrineLanGameRepository implements LanGameRepositoryInter
             $row = new LanGameRecord(
                 $game->gameId,
                 $this->entityManager->getReference(LanEvent::class, $game->lanId),
-                $game->gameMode,
+                $game->queue,
                 $game->playersFingerprint,
                 $game->estimatedStartAt,
             );
@@ -34,10 +35,10 @@ final readonly class DoctrineLanGameRepository implements LanGameRepositoryInter
         $this->entityManager->flush();
     }
 
-    public function findCandidates(int $lanId, string $gameMode, string $playersFingerprint): array
+    public function findCandidates(int $lanId, LanQueue $queue, string $playersFingerprint): array
     {
         $rows = $this->entityManager->getRepository(LanGameRecord::class)->findBy(
-            ['lanEvent' => $lanId, 'gameMode' => $gameMode, 'playersFingerprint' => $playersFingerprint],
+            ['lanEvent' => $lanId, 'queue' => $queue, 'playersFingerprint' => $playersFingerprint],
             ['estimatedStartAt' => 'DESC'],
         );
 
@@ -64,7 +65,7 @@ final readonly class DoctrineLanGameRepository implements LanGameRepositoryInter
         return LanGame::restore(
             $row->getGameId(),
             $row->getLanEvent()->getId(),
-            $row->getGameMode(),
+            $row->getQueue(),
             $row->getPlayersFingerprint(),
             $row->getEstimatedStartAt(),
             $row->getStatus(),

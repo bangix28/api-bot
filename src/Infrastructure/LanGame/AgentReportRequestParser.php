@@ -43,7 +43,11 @@ final class AgentReportRequestParser
             strtolower($envelope['sessionId']),
             $envelope['sequence'],
             $final,
-            LiveClientSnapshotParser::parse(self::field($envelope, 'liveClient', is_array(...), 'un objet')),
+            LiveClientSnapshotParser::parse(
+                self::field($envelope, 'liveClient', is_array(...), 'un objet'),
+                // Absent ou null : l'agent n'a pas pu lire la file dans le client LoL.
+                self::optionalField($envelope, 'queueId', is_int(...), 'un entier ou null'),
+            ),
             $json,
         );
     }
@@ -119,6 +123,17 @@ final class AgentReportRequestParser
         }
 
         return $value;
+    }
+
+    /**
+     * @param array<mixed> $envelope
+     * @param callable(mixed): bool $isValid
+     */
+    private static function optionalField(array $envelope, string $name, callable $isValid, string $expected): mixed
+    {
+        $value = $envelope[$name] ?? null;
+
+        return $value === null ? null : self::field($envelope, $name, $isValid, $expected);
     }
 
     private static function isDateTime(mixed $value): bool

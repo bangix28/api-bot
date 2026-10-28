@@ -2,6 +2,7 @@
 
 namespace App\Tests\Infrastructure\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
 use App\Domain\LanGame\Event\Ace;
 use App\Domain\LanGame\Event\ChampionKill;
 use App\Domain\LanGame\Event\FirstBlood;
@@ -57,6 +58,7 @@ class LiveClientSnapshotParserTest extends TestCase
     {
         $report = GameStatsCalculator::report(
             'game-1',
+            LanQueue::ARAM_MAYHEM,
             LiveClientSnapshotParser::parse(self::realGame()),
             ['joueur1#euw' => 'puuid-1', 'joueur2#euw' => 'puuid-2', 'joueur3#euw' => 'puuid-3', 'joueur6#euw' => 'puuid-6', 'joueur8#euw' => 'puuid-8'],
         );

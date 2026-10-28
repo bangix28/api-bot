@@ -20,8 +20,11 @@ use App\Domain\LanGame\ObservedPlayer;
  */
 final class LiveClientSnapshotParser
 {
-    /** @param array<string, mixed> $liveClient */
-    public static function parse(array $liveClient): GameSnapshot
+    /**
+     * @param array<string, mixed> $liveClient
+     * @param ?int $queueId file lue par l'agent dans le client LoL, hors de la Live Client Data API
+     */
+    public static function parse(array $liveClient, ?int $queueId = null): GameSnapshot
     {
         $gameData = self::section($liveClient, 'gameData');
         $activePlayer = self::section($liveClient, 'activePlayer');
@@ -40,6 +43,7 @@ final class LiveClientSnapshotParser
                 self::string($activePlayer, 'riotId'),
                 array_map(self::player(...), $allPlayers),
                 array_values(array_filter(array_map(self::event(...), $events))),
+                $queueId,
             );
         } catch (\InvalidArgumentException $exception) {
             throw new InvalidReportException($exception->getMessage(), previous: $exception);

@@ -2,10 +2,12 @@
 
 namespace App\Domain\LanGame;
 
+use App\Domain\LanChallenge\LanQueue;
+
 /**
  * Une partie jouée pendant une LAN, reconstituée à partir des relevés des
  * agents (ADR-0005, décision 2). La Live Client Data API ne donnant pas
- * d'identifiant de partie, elle est reconnue par son mode, ses 10 joueurs et
+ * d'identifiant de partie, elle est reconnue par sa file, ses 10 joueurs et
  * son heure de début estimée (réception − temps de jeu).
  *
  * Immuable : chaque étape renvoie une nouvelle partie.
@@ -22,7 +24,7 @@ final readonly class LanGame
     private function __construct(
         public string $gameId,
         public int $lanId,
-        public string $gameMode,
+        public LanQueue $queue,
         public string $playersFingerprint,
         public \DateTimeImmutable $estimatedStartAt,
         public LanGameStatus $status,
@@ -32,15 +34,15 @@ final readonly class LanGame
     ) {
     }
 
-    /** Premier relevé d'une partie inconnue. */
-    public static function open(string $gameId, int $lanId, GameSnapshot $snapshot, \DateTimeImmutable $receivedAt): self
+    /** Premier relevé d'une partie inconnue, dont la file est connue et acceptée par la LAN. */
+    public static function open(string $gameId, int $lanId, LanQueue $queue, GameSnapshot $snapshot, \DateTimeImmutable $receivedAt): self
     {
         $status = $snapshot->gameTimeSeconds <= self::LATE_START_SECONDS
             ? LanGameStatus::IN_PROGRESS
             : LanGameStatus::JOINED_TOO_LATE;
 
         return new self(
-            $gameId, $lanId, $snapshot->gameMode, $snapshot->playersFingerprint(),
+            $gameId, $lanId, $queue, $snapshot->playersFingerprint(),
             self::estimatedStart($snapshot, $receivedAt), $status, $receivedAt, null,
         );
     }
@@ -48,14 +50,14 @@ final readonly class LanGame
     public static function restore(
         string $gameId,
         int $lanId,
-        string $gameMode,
+        LanQueue $queue,
         string $playersFingerprint,
         \DateTimeImmutable $estimatedStartAt,
         LanGameStatus $status,
         \DateTimeImmutable $lastReportAt,
         ?string $settledScores,
     ): self {
-        return new self($gameId, $lanId, $gameMode, $playersFingerprint, $estimatedStartAt, $status, $lastReportAt, $settledScores);
+        return new self($gameId, $lanId, $queue, $playersFingerprint, $estimatedStartAt, $status, $lastReportAt, $settledScores);
     }
 
     /** Identifiant stable, fixé au premier relevé : c'est sur lui que les cartes sont verrouillées. */
@@ -74,12 +76,12 @@ final readonly class LanGame
         return $receivedAt->modify(sprintf('-%d seconds', (int) $snapshot->gameTimeSeconds));
     }
 
-    /** Ce relevé décrit-il cette partie ? Même mode, mêmes joueurs, même début à une minute près. */
+    /** Ce relevé décrit-il cette partie ? Même file, mêmes joueurs, même début à une minute près. */
     public function matches(GameSnapshot $snapshot, \DateTimeImmutable $receivedAt): bool
     {
         $startGap = abs(self::estimatedStart($snapshot, $receivedAt)->getTimestamp() - $this->estimatedStartAt->getTimestamp());
 
-        return $snapshot->gameMode === $this->gameMode
+        return $snapshot->queue() === $this->queue
             && $snapshot->playersFingerprint() === $this->playersFingerprint
             && $startGap <= self::START_TOLERANCE_SECONDS;
     }
@@ -92,7 +94,7 @@ final readonly class LanGame
     public function withReportAt(\DateTimeImmutable $receivedAt): self
     {
         return new self(
-            $this->gameId, $this->lanId, $this->gameMode, $this->playersFingerprint,
+            $this->gameId, $this->lanId, $this->queue, $this->playersFingerprint,
             $this->estimatedStartAt, $this->status, $receivedAt, $this->settledScores,
         );
     }
@@ -104,7 +106,7 @@ final readonly class LanGame
         }
 
         return new self(
-            $this->gameId, $this->lanId, $this->gameMode, $this->playersFingerprint,
+            $this->gameId, $this->lanId, $this->queue, $this->playersFingerprint,
             $this->estimatedStartAt, LanGameStatus::SETTLED, $this->lastReportAt, self::scoresOf($finalSnapshot),
         );
     }
@@ -131,7 +133,7 @@ final readonly class LanGame
         }
 
         return new self(
-            $this->gameId, $this->lanId, $this->gameMode, $this->playersFingerprint,
+            $this->gameId, $this->lanId, $this->queue, $this->playersFingerprint,
             $this->estimatedStartAt, LanGameStatus::ABANDONED, $this->lastReportAt, null,
         );
     }

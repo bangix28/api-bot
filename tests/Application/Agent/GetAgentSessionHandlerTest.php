@@ -6,6 +6,7 @@ use App\Domain\Agent\AgentSettings;
 use App\Domain\Agent\AgentToken;
 use App\Domain\Agent\AgentTokenExpiredException;
 use App\Domain\LanChallenge\LanNotFoundException;
+use App\Domain\LanChallenge\LanQueue;
 use PHPUnit\Framework\TestCase;
 
 class GetAgentSessionHandlerTest extends TestCase
@@ -21,7 +22,7 @@ class GetAgentSessionHandlerTest extends TestCase
 
         $this->assertTrue($session->lanInProgress);
         $this->assertSame(['Alpha#EUW'], $session->riotIds);
-        $this->assertSame(['KIWI'], $session->acceptedGameModes);
+        $this->assertSame([LanQueue::ARAM_MAYHEM], $session->lan->acceptedQueues);
         $this->assertSame(AgentSettings::REPORT_INTERVAL_SECONDS, $session->reportIntervalSeconds);
     }
 
