@@ -21,12 +21,16 @@ namespace App\Domain\LanChallenge;
  */
 enum Challenge: string
 {
+    /** Tout pour toi : laisser les kills aux autres, quelle que soit la file. */
+    private const int ALL_FOR_YOU_MAX_KILLS = 3;
+
     // Argent
     case DOUBLE_KILL = 'double_kill';
     case PRUDENT = 'prudent';
     case TEAM_SPIRIT = 'team_spirit';
     case HUNTER = 'hunter';
     case WINGMAN = 'wingman';
+    case WHERE_IS_MAMA = 'where_is_mama';
 
     // Or
     case TRIPLE_KILL = 'triple_kill';
@@ -35,6 +39,8 @@ enum Challenge: string
     case CLEANER = 'cleaner';
     case FIRST_BLOOD = 'first_blood';
     case UNTOUCHABLE = 'untouchable';
+    case ALL_FOR_YOU = 'all_for_you';
+    case AVENGER = 'avenger';
 
     // Prismatique
     case QUADRA_KILL = 'quadra_kill';
@@ -58,12 +64,15 @@ enum Challenge: string
             self::TEAM_SPIRIT => 'Esprit d\'équipe',
             self::HUNTER => 'Chasseur',
             self::WINGMAN => 'Bras droit',
+            self::WHERE_IS_MAMA => 'Où est maman ?',
             self::TRIPLE_KILL => 'Triplé',
             self::EXECUTIONER => 'Exécuteur',
             self::DUELIST => 'Duelliste',
             self::CLEANER => 'Nettoyeur',
             self::FIRST_BLOOD => 'Premier sang',
             self::UNTOUCHABLE => 'Intouchable',
+            self::ALL_FOR_YOU => 'Tout pour toi',
+            self::AVENGER => 'Ange vengeur',
             self::QUADRA_KILL => 'Quadra',
             self::PENTA_KILL => 'Penta',
             self::IMMORTAL => 'Immortel',
@@ -83,12 +92,18 @@ enum Challenge: string
             self::TEAM_SPIRIT => $this->describe('Participe à au moins %d %% des kills de ton équipe.', ' %'),
             self::HUNTER => $this->describe('Réalise au moins %d kills.'),
             self::WINGMAN => $this->describe('Réalise au moins %d assistances.'),
+            self::WHERE_IS_MAMA => $this->describe('Fais une assistance sur au moins %d kills d\'un même coéquipier.'),
             self::TRIPLE_KILL => 'Réalise au moins un triplé.',
             self::EXECUTIONER => 'Termine avec un KDA d\'au moins 5.',
             self::DUELIST => 'Réalise au moins 2 kills sans aucune aide.',
             self::CLEANER => 'Porte le dernier coup d\'un Ace.',
             self::FIRST_BLOOD => 'Réalise le premier sang de la partie.',
             self::UNTOUCHABLE => $this->describe('Gagne avec %d morts au maximum.'),
+            self::ALL_FOR_YOU => $this->describe(
+                sprintf('Réalise au moins %%d assistances avec %d kills au maximum.', self::ALL_FOR_YOU_MAX_KILLS),
+                ' assistances',
+            ),
+            self::AVENGER => $this->describe('Venge un coéquipier au moins %d fois : tue son tueur dans les 10 secondes.'),
             self::QUADRA_KILL => 'Réalise au moins un quadra.',
             self::PENTA_KILL => 'Réalise un penta.',
             self::IMMORTAL => 'Gagne sans mourir.',
@@ -103,8 +118,9 @@ enum Challenge: string
     public function rarity(): Rarity
     {
         return match ($this) {
-            self::DOUBLE_KILL, self::PRUDENT, self::TEAM_SPIRIT, self::HUNTER, self::WINGMAN => Rarity::SILVER,
-            self::TRIPLE_KILL, self::EXECUTIONER, self::DUELIST, self::CLEANER, self::FIRST_BLOOD, self::UNTOUCHABLE => Rarity::GOLD,
+            self::DOUBLE_KILL, self::PRUDENT, self::TEAM_SPIRIT, self::HUNTER, self::WINGMAN, self::WHERE_IS_MAMA => Rarity::SILVER,
+            self::TRIPLE_KILL, self::EXECUTIONER, self::DUELIST, self::CLEANER, self::FIRST_BLOOD, self::UNTOUCHABLE,
+            self::ALL_FOR_YOU, self::AVENGER => Rarity::GOLD,
             self::QUADRA_KILL, self::PENTA_KILL, self::IMMORTAL, self::BLITZ => Rarity::PRISMATIC,
             self::BAD_LOSER, self::MARTYR, self::PICKPOCKET, self::CURSE => Rarity::SABOTEUR,
         };
@@ -113,12 +129,19 @@ enum Challenge: string
     public function points(): int
     {
         return match ($this) {
-            // Le penta est la seule carte au-dessus du barème de sa rareté :
-            // à 60 points, elle vaudrait autant qu'un Blitz bien plus accessible.
-            self::PENTA_KILL => 100,
+            // L'Immortel est la seule carte au-dessus du barème de sa rareté.
+            self::IMMORTAL => 100,
             // Saboter un joueur ne rapporte rien : l'effet est la récompense.
             self::PICKPOCKET, self::CURSE => 0,
             default => $this->rarity()->points(),
+        };
+    }
+
+    public function theme(): ?Theme
+    {
+        return match ($this) {
+            self::WHERE_IS_MAMA, self::ALL_FOR_YOU, self::AVENGER => Theme::BOND,
+            default => null,
         };
     }
 
@@ -142,12 +165,15 @@ enum Challenge: string
             self::TEAM_SPIRIT => Verdict::of($stats->killParticipation() >= $this->threshold($game->queue) / 100),
             self::HUNTER => Verdict::of($stats->kills >= $this->threshold($game->queue)),
             self::WINGMAN => Verdict::of($stats->assists >= $this->threshold($game->queue)),
+            self::WHERE_IS_MAMA => Verdict::of($stats->mostAssistsOnOneAlly >= $this->threshold($game->queue)),
             self::TRIPLE_KILL => Verdict::of($stats->largestMultiKill >= 3),
             self::EXECUTIONER => Verdict::of($stats->kda() >= 5.0),
             self::DUELIST => Verdict::of($stats->soloKills >= 2),
             self::CLEANER => Verdict::of($stats->aces >= 1),
             self::FIRST_BLOOD => $stats->firstBlood === null ? Verdict::UNKNOWN : Verdict::of($stats->firstBlood),
             self::UNTOUCHABLE => self::ifWon($stats, $stats->deaths <= $this->threshold($game->queue)),
+            self::ALL_FOR_YOU => Verdict::of($stats->assists >= $this->threshold($game->queue) && $stats->kills <= self::ALL_FOR_YOU_MAX_KILLS),
+            self::AVENGER => Verdict::of($stats->avengedAllies >= $this->threshold($game->queue)),
             self::QUADRA_KILL => Verdict::of($stats->largestMultiKill >= 4),
             self::PENTA_KILL => Verdict::of($stats->largestMultiKill >= 5),
             self::IMMORTAL => self::ifWon($stats, $stats->deaths === 0),
@@ -180,7 +206,11 @@ enum Challenge: string
             self::TEAM_SPIRIT => [60, 55],
             self::HUNTER => [10, 7],
             self::WINGMAN => [20, 12],
-            self::UNTOUCHABLE => [3, 2],
+            // En ARAM du chaos, un joueur meurt environ 8 fois par partie.
+            self::UNTOUCHABLE => [5, 2],
+            self::WHERE_IS_MAMA => [12, 6],
+            self::ALL_FOR_YOU => [20, 12],
+            self::AVENGER => [3, 2],
             // Sur la Faille, une victoire avant 15 minutes est quasi impossible (abandon à 15 min).
             self::BLITZ => [15, 22],
             default => null,

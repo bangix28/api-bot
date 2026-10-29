@@ -85,6 +85,9 @@ class LiveClientSnapshotParserTest extends TestCase
         $this->assertSame(37, $feeder->teamKills);
         $this->assertSame(3, $feeder->soloKills);
         $this->assertSame(1, $report->statsFor('puuid-8')->soloKills);
+
+        $this->assertSame(18, $report->statsFor('puuid-3')->mostAssistsOnOneAlly);
+        $this->assertSame(4, $report->statsFor('puuid-2')->avengedAllies);
     }
 
     public function testLeResultatDeFinDePartie(): void
@@ -101,7 +104,7 @@ class LiveClientSnapshotParserTest extends TestCase
 
         $kill = LiveClientSnapshotParser::parse($liveClient)->eventsOf(ChampionKill::class)[0];
 
-        $this->assertSame(['Turret_T1_C_05_A', 'Joueur1', []], [$kill->killerName, $kill->victimName, $kill->assisterNames]);
+        $this->assertSame(['Turret_T1_C_05_A', 'Joueur1', [], 0.0], [$kill->killerName, $kill->victimName, $kill->assisterNames, $kill->time]);
     }
 
     /** @return iterable<string, array{callable(array<string, mixed>): array<string, mixed>}> */

@@ -22,6 +22,8 @@ final class PlayerGameStatsBuilder
     private ?bool $win = null;
     private ?bool $firstBlood = null;
     private ?bool $mostDeathsInGame = false;
+    private int $mostAssistsOnOneAlly = 0;
+    private int $avengedAllies = 0;
 
     public static function aPlayer(string $puuid = 'puuid-1'): self
     {
@@ -41,12 +43,15 @@ final class PlayerGameStatsBuilder
     public function withWin(?bool $win): self { $this->win = $win; return $this; }
     public function withFirstBlood(?bool $firstBlood): self { $this->firstBlood = $firstBlood; return $this; }
     public function withMostDeathsInGame(?bool $mostDeathsInGame): self { $this->mostDeathsInGame = $mostDeathsInGame; return $this; }
+    public function withMostAssistsOnOneAlly(int $assists): self { $this->mostAssistsOnOneAlly = $assists; return $this; }
+    public function withAvengedAllies(int $avengedAllies): self { $this->avengedAllies = $avengedAllies; return $this; }
 
     public function build(): PlayerGameStats
     {
         return new PlayerGameStats(
             $this->puuid, $this->kills, $this->deaths, $this->assists, $this->largestMultiKill,
             $this->soloKills, $this->teamKills, $this->aces, $this->win, $this->firstBlood, $this->mostDeathsInGame,
+            $this->mostAssistsOnOneAlly, $this->avengedAllies,
         );
     }
 }

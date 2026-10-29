@@ -97,6 +97,7 @@ Même forme partout (offre, carte active, résultats, fil) :
   "label": "Malédiction",
   "description": "Le prochain défi réussi du joueur de ton choix ne lui rapporte que la moitié des points. Il ne le saura qu'au règlement.",
   "rarity": "saboteur",
+  "theme": null,
   "points": 0,
   "secret": true,
   "needsTarget": true
@@ -106,6 +107,7 @@ Même forme partout (offre, carte active, résultats, fil) :
 | Champ | Usage |
 |---|---|
 | `rarity` | `silver` \| `gold` \| `prismatic` \| `saboteur` — à styliser comme les augments |
+| `theme` | `bond` (« Lien » : jouer pour ses coéquipiers, à la Yuumi) ou `null`. Indépendant de la rareté : une carte Lien reste argent, or… À marquer d'un badge, en plus du style de rareté (cf. [cartes-lien.md](cartes-lien.md)) |
 | `secret` | Carte saboteur : ne jamais l'afficher aux autres joueurs |
 | `needsTarget` | Choisir cette carte demande une cible (`target`) |
 | `code` | Stable : c'est lui qu'il faut utiliser pour une icône ou une animation |
