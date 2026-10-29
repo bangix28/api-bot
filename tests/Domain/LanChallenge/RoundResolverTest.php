@@ -27,6 +27,11 @@ class RoundResolverTest extends TestCase
             ->lockFor($gameId);
     }
 
+    private static function engagedWithRerolls(string $puuid, Challenge $card, int $rerollsLeft): PlayerRun
+    {
+        return PlayerRun::restore(1, $puuid, $rerollsLeft, 0, null, $card, 'game-1', []);
+    }
+
     private static function report(PlayerGameStats ...$players): GameReport
     {
         return new GameReport('game-1', LanQueue::ARAM_MAYHEM, 20 * 60, $players);
@@ -96,7 +101,7 @@ class RoundResolverTest extends TestCase
         $this->assertSame(0, $settled['b']->score);
     }
 
-    public function testUnVerdictInconnuNeRapporteRienMaisRendUneRelance(): void
+    public function testUnVerdictInconnuNeRapporteRien(): void
     {
         $settled = self::resolve(
             self::report(PlayerGameStatsBuilder::aPlayer('a')->withWin(null)->build()),
@@ -105,7 +110,34 @@ class RoundResolverTest extends TestCase
 
         $this->assertSame(Verdict::UNKNOWN, $settled['a']->results[0]->verdict);
         $this->assertSame(0, $settled['a']->score);
-        $this->assertSame(4, $settled['a']->rerollsLeft);
+    }
+
+    public function testChaqueMancheRechargeLesRelancesJusquaTrois(): void
+    {
+        $settled = self::resolve(
+            self::report(
+                PlayerGameStatsBuilder::aPlayer('a')->withLargestMultiKill(2)->build(),
+                PlayerGameStatsBuilder::aPlayer('b')->withLargestMultiKill(1)->build(),
+                PlayerGameStatsBuilder::aPlayer('c')->withWin(null)->build(),
+            ),
+            self::engagedWithRerolls('a', Challenge::DOUBLE_KILL, 0),
+            self::engagedWithRerolls('b', Challenge::DOUBLE_KILL, 2),
+            self::engagedWithRerolls('c', Challenge::IMMORTAL, 1),
+        );
+
+        $this->assertSame(3, $settled['a']->rerollsLeft, 'Réussite : recharge complète.');
+        $this->assertSame(3, $settled['b']->rerollsLeft, 'Échec : recharge plafonnée à 3.');
+        $this->assertSame(3, $settled['c']->rerollsLeft, 'Verdict inconnu : recharge aussi.');
+    }
+
+    public function testUnStockAuDessusDuPlafondNEstPasRogne(): void
+    {
+        $settled = self::resolve(
+            self::report(PlayerGameStatsBuilder::aPlayer('a')->build()),
+            self::engagedWithRerolls('a', Challenge::DOUBLE_KILL, 5),
+        );
+
+        $this->assertSame(5, $settled['a']->rerollsLeft);
     }
 
     public function testUnJoueurAbsentDuReleveEstInconnuPasEchoue(): void
@@ -113,21 +145,6 @@ class RoundResolverTest extends TestCase
         $settled = self::resolve(self::report(), self::engaged('a', Challenge::DOUBLE_KILL));
 
         $this->assertSame(Verdict::UNKNOWN, $settled['a']->results[0]->verdict);
-    }
-
-    public function testEchouerUnPrismatiqueRendUneRelance(): void
-    {
-        $settled = self::resolve(
-            self::report(
-                PlayerGameStatsBuilder::aPlayer('a')->withLargestMultiKill(3)->build(),
-                PlayerGameStatsBuilder::aPlayer('b')->withLargestMultiKill(1)->build(),
-            ),
-            self::engaged('a', Challenge::QUADRA_KILL),
-            self::engaged('b', Challenge::DOUBLE_KILL),
-        );
-
-        $this->assertSame(4, $settled['a']->rerollsLeft);
-        $this->assertSame(3, $settled['b']->rerollsLeft, 'Échouer une carte argent ne rend rien.');
     }
 
     public function testLesParcoursSansCarteSurLaPartieNeSontPasTouches(): void

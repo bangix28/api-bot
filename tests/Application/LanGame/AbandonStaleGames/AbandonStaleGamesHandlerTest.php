@@ -2,6 +2,7 @@
 
 namespace App\Tests\Application\LanGame\AbandonStaleGames;
 
+use App\Domain\LanChallenge\PlayerRun;
 use App\Domain\LanChallenge\Verdict;
 use App\Domain\LanGame\LanGameStatus;
 use App\Tests\Application\LanChallenge\LanChallengeFixture;
@@ -22,7 +23,6 @@ class AbandonStaleGamesHandlerTest extends TestCase
 
     public function testUnePartieSansReleveDepuisUneHeureEstRegleeEnVerdictInconnu(): void
     {
-        $rerollsBefore = $this->fixture->run('puuid-a')->rerollsLeft;
         $this->fixture->advance('+3601 seconds');
 
         $abandoned = $this->fixture->abandonStaleGames()->handle();
@@ -32,7 +32,7 @@ class AbandonStaleGamesHandlerTest extends TestCase
         $this->assertSame(LanGameStatus::ABANDONED, $this->fixture->games->all()[0]->status);
         $run = $this->fixture->run('puuid-a');
         $this->assertSame(Verdict::UNKNOWN, $run->results[0]->verdict);
-        $this->assertSame($rerollsBefore + 1, $run->rerollsLeft, 'Une relance rendue en dédommagement.');
+        $this->assertSame(PlayerRun::ROUND_REROLLS_CAP, $run->rerollsLeft, 'La manche close recharge les relances.');
         $this->assertNull($run->lockedGameId, 'La carte n\'est plus bloquée.');
     }
 

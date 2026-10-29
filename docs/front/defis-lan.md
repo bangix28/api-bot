@@ -15,16 +15,16 @@ choix, relances, sabotages).
 
 - **Une manche = un match.** Avant chaque partie, le joueur reçoit une **offre de
   3 cartes défis** et en **choisit une**. Le choix est définitif.
-- **Relances** : 3 par joueur et par LAN ; une relance remplace **une** carte de
-  l'offre par une carte absente de l'offre.
+- **Relances** : 3 au départ, et **rechargées à 3** à la fin de chaque manche
+  (un stock déjà au-dessus, grâce à un Pickpocket, est conservé). Une relance
+  remplace **une** carte de l'offre par une carte absente de l'offre.
 - Au **lancement** de la partie, la carte est **verrouillée** sur ce match
   (`cardLocked: true`). Un joueur qui lance une partie sans avoir choisi la joue
   sans carte et garde son offre pour la suivante.
 - À la **fin** de la partie, la carte est jugée sur les statistiques du match :
   - `success` : points de la carte ;
-  - `failure` : rien — mais échouer une carte **prismatique** rend une relance ;
-  - `unknown` : la donnée manquait (agent absent ou coupé) — rien, mais une
-    relance rendue.
+  - `failure` : rien ;
+  - `unknown` : la donnée manquait (agent absent ou coupé) — rien.
 - **Bonus de manche** : quand au moins deux joueurs ont engagé une carte sur le
   même match et que **tous** la réussissent, chacun gagne **+50 %**.
 - Puis une nouvelle offre arrive pour le match suivant.
