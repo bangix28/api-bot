@@ -91,18 +91,22 @@ class GetStandingsHandlerTest extends TestCase
 
         $this->assertFalse($bravo->joined);
         $this->assertSame(0, $bravo->score);
-        $this->assertNull($bravo->activeCard);
+        $this->assertFalse($bravo->cardChosen);
     }
 
-    public function testLaCarteEnCoursEtSonVerrouSontVisibles(): void
+    public function testOnSaitQuUneCarteEstChoisieJamaisLaquelle(): void
     {
-        $this->storeRun('puuid-a', 0, [], Challenge::PENTA_KILL, 'game-9');
+        $this->storeRun('puuid-a', 0, [], Challenge::BAD_LOSER, 'game-9');
         $this->storeRun('puuid-b', 0, [], Challenge::PRUDENT);
+        $this->storeRun('puuid-c', 0, []);
 
         $entries = $this->standings();
         $byRiotId = array_column(array_map(static fn(StandingEntry $entry) => [$entry->riotId, $entry], $entries), 1, 0);
 
-        $this->assertSame(Challenge::PENTA_KILL, $byRiotId['Alpha#EUW']->activeCard);
+        // Une carte saboteur et une carte ordinaire se présentent pareil.
+        $this->assertTrue($byRiotId['Alpha#EUW']->cardChosen);
+        $this->assertTrue($byRiotId['Bravo#EUW']->cardChosen);
+        $this->assertFalse($byRiotId['Charlie#EUW']->cardChosen, 'Offre en attente de choix.');
         $this->assertTrue($byRiotId['Alpha#EUW']->cardLocked);
         $this->assertFalse($byRiotId['Bravo#EUW']->cardLocked, 'Choisie mais pas encore en jeu.');
         $this->assertSame(2, $byRiotId['Bravo#EUW']->rerollsLeft);

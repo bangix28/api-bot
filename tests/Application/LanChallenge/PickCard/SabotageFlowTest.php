@@ -127,18 +127,16 @@ class SabotageFlowTest extends TestCase
         $standings = (new GetStandingsHandler($this->fixture->lans, $this->fixture->runs))->handle(LanChallengeFixture::LAN);
         $bravo = array_values(array_filter($standings->entries, static fn(StandingEntry $entry) => $entry->riotId === 'Bravo#EUW'))[0];
 
-        $this->assertFalse($bravo->secretCard);
         $this->assertSame(2, $bravo->rerollsLeft);
     }
 
-    public function testUneCarteSaboteurChoisieEstSecreteDansLeClassement(): void
+    public function testUneCarteSaboteurChoisieSeVoitCommeNImporteQuelleCarte(): void
     {
         $this->pick(2);
 
         $standings = (new GetStandingsHandler($this->fixture->lans, $this->fixture->runs))->handle(LanChallengeFixture::LAN);
         $alpha = array_values(array_filter($standings->entries, static fn(StandingEntry $entry) => $entry->riotId === 'Alpha#EUW'))[0];
 
-        $this->assertNull($alpha->activeCard);
-        $this->assertTrue($alpha->secretCard);
+        $this->assertTrue($alpha->cardChosen);
     }
 }
