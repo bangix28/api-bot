@@ -2,13 +2,18 @@
 
 namespace App\Controller;
 
+use App\Application\Player\EndSession\EndSessionHandler;
 use App\Application\Player\GetProfile\GetProfileHandler;
 use App\Application\Player\GetProfile\PlayerProfileView;
+use App\Application\Player\IssuedSession;
 use App\Application\Player\LinkRiotAccount\LinkRiotAccountCommand;
 use App\Application\Player\LinkRiotAccount\LinkRiotAccountHandler;
 use App\Application\Player\LoginWithDiscord\LoginWithDiscordCommand;
 use App\Application\Player\LoginWithDiscord\LoginWithDiscordHandler;
+use App\Application\Player\OpenSession\OpenSessionHandler;
+use App\Application\Player\RefreshSession\RefreshSessionHandler;
 use App\Domain\Player\DiscordLoginFailedException;
+use App\Domain\Player\InvalidRefreshTokenException;
 use App\Domain\Player\InvalidRiotIdException;
 use App\Domain\Player\RiotAccountAlreadyLinkedException;
 use App\Domain\Player\RiotAccountNotTrackedException;
@@ -23,13 +28,14 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
- * Joueurs connectés par Discord : connexion, profil, liaison des comptes Riot.
+ * Joueurs connectés par Discord : connexion, rafraîchissement de session,
+ * déconnexion, profil, liaison des comptes Riot.
  * Contrat pour le front : docs/front/connexion-discord.md.
  */
 class PlayerController extends AbstractController
 {
     #[Route('/api/auth/discord', name: 'api_player_login', methods: ['POST'])]
-    public function login(Request $request, LoginWithDiscordHandler $handler, JWTTokenManagerInterface $tokenManager, GetProfileHandler $profile): JsonResponse
+    public function login(Request $request, LoginWithDiscordHandler $handler, OpenSessionHandler $openSession, JWTTokenManagerInterface $tokenManager, GetProfileHandler $profile): JsonResponse
     {
         $code = $request->getPayload()->get('code');
         if (!is_string($code) || $code === '') {
@@ -42,12 +48,40 @@ class PlayerController extends AbstractController
             return self::error(Response::HTTP_UNAUTHORIZED, 'discord_login_failed', $exception->getMessage());
         }
 
-        $token = $tokenManager->createFromPayload(new PlayerUser($identity), [PlayerUserProvider::USERNAME_CLAIM => $identity->username]);
-
-        return new JsonResponse(['token' => $token, 'player' => self::profile($profile->handle($identity))]);
+        return self::session($openSession->handle($identity), $tokenManager, $profile);
     }
 
-    #[Route('/api/me', name: 'api_player_profile', methods: ['GET'])]
+    #[Route('/api/auth/refresh', name: 'api_player_refresh', methods: ['POST'])]
+    public function refresh(Request $request, RefreshSessionHandler $handler, JWTTokenManagerInterface $tokenManager, GetProfileHandler $profile): JsonResponse
+    {
+        $refreshToken = $request->getPayload()->get('refreshToken');
+        if (!is_string($refreshToken) || $refreshToken === '') {
+            return self::error(Response::HTTP_BAD_REQUEST, 'missing_refresh_token', 'Le jeton de rafraîchissement est obligatoire.');
+        }
+
+        try {
+            $issued = $handler->handle($refreshToken);
+        } catch (InvalidRefreshTokenException $exception) {
+            return self::error(Response::HTTP_UNAUTHORIZED, 'invalid_refresh_token', $exception->getMessage());
+        }
+
+        return self::session($issued, $tokenManager, $profile);
+    }
+
+    #[Route('/api/auth/logout', name: 'api_player_logout', methods: ['POST'])]
+    public function logout(Request $request, EndSessionHandler $handler): Response
+    {
+        $refreshToken = $request->getPayload()->get('refreshToken');
+        if (!is_string($refreshToken) || $refreshToken === '') {
+            return self::error(Response::HTTP_BAD_REQUEST, 'missing_refresh_token', 'Le jeton de rafraîchissement est obligatoire.');
+        }
+
+        $handler->handle($refreshToken);
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/api/me',name: 'api_player_profile', methods: ['GET'])]
     public function me(#[CurrentUser] PlayerUser $player, GetProfileHandler $profile): JsonResponse
     {
         return new JsonResponse(self::profile($profile->handle($player->discord)));
@@ -72,6 +106,18 @@ class PlayerController extends AbstractController
         }
 
         return new JsonResponse(self::profile($profile->handle($player->discord)));
+    }
+
+    private static function session(IssuedSession $issued, JWTTokenManagerInterface $tokenManager, GetProfileHandler $profile): JsonResponse
+    {
+        $player = $issued->session->player;
+        $token = $tokenManager->createFromPayload(new PlayerUser($player), [PlayerUserProvider::USERNAME_CLAIM => $player->username]);
+
+        return new JsonResponse([
+            'token' => $token,
+            'refreshToken' => $issued->plainRefreshToken,
+            'player' => self::profile($profile->handle($player)),
+        ]);
     }
 
     /** @return array<string, mixed> */

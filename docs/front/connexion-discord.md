@@ -15,7 +15,9 @@ comptes Riot qui la portent. Il n'a ni e-mail ni mot de passe, et n'a pas accès
 ## 1. Le contrat en un coup d'œil
 
 ```
-POST /api/auth/discord          code Discord → jeton du joueur        (public)
+POST /api/auth/discord          code Discord → jetons du joueur       (public)
+POST /api/auth/refresh          jeton de rafraîchissement → jetons neufs (public)
+POST /api/auth/logout           déconnexion de cet appareil           (public)
 GET  /api/me                    profil du joueur connecté             (joueur)
 POST /api/me/riot-accounts      lier un compte Riot suivi             (joueur)
 POST /api/me/agent-devices/approve   connecter l'agent de LAN du joueur  (joueur)
@@ -73,6 +75,7 @@ suite, une seule fois.
 ```json
 {
   "token": "eyJ0eXAiOiJKV1Qi…",
+  "refreshToken": "rft_3f9c…",
   "player": {
     "discordId": "80351110224678912",
     "discordUsername": "pseudo",
@@ -92,12 +95,64 @@ suite, une seule fois.
 Authorization: Bearer <token>
 ```
 
-- Durée de vie : **1 heure**. Passé ce délai, l'API répond `401` : relancer la
-  connexion Discord (§ 2.1). Ajouter `&prompt=none` à l'URL pour qu'un joueur
-  qui a déjà autorisé l'application ne revoie pas l'écran d'autorisation.
+- Durée de vie : **1 heure**. Passé ce délai, l'API répond `401` : rafraîchir
+  la session (§ 2.4), sans renvoyer le joueur sur Discord.
 - Le jeton d'un joueur **ne donne pas accès** aux classements
   (`/api/riot-account/*`, `/api/ranked-race*` : rôle `ROLE_API`). Le front
   continue d'utiliser son propre compte API pour les afficher.
+
+### 2.4 Rester connecté : rafraîchir la session
+
+Garder `token` **et** `refreshToken` (`localStorage`). Quand une requête
+répond `401` :
+
+```
+POST /api/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "<refreshToken stocké>" }
+```
+
+**`200`** : même corps que la connexion (§ 2.2). **Remplacer les deux jetons
+stockés** par ceux de la réponse, puis rejouer la requête refusée.
+
+- Le jeton de rafraîchissement vaut **30 jours**, et chaque rafraîchissement
+  repart pour 30 jours : un joueur qui revient au moins une fois par mois ne
+  revoit jamais Discord.
+- Il change à chaque appel. L'ancien reste accepté **30 secondes**, pour que deux
+  onglets qui rafraîchissent en même temps ne se déconnectent pas l'un l'autre ;
+  au-delà, seul le dernier reçu fonctionne.
+- L'en-tête `Authorization` est ignoré sur cette route : un JWT expiré laissé
+  par un intercepteur ne gêne pas.
+
+| Code | `code` | Cas |
+|---|---|---|
+| `400` | `missing_refresh_token` | Corps sans `refreshToken` |
+| `401` | `invalid_refresh_token` | Jeton inconnu ou expiré : effacer les jetons et relancer la connexion Discord (§ 2.1). Ajouter `&prompt=none` à l'URL pour qu'un joueur qui a déjà autorisé l'application ne revoie pas l'écran d'autorisation. |
+
+### 2.5 Se déconnecter
+
+```
+POST /api/auth/logout
+Content-Type: application/json
+
+{ "refreshToken": "<refreshToken stocké>" }
+```
+
+**`204`**, sans corps : le jeton de rafraîchissement ne sert plus. Effacer
+ensuite `token` et `refreshToken` du stockage. Le JWT déjà émis reste valable
+jusqu'à son expiration (1 h au plus) : c'est en l'effaçant que le front le rend
+inutilisable.
+
+- Seul **cet appareil** est déconnecté : les autres sessions du joueur restent
+  ouvertes.
+- Rejouable sans risque : un jeton inconnu, expiré ou déjà révoqué répond aussi
+  `204`. Le front peut donc effacer ses jetons quoi qu'il arrive.
+- Comme pour le rafraîchissement, l'en-tête `Authorization` est ignoré.
+
+| Code | `code` | Cas |
+|---|---|---|
+| `400` | `missing_refresh_token` | Corps sans `refreshToken` |
 
 ---
 
@@ -187,4 +242,4 @@ Content-Type: application/json
 |---|---|---|
 | `400` | `invalid_user_code` | « Code inconnu ou expiré : relance la connexion depuis l'agent » |
 | `409` | `not_registered` | « Tu n'es inscrit à aucune LAN en cours ou à venir » |
-| `401` / `403` | — | Reconnexion Discord nécessaire (§ 2) |
+| `401` / `403` | — | Rafraîchir la session (§ 2.4), sinon reconnexion Discord |
