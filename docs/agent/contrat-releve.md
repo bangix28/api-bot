@@ -18,7 +18,7 @@ le serveur l'apprend du jeton de chaque relevé (§ 1).
 |---|---|
 | Un agent dans la partie | Toutes les cartes de la partie sont réglées sur son relevé. |
 | Plusieurs agents dans la même partie | Leurs relevés sont **recoupés** : ils doivent concorder (§ 4). |
-| Aucun agent dans la partie | Rien n'est rapporté : les cartes engagées finissent en verdict inconnu (relance rendue). | L'agent est un projet séparé : ce
+| Aucun agent dans la partie | Rien n'est rapporté : les cartes engagées finissent en verdict inconnu. | L'agent est un projet séparé : ce
 document est **la seule chose que les deux projets partagent**.
 
 Principe directeur : **l'agent transporte, le serveur juge.** L'agent n'interprète

@@ -19,6 +19,7 @@ namespace App\Domain\LanChallenge;
 final readonly class PlayerRun
 {
     public const int INITIAL_REROLLS = 3;
+    public const int ROUND_REROLLS_CAP = 3;
     public const int CURSE_PERCENT = 50;
 
     /**
@@ -161,15 +162,14 @@ final readonly class PlayerRun
     }
 
     /**
-     * Clôt la manche : points, relances rendues, et offre suivante.
+     * Clôt la manche : points, relances rechargées, et offre suivante.
      *
      * - Réussite : points de la carte, majorés du bonus de manche le cas échéant,
      *   puis réduits de moitié si le joueur est maudit (la malédiction est alors
      *   levée et révélée par le résultat).
-     * - Échec d'une carte prismatique : une relance rendue, pour que viser haut
-     *   ne soit pas puni deux fois.
-     * - Verdict inconnu : aucun point, mais une relance rendue en dédommagement
-     *   d'une carte perdue faute de donnée.
+     * - Quel que soit le verdict, les relances remontent à ROUND_REROLLS_CAP. Un
+     *   stock déjà au-dessus (relances volées par Pickpocket) n'est pas rogné :
+     *   le plafond borne le gain de la manche, pas ce que le joueur a gagné ailleurs.
      *
      * Une malédiction attend le prochain défi réussi : un échec ne la lève pas.
      */
@@ -190,14 +190,8 @@ final readonly class PlayerRun
             $points = intdiv($points * self::CURSE_PERCENT, 100);
         }
 
-        $refund = match (true) {
-            $verdict === Verdict::UNKNOWN => 1,
-            $verdict === Verdict::FAILURE && $card->rarity() === Rarity::PRISMATIC => 1,
-            default => 0,
-        };
-
         return $this->with(
-            rerollsLeft: $this->rerollsLeft + $refund,
+            rerollsLeft: max($this->rerollsLeft, self::ROUND_REROLLS_CAP),
             score: $this->score + $points,
             offer: $nextOffer,
             activeCard: null,
