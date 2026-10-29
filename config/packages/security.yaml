@@ -24,6 +24,13 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        # Rafraîchissement et déconnexion d'un joueur : hors pare-feu JWT, sinon le
+        # jeton d'accès expiré que le front envoie encore en en-tête ferait échouer
+        # la requête en 401 avant même d'atteindre la route. Le jeton de
+        # rafraîchissement du corps est la seule preuve demandée.
+        player_session:
+            pattern: ^/api/auth/(refresh|logout)$
+            security: false
         # Agent de LAN : authentifié par son jeton « agt_… » (contrat de l'agent, § 1).
         # Avant « main », qui couvre tout ^/api. L'appairage (device, token) reste
         # sous « main », public : l'agent n'a pas encore de jeton à ce moment-là.

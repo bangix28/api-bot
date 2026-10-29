@@ -72,9 +72,23 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
             ['/api/auth/discord', 'post', self::operation(
                 'player_discord_login', self::PLAYER_TAG, self::PUBLIC,
                 'Connecte un joueur avec le code renvoyé par Discord.',
-                'Le front envoie le joueur sur Discord (scope « identify »), puis transmet ici le code reçu. Renvoie un JWT de joueur (1 h).',
+                'Le front envoie le joueur sur Discord (scope « identify »), puis transmet ici le code reçu. Renvoie un JWT de joueur (1 h) et un jeton de rafraîchissement (30 jours).',
                 self::body(['code' => ['type' => 'string']]),
                 [200 => ['Joueur connecté.', 'DiscordLogin'], 400 => ['missing_code'], 401 => ['discord_login_failed : code refusé, expiré, redirect_uri différente ou Discord injoignable.']],
+            )],
+            ['/api/auth/refresh', 'post', self::operation(
+                'player_refresh_session', self::PLAYER_TAG, self::PUBLIC,
+                'Échange le jeton de rafraîchissement contre un JWT neuf, sans repasser par Discord.',
+                'À appeler quand l\'API répond 401 au JWT. Remplacer les deux jetons stockés par ceux de la réponse : l\'ancien jeton de rafraîchissement n\'est plus accepté que 30 secondes.',
+                self::body(['refreshToken' => ['type' => 'string', 'example' => 'rft_3f9c…']]),
+                [200 => ['Session renouvelée.', 'DiscordLogin'], 400 => ['missing_refresh_token'], 401 => ['invalid_refresh_token : inconnu ou expiré, reconnexion Discord nécessaire.']],
+            )],
+            ['/api/auth/logout', 'post', self::operation(
+                'player_logout', self::PLAYER_TAG, self::PUBLIC,
+                'Déconnecte le joueur sur cet appareil.',
+                'Le jeton de rafraîchissement ne sert plus ; les autres appareils du joueur restent connectés. Rejouable sans risque : un jeton inconnu ou déjà révoqué répond aussi 204. Le front efface ensuite ses deux jetons.',
+                self::body(['refreshToken' => ['type' => 'string', 'example' => 'rft_3f9c…']]),
+                [204 => ['Déconnecté.'], 400 => ['missing_refresh_token']],
             )],
             ['/api/me', 'get', self::operation(
                 'player_profile', self::PLAYER_TAG, self::JWT, 'Profil du joueur connecté.', null, null,
@@ -253,6 +267,7 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
             ]],
             'DiscordLogin' => ['type' => 'object', 'properties' => [
                 'token' => ['type' => 'string', 'description' => 'JWT du joueur, 1 h.'],
+                'refreshToken' => ['type' => 'string', 'description' => 'Jeton de rafraîchissement, 30 jours (POST /api/auth/refresh).'],
                 'player' => $ref('PlayerProfile'),
             ]],
             'LanSummary' => ['type' => 'object', 'properties' => [
