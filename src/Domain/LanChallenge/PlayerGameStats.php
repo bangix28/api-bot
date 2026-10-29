@@ -37,9 +37,22 @@ final readonly class PlayerGameStats
         public int $mostAssistsOnOneAlly = 0,
         /** Kills du joueur sur l'ennemi qui venait de tuer l'un de ses coéquipiers. */
         public int $avengedAllies = 0,
+        /** Plus longue série de kills sans mourir, sur toute la partie (au-delà du penta). */
+        public int $longestKillStreak = 0,
+        /** Le plus grand nombre de fois où le joueur a tué un même ennemi. */
+        public int $mostKillsOnOneEnemy = 0,
+        /** @var list<int> Nombre d'assistants de chaque kill du joueur. */
+        public array $assistersPerKill = [],
+        /** @var list<float> Secondes de jeu de chaque kill du joueur. */
+        public array $killTimes = [],
+        /**
+         * Le joueur finit avec strictement plus de kills que tous les autres
+         * participants de la LAN de la partie ; null s'il en est le seul.
+         */
+        public ?bool $mostKillsAmongLan = null,
     ) {
         if ($kills < 0 || $deaths < 0 || $assists < 0 || $soloKills < 0 || $teamKills < 0 || $aces < 0
-            || $mostAssistsOnOneAlly < 0 || $avengedAllies < 0) {
+            || $mostAssistsOnOneAlly < 0 || $avengedAllies < 0 || $longestKillStreak < 0 || $mostKillsOnOneEnemy < 0) {
             throw new \InvalidArgumentException('Un relevé de partie ne peut pas contenir de compteur négatif.');
         }
 

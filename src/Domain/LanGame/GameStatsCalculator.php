@@ -24,18 +24,24 @@ final class GameStatsCalculator
      */
     public static function report(string $gameId, LanQueue $queue, GameSnapshot $snapshot, array $participantPuuids): GameReport
     {
-        $stats = [];
+        $lanPlayers = [];
         foreach ($snapshot->players as $player) {
             $puuid = $participantPuuids[mb_strtolower($player->riotId)] ?? null;
             if ($puuid !== null) {
-                $stats[] = self::statsOf($puuid, $player, $snapshot);
+                $lanPlayers[$puuid] = $player;
             }
+        }
+
+        $stats = [];
+        foreach ($lanPlayers as $puuid => $player) {
+            $stats[] = self::statsOf((string) $puuid, $player, $snapshot, $lanPlayers);
         }
 
         return new GameReport($gameId, $queue, (int) $snapshot->gameTimeSeconds, $stats);
     }
 
-    private static function statsOf(string $puuid, ObservedPlayer $player, GameSnapshot $snapshot): PlayerGameStats
+    /** @param array<string, ObservedPlayer> $lanPlayers participants de la LAN présents dans la partie */
+    private static function statsOf(string $puuid, ObservedPlayer $player, GameSnapshot $snapshot, array $lanPlayers): PlayerGameStats
     {
         $killsBy = array_filter($snapshot->eventsOf(ChampionKill::class), static fn(ChampionKill $kill) => $kill->killerName === $player->gameName);
         $streaks = array_map(
@@ -58,7 +64,57 @@ final class GameStatsCalculator
             self::hasMostDeaths($player, $snapshot),
             self::mostAssistsOnOneAlly($player, $snapshot),
             self::avengedAllies($player, $snapshot),
+            self::longestKillStreak($player, $snapshot),
+            self::mostKillsOnOneEnemy($killsBy, $snapshot),
+            array_values(array_map(static fn(ChampionKill $kill) => count($kill->assisterNames), $killsBy)),
+            array_values(array_map(static fn(ChampionKill $kill) => $kill->time, $killsBy)),
+            self::mostKillsAmongLan($puuid, $player, $lanPlayers),
         );
+    }
+
+    /** Toute mort du joueur coupe la série, qu'il soit tué par un champion, une tourelle ou un sbire. */
+    private static function longestKillStreak(ObservedPlayer $player, GameSnapshot $snapshot): int
+    {
+        $streak = 0;
+        $longest = 0;
+        foreach ($snapshot->eventsOf(ChampionKill::class) as $kill) {
+            if ($kill->victimName === $player->gameName) {
+                $streak = 0;
+            } elseif ($kill->killerName === $player->gameName) {
+                $longest = max($longest, ++$streak);
+            }
+        }
+
+        return $longest;
+    }
+
+    /** @param ChampionKill[] $killsBy kills du joueur */
+    private static function mostKillsOnOneEnemy(array $killsBy, GameSnapshot $snapshot): int
+    {
+        $killsByVictim = [];
+        foreach ($killsBy as $kill) {
+            if ($snapshot->playerByName($kill->victimName) !== null) {
+                $killsByVictim[$kill->victimName] = ($killsByVictim[$kill->victimName] ?? 0) + 1;
+            }
+        }
+
+        return max([0, ...array_values($killsByVictim)]);
+    }
+
+    /**
+     * Strictement plus de kills que chacun des autres participants de la LAN de
+     * la partie, alliés comme adversaires : une égalité ne suffit pas.
+     *
+     * @param array<string, ObservedPlayer> $lanPlayers
+     */
+    private static function mostKillsAmongLan(string $puuid, ObservedPlayer $player, array $lanPlayers): ?bool
+    {
+        $others = array_filter($lanPlayers, static fn(ObservedPlayer $other, int|string $otherPuuid) => (string) $otherPuuid !== $puuid, ARRAY_FILTER_USE_BOTH);
+        if ($others === []) {
+            return null;
+        }
+
+        return $player->kills > max(array_map(static fn(ObservedPlayer $other) => $other->kills, $others));
     }
 
     private static function mostAssistsOnOneAlly(ObservedPlayer $player, GameSnapshot $snapshot): int

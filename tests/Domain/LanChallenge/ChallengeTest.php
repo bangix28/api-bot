@@ -46,6 +46,8 @@ class ChallengeTest extends TestCase
         $this->assertSame('Participe à au moins 60 % des kills de ton équipe (55 % sur la Faille).', Challenge::TEAM_SPIRIT->description());
         $this->assertSame('Gagne une partie de moins de 15 minutes (22 minutes sur la Faille).', Challenge::BLITZ->description());
         $this->assertSame('Réalise au moins 20 assistances avec 3 kills au maximum (12 assistances sur la Faille).', Challenge::ALL_FOR_YOU->description());
+        $this->assertSame('Réalise 3 kills avant 5 minutes de jeu (2 avant 10 minutes sur la Faille).', Challenge::FAST_START->description());
+        $this->assertSame('Porte le dernier coup sur 3 kills où au moins 4 coéquipiers ont aidé (3 sur la Faille).', Challenge::KILL_STEALER->description());
     }
 
     public function testLesCartesLienSontRepartiesDansLesRaretes(): void
@@ -103,6 +105,17 @@ class ChallengeTest extends TestCase
         yield 'tout pour toi avec 4 kills' => [Challenge::ALL_FOR_YOU, $player()->withAssists(30)->withKills(4)->build(), Verdict::FAILURE];
         yield 'ange vengeur' => [Challenge::AVENGER, $player()->withAvengedAllies(3)->build(), Verdict::SUCCESS];
         yield 'ange vengeur à 2' => [Challenge::AVENGER, $player()->withAvengedAllies(2)->build(), Verdict::FAILURE];
+        yield 'sanguinaire' => [Challenge::BLOODTHIRSTY, $player()->withLongestKillStreak(5)->build(), Verdict::SUCCESS];
+        yield 'sanguinaire coupé à 4' => [Challenge::BLOODTHIRSTY, $player()->withLongestKillStreak(4)->build(), Verdict::FAILURE];
+        yield 'ex toxique' => [Challenge::TOXIC_EX, $player()->withMostKillsOnOneEnemy(5)->build(), Verdict::SUCCESS];
+        yield 'ex toxique à 4' => [Challenge::TOXIC_EX, $player()->withMostKillsOnOneEnemy(4)->build(), Verdict::FAILURE];
+        yield 'voleur de kill' => [Challenge::KILL_STEALER, $player()->withAssistersPerKill(4, 4, 1, 4)->build(), Verdict::SUCCESS];
+        yield 'voleur de kill, un kill d\'équipe de trop peu' => [Challenge::KILL_STEALER, $player()->withAssistersPerKill(4, 4, 3, 3)->build(), Verdict::FAILURE];
+        yield 'ouverture fulgurante' => [Challenge::FAST_START, $player()->withKillTimes(60.0, 120.0, 299.9, 900.0)->build(), Verdict::SUCCESS];
+        yield 'ouverture fulgurante, troisième kill à 5:00' => [Challenge::FAST_START, $player()->withKillTimes(60.0, 120.0, 300.0)->build(), Verdict::FAILURE];
+        yield 'roi de la tablée' => [Challenge::TABLE_KING, $player()->withMostKillsAmongLan(true)->build(), Verdict::SUCCESS];
+        yield 'roi de la tablée détrôné' => [Challenge::TABLE_KING, $player()->withMostKillsAmongLan(false)->build(), Verdict::FAILURE];
+        yield 'roi de la tablée sans autre joueur de la LAN' => [Challenge::TABLE_KING, $player()->withMostKillsAmongLan(null)->build(), Verdict::UNKNOWN];
     }
 
     #[DataProvider('cases')]
@@ -132,6 +145,13 @@ class ChallengeTest extends TestCase
         yield 'tout pour toi à 11 assistances' => [Challenge::ALL_FOR_YOU, $player()->withAssists(11)->build(), Verdict::FAILURE];
         yield 'ange vengeur à 2' => [Challenge::AVENGER, $player()->withAvengedAllies(2)->build(), Verdict::SUCCESS];
         yield 'ange vengeur à 1' => [Challenge::AVENGER, $player()->withAvengedAllies(1)->build(), Verdict::FAILURE];
+        yield 'ex toxique à 4' => [Challenge::TOXIC_EX, $player()->withMostKillsOnOneEnemy(4)->build(), Verdict::SUCCESS];
+        yield 'ex toxique à 3' => [Challenge::TOXIC_EX, $player()->withMostKillsOnOneEnemy(3)->build(), Verdict::FAILURE];
+        yield 'voleur de kill à 3 assistants' => [Challenge::KILL_STEALER, $player()->withAssistersPerKill(3, 3, 3)->build(), Verdict::SUCCESS];
+        yield 'voleur de kill à 2 assistants' => [Challenge::KILL_STEALER, $player()->withAssistersPerKill(3, 3, 2)->build(), Verdict::FAILURE];
+        yield 'ouverture fulgurante avant 10:00' => [Challenge::FAST_START, $player()->withKillTimes(400.0, 599.0)->build(), Verdict::SUCCESS];
+        yield 'ouverture fulgurante après 10:00' => [Challenge::FAST_START, $player()->withKillTimes(400.0, 600.0)->build(), Verdict::FAILURE];
+        yield 'sanguinaire : même série sur la Faille' => [Challenge::BLOODTHIRSTY, $player()->withLongestKillStreak(4)->build(), Verdict::FAILURE];
         yield 'les seuils fixes ne changent pas' => [Challenge::TRIPLE_KILL, $player()->withLargestMultiKill(3)->build(), Verdict::SUCCESS];
     }
 
