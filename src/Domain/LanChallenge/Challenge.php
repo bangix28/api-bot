@@ -23,6 +23,12 @@ enum Challenge: string
 {
     /** Tout pour toi : laisser les kills aux autres, quelle que soit la file. */
     private const int ALL_FOR_YOU_MAX_KILLS = 3;
+    /** Sanguinaire : même série sur toutes les files. */
+    private const int BLOODTHIRSTY_KILLS = 5;
+    /** Voleur de kill : kills à voler, quelle que soit la file (le seuil porte sur les assistants). */
+    private const int KILL_STEALER_KILLS = 3;
+    /** Ouverture fulgurante : fenêtre d'ouverture en minutes [ARAM du chaos, Faille]. */
+    private const array FAST_START_MINUTES = [5, 10];
 
     // Argent
     case DOUBLE_KILL = 'double_kill';
@@ -31,6 +37,9 @@ enum Challenge: string
     case HUNTER = 'hunter';
     case WINGMAN = 'wingman';
     case WHERE_IS_MAMA = 'where_is_mama';
+    case KILL_STEALER = 'kill_stealer';
+    case FAST_START = 'fast_start';
+    case TABLE_KING = 'table_king';
 
     // Or
     case TRIPLE_KILL = 'triple_kill';
@@ -41,6 +50,8 @@ enum Challenge: string
     case UNTOUCHABLE = 'untouchable';
     case ALL_FOR_YOU = 'all_for_you';
     case AVENGER = 'avenger';
+    case BLOODTHIRSTY = 'bloodthirsty';
+    case TOXIC_EX = 'toxic_ex';
 
     // Prismatique
     case QUADRA_KILL = 'quadra_kill';
@@ -65,6 +76,9 @@ enum Challenge: string
             self::HUNTER => 'Chasseur',
             self::WINGMAN => 'Bras droit',
             self::WHERE_IS_MAMA => 'Où est maman ?',
+            self::KILL_STEALER => 'Voleur de kill',
+            self::FAST_START => 'Ouverture fulgurante',
+            self::TABLE_KING => 'Roi de la tablée',
             self::TRIPLE_KILL => 'Triplé',
             self::EXECUTIONER => 'Exécuteur',
             self::DUELIST => 'Duelliste',
@@ -73,6 +87,8 @@ enum Challenge: string
             self::UNTOUCHABLE => 'Intouchable',
             self::ALL_FOR_YOU => 'Tout pour toi',
             self::AVENGER => 'Ange vengeur',
+            self::BLOODTHIRSTY => 'Sanguinaire',
+            self::TOXIC_EX => 'Ex toxique',
             self::QUADRA_KILL => 'Quadra',
             self::PENTA_KILL => 'Penta',
             self::IMMORTAL => 'Immortel',
@@ -93,6 +109,17 @@ enum Challenge: string
             self::HUNTER => $this->describe('Réalise au moins %d kills.'),
             self::WINGMAN => $this->describe('Réalise au moins %d assistances.'),
             self::WHERE_IS_MAMA => $this->describe('Fais une assistance sur au moins %d kills d\'un même coéquipier.'),
+            self::KILL_STEALER => $this->describe(
+                sprintf('Porte le dernier coup sur %d kills où au moins %%d coéquipiers ont aidé.', self::KILL_STEALER_KILLS),
+            ),
+            self::FAST_START => sprintf(
+                'Réalise %d kills avant %d minutes de jeu (%d avant %d minutes sur la Faille).',
+                $this->thresholds()[0],
+                self::FAST_START_MINUTES[0],
+                $this->thresholds()[1],
+                self::FAST_START_MINUTES[1],
+            ),
+            self::TABLE_KING => 'Termine avec plus de kills que tous les autres joueurs de la LAN présents dans ta partie.',
             self::TRIPLE_KILL => 'Réalise au moins un triplé.',
             self::EXECUTIONER => 'Termine avec un KDA d\'au moins 5.',
             self::DUELIST => 'Réalise au moins 2 kills sans aucune aide.',
@@ -104,6 +131,8 @@ enum Challenge: string
                 ' assistances',
             ),
             self::AVENGER => $this->describe('Venge un coéquipier au moins %d fois : tue son tueur dans les 10 secondes.'),
+            self::BLOODTHIRSTY => sprintf('Enchaîne %d kills sans mourir.', self::BLOODTHIRSTY_KILLS),
+            self::TOXIC_EX => $this->describe('Tue au moins %d fois le même ennemi.'),
             self::QUADRA_KILL => 'Réalise au moins un quadra.',
             self::PENTA_KILL => 'Réalise un penta.',
             self::IMMORTAL => 'Gagne sans mourir.',
@@ -118,9 +147,10 @@ enum Challenge: string
     public function rarity(): Rarity
     {
         return match ($this) {
-            self::DOUBLE_KILL, self::PRUDENT, self::TEAM_SPIRIT, self::HUNTER, self::WINGMAN, self::WHERE_IS_MAMA => Rarity::SILVER,
+            self::DOUBLE_KILL, self::PRUDENT, self::TEAM_SPIRIT, self::HUNTER, self::WINGMAN, self::WHERE_IS_MAMA,
+            self::KILL_STEALER, self::FAST_START, self::TABLE_KING => Rarity::SILVER,
             self::TRIPLE_KILL, self::EXECUTIONER, self::DUELIST, self::CLEANER, self::FIRST_BLOOD, self::UNTOUCHABLE,
-            self::ALL_FOR_YOU, self::AVENGER => Rarity::GOLD,
+            self::ALL_FOR_YOU, self::AVENGER, self::BLOODTHIRSTY, self::TOXIC_EX => Rarity::GOLD,
             self::QUADRA_KILL, self::PENTA_KILL, self::IMMORTAL, self::BLITZ => Rarity::PRISMATIC,
             self::BAD_LOSER, self::MARTYR, self::PICKPOCKET, self::CURSE => Rarity::SABOTEUR,
         };
@@ -175,6 +205,18 @@ enum Challenge: string
             self::UNTOUCHABLE => self::ifWon($stats, $stats->deaths <= $this->threshold($game->queue)),
             self::ALL_FOR_YOU => Verdict::of($stats->assists >= $this->threshold($game->queue) && $stats->kills <= self::ALL_FOR_YOU_MAX_KILLS),
             self::AVENGER => Verdict::of($stats->avengedAllies >= $this->threshold($game->queue)),
+            self::BLOODTHIRSTY => Verdict::of($stats->longestKillStreak >= self::BLOODTHIRSTY_KILLS),
+            self::TOXIC_EX => Verdict::of($stats->mostKillsOnOneEnemy >= $this->threshold($game->queue)),
+            self::KILL_STEALER => Verdict::of(count(array_filter(
+                $stats->assistersPerKill,
+                fn(int $assisters) => $assisters >= $this->threshold($game->queue),
+            )) >= self::KILL_STEALER_KILLS),
+            self::FAST_START => Verdict::of(count(array_filter(
+                $stats->killTimes,
+                static fn(float $time) => $time < self::FAST_START_MINUTES[$game->queue->playsOnRift() ? 1 : 0] * 60,
+            )) >= $this->threshold($game->queue)),
+            // Seul joueur de la LAN dans la partie : la carte ne peut pas se jouer.
+            self::TABLE_KING => $stats->mostKillsAmongLan === null ? Verdict::UNKNOWN : Verdict::of($stats->mostKillsAmongLan),
             self::QUADRA_KILL => Verdict::of($stats->largestMultiKill >= 4),
             self::PENTA_KILL => Verdict::of($stats->largestMultiKill >= 5),
             self::IMMORTAL => self::ifWon($stats, $stats->deaths === 0),
@@ -212,6 +254,11 @@ enum Challenge: string
             self::WHERE_IS_MAMA => [12, 6],
             self::ALL_FOR_YOU => [20, 12],
             self::AVENGER => [3, 2],
+            self::TOXIC_EX => [5, 4],
+            // Assistants : toute l'équipe en ARAM du chaos, trois sur la Faille.
+            self::KILL_STEALER => [4, 3],
+            // Kills à faire dans la fenêtre d'ouverture (FAST_START_MINUTES).
+            self::FAST_START => [3, 2],
             // Sur la Faille, une victoire avant 15 minutes est quasi impossible (abandon à 15 min).
             self::BLITZ => [15, 22],
             default => null,

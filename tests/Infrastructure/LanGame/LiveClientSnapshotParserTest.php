@@ -88,6 +88,11 @@ class LiveClientSnapshotParserTest extends TestCase
 
         $this->assertSame(18, $report->statsFor('puuid-3')->mostAssistsOnOneAlly);
         $this->assertSame(4, $report->statsFor('puuid-2')->avengedAllies);
+
+        $this->assertSame(6, $carry->longestKillStreak);
+        $this->assertSame(8, $carry->mostKillsOnOneEnemy, 'Joueur1 a tué 8 fois Joueur6.');
+        $this->assertTrue($carry->mostKillsAmongLan, '26 kills, loin devant les autres joueurs de la LAN.');
+        $this->assertFalse($report->statsFor('puuid-2')->mostKillsAmongLan);
     }
 
     public function testLeResultatDeFinDePartie(): void

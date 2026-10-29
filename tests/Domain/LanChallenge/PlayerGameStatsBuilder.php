@@ -24,6 +24,13 @@ final class PlayerGameStatsBuilder
     private ?bool $mostDeathsInGame = false;
     private int $mostAssistsOnOneAlly = 0;
     private int $avengedAllies = 0;
+    private int $longestKillStreak = 0;
+    private int $mostKillsOnOneEnemy = 0;
+    /** @var list<int> */
+    private array $assistersPerKill = [];
+    /** @var list<float> */
+    private array $killTimes = [];
+    private ?bool $mostKillsAmongLan = null;
 
     public static function aPlayer(string $puuid = 'puuid-1'): self
     {
@@ -45,13 +52,19 @@ final class PlayerGameStatsBuilder
     public function withMostDeathsInGame(?bool $mostDeathsInGame): self { $this->mostDeathsInGame = $mostDeathsInGame; return $this; }
     public function withMostAssistsOnOneAlly(int $assists): self { $this->mostAssistsOnOneAlly = $assists; return $this; }
     public function withAvengedAllies(int $avengedAllies): self { $this->avengedAllies = $avengedAllies; return $this; }
+    public function withLongestKillStreak(int $streak): self { $this->longestKillStreak = $streak; return $this; }
+    public function withMostKillsOnOneEnemy(int $kills): self { $this->mostKillsOnOneEnemy = $kills; return $this; }
+    public function withAssistersPerKill(int ...$assisters): self { $this->assistersPerKill = $assisters; return $this; }
+    public function withKillTimes(float ...$seconds): self { $this->killTimes = $seconds; return $this; }
+    public function withMostKillsAmongLan(?bool $mostKills): self { $this->mostKillsAmongLan = $mostKills; return $this; }
 
     public function build(): PlayerGameStats
     {
         return new PlayerGameStats(
             $this->puuid, $this->kills, $this->deaths, $this->assists, $this->largestMultiKill,
             $this->soloKills, $this->teamKills, $this->aces, $this->win, $this->firstBlood, $this->mostDeathsInGame,
-            $this->mostAssistsOnOneAlly, $this->avengedAllies,
+            $this->mostAssistsOnOneAlly, $this->avengedAllies, $this->longestKillStreak, $this->mostKillsOnOneEnemy,
+            $this->assistersPerKill, $this->killTimes, $this->mostKillsAmongLan,
         );
     }
 }

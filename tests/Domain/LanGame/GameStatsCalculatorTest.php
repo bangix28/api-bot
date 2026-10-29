@@ -228,4 +228,67 @@ class GameStatsCalculatorTest extends TestCase
         $this->assertSame(2, self::statsOf('puuid-a', $snapshot)->avengedAllies);
         $this->assertSame(0, self::statsOf('puuid-b', $snapshot)->avengedAllies);
     }
+
+    public function testUneMortCoupeLaSerieDeKills(): void
+    {
+        $snapshot = GameSnapshotBuilder::aGame()->withEvents(
+            new ChampionKill('Alpha', 'Charlie', [], 10.0),
+            new ChampionKill('Alpha', 'Inconnu4', [], 20.0),
+            // Un kill d'un autre ne coupe rien
+            new ChampionKill('Bravo', 'Inconnu5', [], 25.0),
+            new ChampionKill('Alpha', 'Inconnu5', [], 30.0),
+            // Tué par une tourelle : la série repart de zéro
+            new ChampionKill('Turret_T2_L_03_A', 'Alpha', [], 40.0),
+            new ChampionKill('Alpha', 'Charlie', [], 50.0),
+            new ChampionKill('Alpha', 'Inconnu6', [], 60.0),
+        )->build();
+
+        $this->assertSame(3, self::statsOf('puuid-a', $snapshot)->longestKillStreak);
+    }
+
+    public function testLEnnemiLePlusSouventTue(): void
+    {
+        $snapshot = GameSnapshotBuilder::aGame()->withEvents(
+            new ChampionKill('Alpha', 'Charlie', [], 10.0),
+            new ChampionKill('Alpha', 'Charlie', ['Bravo'], 20.0),
+            new ChampionKill('Alpha', 'Inconnu4', [], 30.0),
+            new ChampionKill('Bravo', 'Charlie', [], 40.0),
+        )->build();
+
+        $this->assertSame(2, self::statsOf('puuid-a', $snapshot)->mostKillsOnOneEnemy);
+        $this->assertSame(1, self::statsOf('puuid-b', $snapshot)->mostKillsOnOneEnemy);
+    }
+
+    public function testAssistantsEtHeureDeChaqueKillDuJoueur(): void
+    {
+        $snapshot = GameSnapshotBuilder::aGame()->withEvents(
+            new ChampionKill('Alpha', 'Charlie', ['Bravo', 'Inconnu1', 'Inconnu2', 'Inconnu3'], 65.5),
+            new ChampionKill('Bravo', 'Inconnu4', ['Alpha'], 70.0),
+            new ChampionKill('Alpha', 'Inconnu5', [], 200.0),
+        )->build();
+
+        $alpha = self::statsOf('puuid-a', $snapshot);
+        $this->assertSame([4, 0], $alpha->assistersPerKill);
+        $this->assertSame([65.5, 200.0], $alpha->killTimes);
+    }
+
+    public function testLeRoiDeLaTableeAStrictementPlusDeKillsQueLesAutresJoueursDeLaLan(): void
+    {
+        $snapshot = GameSnapshotBuilder::aGame()
+            ->withScore('Alpha#EUW', 9, 0)
+            ->withScore('Bravo#EUW', 7, 0)
+            ->withScore('Charlie#EUW', 9, 0)
+            // Un inconnu à 15 kills ne compte pas : il n'est pas de la LAN
+            ->withScore('Inconnu1#EUW', 15, 0)
+            ->build();
+
+        $this->assertFalse(self::statsOf('puuid-a', $snapshot)->mostKillsAmongLan, 'Égalité avec Charlie, adversaire.');
+        $this->assertFalse(self::statsOf('puuid-b', $snapshot)->mostKillsAmongLan);
+
+        $alone = GameStatsCalculator::report('game-1', LanQueue::ARAM_MAYHEM, $snapshot, ['alpha#euw' => 'puuid-a'])->statsFor('puuid-a');
+        $this->assertNull($alone?->mostKillsAmongLan, 'Seul joueur de la LAN dans la partie.');
+
+        $king = GameSnapshotBuilder::aGame()->withScore('Alpha#EUW', 10, 0)->withScore('Charlie#EUW', 9, 0)->build();
+        $this->assertTrue(self::statsOf('puuid-a', $king)->mostKillsAmongLan);
+    }
 }
