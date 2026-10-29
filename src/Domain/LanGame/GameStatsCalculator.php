@@ -17,6 +17,8 @@ use App\Domain\LanGame\Event\Multikill;
  */
 final class GameStatsCalculator
 {
+    private const int AVENGE_WINDOW_SECONDS = 10;
+
     /**
      * @param array<string, string> $participantPuuids puuid des participants de la LAN, indexés par Riot ID en minuscules
      */
@@ -54,7 +56,53 @@ final class GameStatsCalculator
             self::won($player, $snapshot),
             self::firstBlood($player, $snapshot),
             self::hasMostDeaths($player, $snapshot),
+            self::mostAssistsOnOneAlly($player, $snapshot),
+            self::avengedAllies($player, $snapshot),
         );
+    }
+
+    private static function mostAssistsOnOneAlly(ObservedPlayer $player, GameSnapshot $snapshot): int
+    {
+        $assistsByAlly = [];
+        foreach ($snapshot->eventsOf(ChampionKill::class) as $kill) {
+            if (in_array($player->gameName, $kill->assisterNames, true) && $snapshot->playerByName($kill->killerName) !== null) {
+                $assistsByAlly[$kill->killerName] = ($assistsByAlly[$kill->killerName] ?? 0) + 1;
+            }
+        }
+
+        return max([0, ...array_values($assistsByAlly)]);
+    }
+
+    /**
+     * Venger un coéquipier : tuer son tueur dans les AVENGE_WINDOW_SECONDS qui
+     * suivent sa mort. Une même mort ne se venge qu'une fois.
+     */
+    private static function avengedAllies(ObservedPlayer $player, GameSnapshot $snapshot): int
+    {
+        $kills = $snapshot->eventsOf(ChampionKill::class);
+        $allyDeaths = array_filter(
+            $kills,
+            static fn(ChampionKill $kill) => $kill->victimName !== $player->gameName
+                && $snapshot->playerByName($kill->victimName)?->team === $player->team,
+        );
+
+        $avenged = 0;
+        foreach ($kills as $kill) {
+            if ($kill->killerName !== $player->gameName) {
+                continue;
+            }
+
+            foreach ($allyDeaths as $index => $allyDeath) {
+                $delay = $kill->time - $allyDeath->time;
+                if ($allyDeath->killerName === $kill->victimName && $delay >= 0 && $delay <= self::AVENGE_WINDOW_SECONDS) {
+                    $avenged++;
+                    unset($allyDeaths[$index]);
+                    break;
+                }
+            }
+        }
+
+        return $avenged;
     }
 
     private static function teamKills(string $team, GameSnapshot $snapshot): int

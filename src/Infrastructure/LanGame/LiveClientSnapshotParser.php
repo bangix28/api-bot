@@ -79,6 +79,7 @@ final class LiveClientSnapshotParser
                 (string) ($event['KillerName'] ?? ''),
                 (string) ($event['VictimName'] ?? ''),
                 array_map('strval', is_array($event['Assisters'] ?? null) ? $event['Assisters'] : []),
+                (float) ($event['EventTime'] ?? 0),
             ),
             'Multikill' => new Multikill((string) ($event['KillerName'] ?? ''), (int) ($event['KillStreak'] ?? 0)),
             'Ace' => new Ace((string) ($event['Acer'] ?? '')),

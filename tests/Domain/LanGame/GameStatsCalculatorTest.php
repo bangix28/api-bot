@@ -77,10 +77,10 @@ class GameStatsCalculatorTest extends TestCase
     public function testUnSoloKillEstUnKillSansAssistant(): void
     {
         $snapshot = GameSnapshotBuilder::aGame()->withEvents(
-            new ChampionKill('Alpha', 'Charlie', []),
-            new ChampionKill('Alpha', 'Inconnu4', ['Bravo']),
-            new ChampionKill('Alpha', 'Inconnu5', []),
-            new ChampionKill('Bravo', 'Inconnu6', []),
+            new ChampionKill('Alpha', 'Charlie', [], 0.0),
+            new ChampionKill('Alpha', 'Inconnu4', ['Bravo'], 0.0),
+            new ChampionKill('Alpha', 'Inconnu5', [], 0.0),
+            new ChampionKill('Bravo', 'Inconnu6', [], 0.0),
         )->build();
 
         $this->assertSame(2, self::statsOf('puuid-a', $snapshot)->soloKills);
@@ -138,7 +138,7 @@ class GameStatsCalculatorTest extends TestCase
     public function testPremierSang(): void
     {
         $snapshot = GameSnapshotBuilder::aGame()
-            ->withEvents(new ChampionKill('Bravo', 'Charlie', []), new FirstBlood('Bravo'))
+            ->withEvents(new ChampionKill('Bravo', 'Charlie', [], 0.0), new FirstBlood('Bravo'))
             ->build();
 
         $this->assertTrue(self::statsOf('puuid-b', $snapshot)->firstBlood);
@@ -159,7 +159,7 @@ class GameStatsCalculatorTest extends TestCase
 
     public function testDesKillsSansEvenementPremierSangLaissentLePremierSangInconnu(): void
     {
-        $snapshot = GameSnapshotBuilder::aGame()->withEvents(new ChampionKill('Alpha', 'Charlie', []))->build();
+        $snapshot = GameSnapshotBuilder::aGame()->withEvents(new ChampionKill('Alpha', 'Charlie', [], 0.0))->build();
 
         $this->assertNull(self::statsOf('puuid-a', $snapshot)->firstBlood);
     }
@@ -187,5 +187,45 @@ class GameStatsCalculatorTest extends TestCase
     public function testDansUnePartieSansMortPersonneNALePlusDeMorts(): void
     {
         $this->assertFalse(self::statsOf('puuid-a', GameSnapshotBuilder::aGame()->build())->mostDeathsInGame);
+    }
+
+    public function testLeCoequipierLePlusAideCompteSesKillsAssistes(): void
+    {
+        $snapshot = GameSnapshotBuilder::aGame()->withEvents(
+            new ChampionKill('Bravo', 'Charlie', ['Alpha'], 10.0),
+            new ChampionKill('Bravo', 'Inconnu4', ['Alpha', 'Inconnu1'], 20.0),
+            new ChampionKill('Bravo', 'Inconnu5', ['Alpha'], 30.0),
+            new ChampionKill('Bravo', 'Inconnu6', [], 40.0),
+            new ChampionKill('Inconnu1', 'Charlie', ['Alpha'], 50.0),
+            // Une tourelle n'est pas un coéquipier.
+            new ChampionKill('Turret_T1_C_05_A', 'Charlie', ['Alpha'], 60.0),
+            new ChampionKill('Turret_T1_C_05_A', 'Inconnu4', ['Alpha'], 70.0),
+            new ChampionKill('Turret_T1_C_05_A', 'Inconnu5', ['Alpha'], 80.0),
+            new ChampionKill('Turret_T1_C_05_A', 'Inconnu6', ['Alpha'], 90.0),
+        )->build();
+
+        $this->assertSame(3, self::statsOf('puuid-a', $snapshot)->mostAssistsOnOneAlly);
+        $this->assertSame(0, self::statsOf('puuid-c', $snapshot)->mostAssistsOnOneAlly);
+    }
+
+    public function testVengerUnCoequipierCEstTuerSonTueurDansLesDixSecondes(): void
+    {
+        $snapshot = GameSnapshotBuilder::aGame()->withEvents(
+            new ChampionKill('Charlie', 'Bravo', [], 100.0),
+            new ChampionKill('Alpha', 'Charlie', [], 110.0),
+            // Trop tard : 11 secondes après.
+            new ChampionKill('Inconnu4', 'Inconnu1', [], 200.0),
+            new ChampionKill('Alpha', 'Inconnu4', [], 211.0),
+            // Un kill ne venge qu'une mort, même si le tueur en a fait deux.
+            new ChampionKill('Inconnu5', 'Bravo', [], 300.0),
+            new ChampionKill('Inconnu5', 'Inconnu2', [], 302.0),
+            new ChampionKill('Alpha', 'Inconnu5', [], 305.0),
+            // Se venger soi-même ne compte pas.
+            new ChampionKill('Inconnu6', 'Alpha', [], 400.0),
+            new ChampionKill('Alpha', 'Inconnu6', [], 401.0),
+        )->build();
+
+        $this->assertSame(2, self::statsOf('puuid-a', $snapshot)->avengedAllies);
+        $this->assertSame(0, self::statsOf('puuid-b', $snapshot)->avengedAllies);
     }
 }

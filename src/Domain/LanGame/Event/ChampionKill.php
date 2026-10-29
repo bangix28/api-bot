@@ -11,6 +11,8 @@ final readonly class ChampionKill implements ObservedEvent
         public string $killerName,
         public string $victimName,
         public array $assisterNames,
+        /** Secondes de jeu au moment du kill. */
+        public float $time,
     ) {
     }
 }

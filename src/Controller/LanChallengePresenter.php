@@ -29,6 +29,7 @@ final class LanChallengePresenter
             'label' => $card->label(),
             'description' => $card->description(),
             'rarity' => $card->rarity()->value,
+            'theme' => $card->theme()?->value,
             'points' => $card->points(),
             'secret' => $card->isSecret(),
             'needsTarget' => $card->targetsPlayer(),

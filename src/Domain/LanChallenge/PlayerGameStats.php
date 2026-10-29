@@ -33,8 +33,13 @@ final readonly class PlayerGameStats
          * d'un seul joueur ne suffit pas à établir.
          */
         public ?bool $mostDeathsInGame = null,
+        /** Le plus grand nombre de kills d'un même coéquipier sur lesquels le joueur a fait une assistance. */
+        public int $mostAssistsOnOneAlly = 0,
+        /** Kills du joueur sur l'ennemi qui venait de tuer l'un de ses coéquipiers. */
+        public int $avengedAllies = 0,
     ) {
-        if ($kills < 0 || $deaths < 0 || $assists < 0 || $soloKills < 0 || $teamKills < 0 || $aces < 0) {
+        if ($kills < 0 || $deaths < 0 || $assists < 0 || $soloKills < 0 || $teamKills < 0 || $aces < 0
+            || $mostAssistsOnOneAlly < 0 || $avengedAllies < 0) {
             throw new \InvalidArgumentException('Un relevé de partie ne peut pas contenir de compteur négatif.');
         }
 

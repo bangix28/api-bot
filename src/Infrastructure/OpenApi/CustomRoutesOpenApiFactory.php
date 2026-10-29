@@ -281,6 +281,7 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                 'label' => ['type' => 'string'],
                 'description' => ['type' => 'string'],
                 'rarity' => ['type' => 'string', 'enum' => ['silver', 'gold', 'prismatic', 'saboteur']],
+                'theme' => ['type' => ['string', 'null'], 'enum' => ['bond', null], 'description' => 'Thème transversal aux raretés, pour la présentation : bond = Lien (jouer pour ses coéquipiers).'],
                 'points' => ['type' => 'integer'],
                 'secret' => ['type' => 'boolean', 'description' => 'Carte saboteur : ne jamais l\'afficher aux autres joueurs.'],
                 'needsTarget' => ['type' => 'boolean', 'description' => 'Choisir cette carte demande une cible.'],
