@@ -80,9 +80,9 @@ class RoundResolverTest extends TestCase
             self::engaged('b', Challenge::PENTA_KILL),
         );
 
-        // +50 %, arrondi à l'entier inférieur : 25 → 37, 60 → 90.
+        // +50 %, arrondi à l'entier inférieur : 25 → 37, 90 → 135.
         $this->assertSame(37, $settled['a']->score);
-        $this->assertSame(90, $settled['b']->score);
+        $this->assertSame(135, $settled['b']->score);
         $this->assertTrue($settled['a']->results[0]->roundBonus);
     }
 

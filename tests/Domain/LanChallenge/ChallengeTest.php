@@ -56,12 +56,12 @@ class ChallengeTest extends TestCase
         $this->assertNull(Challenge::DOUBLE_KILL->theme());
     }
 
-    public function testLesPointsSuiventLaRareteSaufLImmortel(): void
+    public function testLesPointsSuiventLaRareteSaufImmortelEtPenta(): void
     {
         $this->assertSame(10, Challenge::DOUBLE_KILL->points());
         $this->assertSame(25, Challenge::TRIPLE_KILL->points());
         $this->assertSame(60, Challenge::QUADRA_KILL->points());
-        $this->assertSame(60, Challenge::PENTA_KILL->points());
+        $this->assertSame(90, Challenge::PENTA_KILL->points());
         $this->assertSame(100, Challenge::IMMORTAL->points());
     }
 

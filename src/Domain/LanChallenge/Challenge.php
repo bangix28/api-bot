@@ -129,8 +129,9 @@ enum Challenge: string
     public function points(): int
     {
         return match ($this) {
-            // L'Immortel est la seule carte au-dessus du barème de sa rareté.
+            // Seules cartes au-dessus du barème de leur rareté.
             self::IMMORTAL => 100,
+            self::PENTA_KILL => 90,
             // Saboter un joueur ne rapporte rien : l'effet est la récompense.
             self::PICKPOCKET, self::CURSE => 0,
             default => $this->rarity()->points(),
