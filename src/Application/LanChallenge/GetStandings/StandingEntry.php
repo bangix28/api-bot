@@ -2,8 +2,6 @@
 
 namespace App\Application\LanChallenge\GetStandings;
 
-use App\Domain\LanChallenge\Challenge;
-
 /** La ligne d'un participant au classement de la LAN. */
 final readonly class StandingEntry
 {
@@ -15,11 +13,9 @@ final readonly class StandingEntry
         public int $successes,
         public int $roundsPlayed,
         public int $rerollsLeft,
-        /** Carte choisie pour la prochaine partie, ou en jeu ; null sinon, ou si elle est secrète. */
-        public ?Challenge $activeCard,
+        /** Le joueur a une carte pour la prochaine partie, ou en jeu. Laquelle, le classement ne le dit jamais. */
+        public bool $cardChosen,
         public bool $cardLocked,
-        /** Le joueur a choisi une carte saboteur : les autres ne savent pas laquelle. */
-        public bool $secretCard = false,
     ) {
     }
 }

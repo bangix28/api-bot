@@ -117,7 +117,7 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
             )],
             ['/api/lan-events/{lanId}/standings', 'get', self::operation(
                 'lan_challenge_standings', self::CHALLENGE_TAG, self::JWT,
-                'Classement de la LAN.', 'Tous les participants, y compris ceux qui n\'ont pas rejoint. Une carte saboteur est masquée (secretCard).', null,
+                'Classement de la LAN.', 'Tous les participants, y compris ceux qui n\'ont pas rejoint. Les cartes en cours ne sont jamais révélées (cardChosen).', null,
                 [200 => ['Classement.', 'LanStandings'], 404 => ['lan_not_found']], [$lanId],
             )],
             ['/api/lan-events/{lanId}/feed', 'get', self::operation(
@@ -348,8 +348,7 @@ final readonly class CustomRoutesOpenApiFactory implements OpenApiFactoryInterfa
                     'successes' => ['type' => 'integer'],
                     'roundsPlayed' => ['type' => 'integer'],
                     'rerollsLeft' => ['type' => 'integer'],
-                    'activeCard' => $nullableRef('Card'),
-                    'secretCard' => ['type' => 'boolean'],
+                    'cardChosen' => ['type' => 'boolean', 'description' => 'Le joueur a une carte en cours. Laquelle n\'est jamais révélée.'],
                     'cardLocked' => ['type' => 'boolean'],
                 ]]),
             ]],

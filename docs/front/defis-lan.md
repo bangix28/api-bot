@@ -150,8 +150,7 @@ Tous les participants de la LAN, y compris ceux qui n'ont pas encore rejoint.
       "successes": 4,
       "roundsPlayed": 6,
       "rerollsLeft": 1,
-      "activeCard": null,
-      "secretCard": true,
+      "cardChosen": true,
       "cardLocked": true
     }
   ]
@@ -162,8 +161,7 @@ Tous les participants de la LAN, y compris ceux qui n'ont pas encore rejoint.
 |---|---|
 | `rank` | Ordre : points, puis défis réussis (à points égaux, la régularité l'emporte), puis Riot ID |
 | `joined` | `false` : participant qui n'a pas encore rejoint les défis (« pas encore commencé ») |
-| `activeCard` | Carte choisie par le joueur, visible de tous — sauf carte saboteur : `null` |
-| `secretCard` | `true` : le joueur a choisi une carte saboteur (« carte secrète ») |
+| `cardChosen` | `true` : le joueur a une carte pour la prochaine partie, ou en jeu. **Laquelle n'est jamais donnée**, saboteur ou non : seul son propriétaire la voit, dans son parcours (`activeCard` de `GET …/me`) |
 | `cardLocked` | `true` : la carte est en jeu sur un match en cours (« en partie ») |
 
 Une Malédiction subie n'apparaît **nulle part** dans le classement.

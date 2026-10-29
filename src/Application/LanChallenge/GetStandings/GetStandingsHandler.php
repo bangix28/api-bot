@@ -16,8 +16,10 @@ use App\Domain\LanChallenge\Verdict;
  * Ordre : points, puis défis réussis (à points égaux, la régularité l'emporte),
  * puis Riot ID pour un ordre stable.
  *
- * Une carte saboteur choisie reste secrète : seul son propriétaire la voit,
- * dans son propre parcours. Une Malédiction subie n'apparaît nulle part.
+ * Les cartes en cours ne sont jamais révélées, saboteur ou non : seul leur
+ * propriétaire les voit, dans son propre parcours. Masquer seulement les cartes
+ * saboteur trahissait qu'un joueur en préparait une. Une Malédiction subie
+ * n'apparaît nulle part.
  */
 final readonly class GetStandingsHandler
 {
@@ -51,7 +53,7 @@ final readonly class GetStandingsHandler
     private static function entryFor(string $riotId, ?PlayerRun $run): StandingEntry
     {
         if ($run === null) {
-            return new StandingEntry($riotId, false, 0, 0, 0, 0, null, false);
+            return new StandingEntry($riotId, false, 0, 0, 0, 0, false, false);
         }
 
         $successes = count(array_filter($run->results, static fn(RoundResult $result) => $result->verdict === Verdict::SUCCESS));
@@ -63,9 +65,8 @@ final readonly class GetStandingsHandler
             $successes,
             count($run->results),
             $run->rerollsLeft,
-            $run->activeCard?->isSecret() ? null : $run->activeCard,
+            $run->activeCard !== null,
             $run->lockedGameId !== null,
-            $run->activeCard?->isSecret() ?? false,
         );
     }
 }
